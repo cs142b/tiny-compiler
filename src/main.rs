@@ -1,9 +1,14 @@
 mod tokenizer;
+use crate::tokenizer::{Tokenizer, Token};
 
 fn main() {
-    println!("Hello, world!");
+    let mut tokenizer = Tokenizer::new("function sum(a, b) { return a + b; }".to_string());
+    loop {
+        let token = tokenizer.next_token();
+        println!("{:?}", token);
+        if token == Token::EOF {
+            break;
+        }
 
-    println!("Hello motherfuckers, this is andre\'s first commit hi");
-
-    // testing how merging works
+    }
 }

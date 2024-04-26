@@ -8,12 +8,12 @@ pub enum Token {
     Times,
     Divide,
     Assignment,
-    Equal,                // ==
-    NotEqual,             // !=
-    Less,                 // <
-    LessEqual,            // <=
-    Greater,              // >
-    GreaterEqual,         // >=
+    Equal,        // ==
+    NotEqual,     // !=
+    Less,         // <
+    LessEqual,    // <=
+    Greater,      // >
+    GreaterEqual, // >=
     Semicolon,
     Comma,
     OpenParen,
@@ -21,15 +21,15 @@ pub enum Token {
     OpenBrace,
     CloseBrace,
     If,
+    Fi,
+    Then,
     Else,
     While,
+    Do,
+    Od,
     Function,
     Return,
     Variable,
-    Then,
-    Fi,
-    Do,
-    Od,
     Let,
     Call,
     Main,
@@ -45,9 +45,9 @@ pub struct Tokenizer {
 
 impl Tokenizer {
     /// Create a new tokenizer with the provided input string.
-    pub fn new(input_string: String) -> Self {
+    pub fn new(input: String) -> Self {
         Tokenizer {
-            input: input_string.into_bytes(),
+            input: input.into_bytes(),
             pos: 0,
         }
     }
@@ -119,39 +119,39 @@ impl Tokenizer {
         match op {
             '<' => {
                 if self.peek_char() == '-' {
-                    self.next_char();  // Consume '-'
+                    self.next_char(); // Consume '-'
                     Token::Assignment
                 } else if self.peek_char() == '=' {
-                    self.next_char();  // Consume '='
+                    self.next_char(); // Consume '='
                     Token::LessEqual
                 } else {
                     Token::Less
                 }
-            },
+            }
             '>' => {
                 if self.peek_char() == '=' {
-                    self.next_char();  // Consume '='
+                    self.next_char(); // Consume '='
                     Token::GreaterEqual
                 } else {
                     Token::Greater
                 }
-            },
+            }
             '=' => {
                 if self.peek_char() == '=' {
-                    self.next_char();  // Consume '='
+                    self.next_char(); // Consume '='
                     Token::Equal
                 } else {
                     panic!("Unexpected character after '=': {}", self.peek_char());
                 }
-            },
+            }
             '!' => {
                 if self.peek_char() == '=' {
-                    self.next_char();  // Consume '='
+                    self.next_char(); // Consume '='
                     Token::NotEqual
                 } else {
                     panic!("Unexpected character after '!': {}", self.peek_char());
                 }
-            },
+            }
             _ => panic!("Unexpected operator: {}", op),
         }
     }
@@ -159,24 +159,27 @@ impl Tokenizer {
     /// Retrieve the next token from the input, advancing the tokenizer.
     pub fn next_token(&mut self) -> Token {
         self.consume_whitespace();
-        let c = self.peek_char();
-        match c {
-            '+' => { self.next_char(); Token::Plus },
-            '-' => { self.next_char(); Token::Minus },
-            '*' => { self.next_char(); Token::Times },
-            '/' => { self.next_char(); Token::Divide },
-            ';' => { self.next_char(); Token::Semicolon },
-            ',' => { self.next_char(); Token::Comma },
-            '(' => { self.next_char(); Token::OpenParen },
-            ')' => { self.next_char(); Token::CloseParen },
-            '{' => { self.next_char(); Token::OpenBrace },
-            '}' => { self.next_char(); Token::CloseBrace },
+
+        let token = match self.peek_char() {
+            '+' => Token::Plus,
+            '-' => Token::Minus,
+            '*' => Token::Times,
+            '/' => Token::Divide,
+            ';' => Token::Semicolon,
+            ',' => Token::Comma,
+            '(' => Token::OpenParen,
+            ')' => Token::CloseParen,
+            '{' => Token::OpenBrace,
+            '}' => Token::CloseBrace,
             '\0' => Token::EOF,
-            '0'..='9' => self.tokenize_number(),
-            '<' | '>' | '=' | '!' => self.tokenize_operator(),
-            'a'..='z' | 'A'..='Z' => self.tokenize_identifier_or_keyword(),
-            _ => panic!("Unexpected character: {}", c),
-        }
+            '0'..='9' => return self.tokenize_number(),
+            '<' | '>' | '=' | '!' => return self.tokenize_operator(),
+            'a'..='z' | 'A'..='Z' => return self.tokenize_identifier_or_keyword(),
+            _ => panic!("Unexpected character: {}", self.peek_char()),
+        };
+
+        self.next_char();
+        token
     }
 }
 
@@ -242,7 +245,10 @@ mod tests {
         let mut tokenizer = Tokenizer::new("void function factorial(n); { if n == 0 then return 1; else return n * call factorial(n - 1); };".to_string());
         assert_eq!(tokenizer.next_token(), Token::Void);
         assert_eq!(tokenizer.next_token(), Token::Function);
-        assert_eq!(tokenizer.next_token(), Token::Identifier("factorial".to_string()));
+        assert_eq!(
+            tokenizer.next_token(),
+            Token::Identifier("factorial".to_string())
+        );
         assert_eq!(tokenizer.next_token(), Token::OpenParen);
         assert_eq!(tokenizer.next_token(), Token::Identifier("n".to_string()));
         assert_eq!(tokenizer.next_token(), Token::CloseParen);
@@ -261,7 +267,10 @@ mod tests {
         assert_eq!(tokenizer.next_token(), Token::Identifier("n".to_string()));
         assert_eq!(tokenizer.next_token(), Token::Times);
         assert_eq!(tokenizer.next_token(), Token::Call);
-        assert_eq!(tokenizer.next_token(), Token::Identifier("factorial".to_string()));
+        assert_eq!(
+            tokenizer.next_token(),
+            Token::Identifier("factorial".to_string())
+        );
         assert_eq!(tokenizer.next_token(), Token::OpenParen);
         assert_eq!(tokenizer.next_token(), Token::Identifier("n".to_string()));
         assert_eq!(tokenizer.next_token(), Token::Minus);
@@ -290,7 +299,9 @@ mod tests {
 
     #[test]
     fn test_complex_nested_control_structures() {
-        let mut tokenizer = Tokenizer::new("if x < 5 then { while y >= 10 do y <- y / 2 od } else y <- 0".to_string());
+        let mut tokenizer = Tokenizer::new(
+            "if x < 5 then { while y >= 10 do y <- y / 2 od } else y <- 0".to_string(),
+        );
         assert_eq!(tokenizer.next_token(), Token::If);
         assert_eq!(tokenizer.next_token(), Token::Identifier("x".to_string()));
         assert_eq!(tokenizer.next_token(), Token::Less);
