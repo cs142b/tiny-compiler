@@ -171,7 +171,7 @@ impl Tokenizer {
             ')' => Token::CloseParen,
             '{' => Token::OpenBrace,
             '}' => Token::CloseBrace,
-            '\0' => Token::EOF,
+            '.' => Token::EOF,
             '0'..='9' => return self.tokenize_number(),
             '<' | '>' | '=' | '!' => return self.tokenize_operator(),
             'a'..='z' | 'A'..='Z' => return self.tokenize_identifier_or_keyword(),
