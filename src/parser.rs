@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::tokenizer::{Token, Tokenizer};
 
 pub struct Parser {
@@ -103,15 +105,13 @@ impl Parser {
     }
 
 
-    fn match_token(&mut self, token_to_match: Token) -> Token {
+    fn match_token(&mut self, token_to_match: Token) {
         // advances regardless of token, should always match, else syntax error
         let token = self.token.next_token();
-        if token != token_to_match {
-            panic!("Does not match (open/close) {:?}", token_to_match);
+        match token {
+            token_to_match => (),
+            _ => panic!("Unexpected token, expected {:?}, instead got {:?}", token_to_match, token),
         }
-        
-        // might need to preserve token?
-        token
     }
 
 }
