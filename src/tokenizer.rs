@@ -28,6 +28,7 @@ pub enum Token {
     Do,
     Od,
     Function,
+    FunctionCall,
     Return,
     Variable,
     Let,
@@ -99,6 +100,7 @@ impl Tokenizer {
             "else" => Token::Else,
             "while" => Token::While,
             "function" => Token::Function,
+            "call" => Token::FunctionCall,
             "return" => Token::Return,
             "var" => Token::Variable,
             "void" => Token::Void,
@@ -154,6 +156,15 @@ impl Tokenizer {
             }
             _ => panic!("Unexpected operator: {}", op),
         }
+    }
+    
+    /// Peeks the next token from the input, without advancing the tokenizer.
+    pub fn peek_token(&mut self) -> Token {
+        let previous_pos= self.pos;
+        let token = self.next_token();
+        self.pos = previous_pos;
+
+        token
     }
 
     /// Retrieve the next token from the input, advancing the tokenizer.
