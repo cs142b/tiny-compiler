@@ -8,9 +8,9 @@ var x, var y, var z;
 function addition (a,b); 
 var c, var d; { 
     c <- a; 
-    d <- b；
+    d <- b;
     return c + d;
-}；
+};
 
 function subtraction (a,b);
 var c, var d; {
