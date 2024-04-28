@@ -10,7 +10,7 @@ var c, var d; {
     c <- a; 
     d <- b;
     return c + d;
-}；
+};
 
 function subtraction (a,b);
 var c, var d; {
