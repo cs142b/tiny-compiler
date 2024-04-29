@@ -38,6 +38,7 @@ pub enum Token {
     EOF,
 }
 
+
 /// A tokenizer that converts a string input into a series of tokens.
 pub struct Tokenizer {
     input: Vec<u8>,

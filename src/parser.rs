@@ -13,6 +13,14 @@ impl Parser {
         }
     }
 
+    fn parse_if_statement(&mut self) {
+        self.match_token(Token::If);
+        self.parse_relation();
+        self.match_token(Token::Then);
+        // TODO: implement StatsSequence
+        // and so on
+    }
+
     fn parse_assignment(&mut self) {
         self.match_token(Token::Let);
         let identifier = self.get_identifier();
@@ -120,7 +128,7 @@ impl Parser {
         let token = self.tokenizer.next_token();
         match token {
             token_to_match => (),
-            _ => panic!("Unexpected token, expected {:?}, instead got {:?}", token_to_match, token),
+            _ => panic!("ERROR: Unexpected token, expected {:?}, instead got {:?}", token_to_match, token),
         }
     }
 
