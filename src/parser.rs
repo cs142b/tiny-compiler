@@ -13,6 +13,10 @@ impl Parser {
         }
     }
 
+    // TODO: 
+    // write base code for:
+    // varDecl, funcDecl, formalParam, funcBody, computation
+
     fn parse_fn_call(&mut self) {
         self.match_token(Token::FunctionCall);
         // implement rest later
@@ -51,12 +55,10 @@ impl Parser {
         let token = self.tokenizer.peek_token();
 
         match token {
-            Token::Assignment => {
-                self.tokenizer.next_token();
+            Token::Let => {
                 self.parse_assignment();
             },
             Token::FunctionCall => {
-                self.tokenizer.next_token();
                 self.parse_fn_call();
             },
             Token::If => {
@@ -182,6 +184,7 @@ impl Parser {
             },
             Token::FunctionCall => {
                 // TODO: implement this function
+                self.parse_fn_call();
             },
             _ => {
                 panic!("ERROR: write ...");
