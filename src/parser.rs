@@ -15,32 +15,43 @@ impl Parser {
 
     fn parse_assignment(&mut self) {
         self.match_token(Token::Let);
-        // get identifier
-        // we would need a verify function to make sure this is an identifier
+        let identifier = self.get_identifier();
         self.match_token(Token::Assignment);
         self.parse_expression();
     }
 
     fn parse_relation(&mut self) {
         self.parse_expression();
-        self.parse_relation_operator(); // skeleton code
-        // we would need a verify function to make sure this is an relation operator
+        let rel_op = self.get_operator();
         self.parse_expression();
-
     }
-    
-    // skeleton code, make a generic function that can verify
-    fn parse_relation_operator(&mut self) -> Token {
-        let token = match self.tokenizer.peek_token() {
-            Token::Equal | Token::NotEqual | Token::Greater | Token::GreaterEqual | Token::Less | Token::LessEqual => self.tokenizer.next_token(),
-            _ => panic!("ERROR: write ..."),
-        };
 
-        token
+    /// Retrieves the next token and returns if it's a valid identifier 
+    fn get_identifier(&mut self) -> Token {
+        let token = self.tokenizer.next_token();
+
+        match token {
+            Token::Identifier(_) => token, 
+            _ => panic!("ERROR: {:?} is not a valid identifier", token),
+        }
     }
-    
+
+    /// Retrieves the next token and returns if it's a valid operator 
+    fn get_operator(&mut self) -> Token {
+        let operator_tokens = vec![Token::Equal, Token::NotEqual, Token::Greater, Token::GreaterEqual, Token::Less, Token::LessEqual];
+
+        let token = self.tokenizer.next_token();
+
+        if operator_tokens.contains(&token) {
+            return token;
+        } else {
+            panic!("ERROR: {:?} is not a valid operator", token);
+        }
+    }
+
     fn parse_expression(&mut self) {
         self.parse_term();
+
         loop {
             let token = self.tokenizer.peek_token();
             match token {
@@ -94,8 +105,7 @@ impl Parser {
                 self.match_token(Token::CloseParen);
             },
             Token::FunctionCall => {
-                self.parse_function_call();
-                todo!("do this");
+                // TODO: implement this function
             },
             _ => {
                 panic!("ERROR: write ...");
