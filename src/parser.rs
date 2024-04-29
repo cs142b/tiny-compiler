@@ -3,13 +3,13 @@ use core::panic;
 use crate::tokenizer::{Token, Tokenizer};
 
 pub struct Parser {
-    token: Tokenizer,
+    tokenizer: Tokenizer,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
         Self {
-            token: Tokenizer::new(input),
+            tokenizer: Tokenizer::new(input),
         }
     }
 
@@ -31,8 +31,8 @@ impl Parser {
     
     // skeleton code, make a generic function that can verify
     fn parse_relation_operator(&mut self) -> Token {
-        let token = match self.token.peek_token() {
-            Token::Equal | Token::NotEqual | Token::Greater | Token::GreaterEqual | Token::Less | Token::LessEqual => self.token.next_token(),
+        let token = match self.tokenizer.peek_token() {
+            Token::Equal | Token::NotEqual | Token::Greater | Token::GreaterEqual | Token::Less | Token::LessEqual => self.tokenizer.next_token(),
             _ => panic!("ERROR: write ..."),
         };
 
@@ -42,13 +42,13 @@ impl Parser {
     fn parse_expression(&mut self) {
         self.parse_term();
         loop {
-            let token = self.token.peek_token();
+            let token = self.tokenizer.peek_token();
             match token {
                 Token::Plus => {
-                    self.token.next_token();
+                    self.tokenizer.next_token();
                 }
                 Token::Minus => {
-                    self.token.next_token();
+                    self.tokenizer.next_token();
                 }
                 _ => {
                     break;
@@ -61,13 +61,13 @@ impl Parser {
         self.parse_factor();
 
         loop {
-            let token = self.token.peek_token();
+            let token = self.tokenizer.peek_token();
             match token {
                 Token::Times => {
-                    self.token.next_token();
+                    self.tokenizer.next_token();
                 }
                 Token::Divide => {
-                    self.token.next_token();
+                    self.tokenizer.next_token();
                 },
                 _ => {
                     break;
@@ -79,17 +79,17 @@ impl Parser {
     
     fn parse_factor(&mut self) {
         // NOTE: I could advance it to eliminate extra code, but does it affect readability?
-        let token = self.token.peek_token();
+        let token = self.tokenizer.peek_token();
 
         match token {
             Token::Identifier(name) => {
-                self.token.next_token();
+                self.tokenizer.next_token();
             },
             Token::Number(digits) => {
-                self.token.next_token();
+                self.tokenizer.next_token();
             },
             Token::OpenParen => {
-                self.token.next_token();
+                self.tokenizer.next_token();
                 self.parse_expression();
                 self.match_token(Token::CloseParen);
             },
@@ -107,7 +107,7 @@ impl Parser {
 
     fn match_token(&mut self, token_to_match: Token) {
         // advances regardless of token, should always match, else syntax error
-        let token = self.token.next_token();
+        let token = self.tokenizer.next_token();
         match token {
             token_to_match => (),
             _ => panic!("Unexpected token, expected {:?}, instead got {:?}", token_to_match, token),
