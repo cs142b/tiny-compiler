@@ -20,16 +20,16 @@ var c, var d; {
 };
 
 {
-    let y <- inputNum();
-    let z <- inputNum();
-    let x <- subtraction(y,z);
+    let y <- call inputNum();
+    let z <- call inputNum();
+    let x <- call subtraction(y,z);
     if x < 2 then
         let x <- 100;
     else
         while x < 200 do
-            let x <- addition(x, 1);
+            let x <- call addition(x, 1);
         od
     fi
-    outputNum(x);
+    call outputNum(x);
 }.
 ```
