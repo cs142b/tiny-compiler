@@ -4,7 +4,7 @@ use crate::basic_block::BasicBlock;
 pub struct Function {
     pub name: String,
     pub parameters: Vec<String>,
-    pub basic_blocks: Vec<BasicBlock>,
+    pub basic_blocks: Vec<BasicBlock>, // change this to graph
 }
 
 impl Function {
