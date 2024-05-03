@@ -1,4 +1,4 @@
-use crate::{BasicBlock, Operand};
+use crate::basic_block::BasicBlock;
 
 #[derive(Debug)]
 pub struct Function {
