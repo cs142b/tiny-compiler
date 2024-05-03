@@ -5,7 +5,7 @@
 - [ ] Implement how basic blocks, functions, and program work as a whole together.<br>-> add implementation like graphs here...
 - [ ] Add tasks as we go...
 
-#### usage of the tiny language
+#### Usage of the tiny Language
 ```js
 main 
 var x, var y, var z; 
