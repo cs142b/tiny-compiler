@@ -1,9 +1,11 @@
 ## tiny-compiler in Rust :)
 
 #### TODO
-- [ ] Build the frontend of the compiler by generating/emitting SSA instructions in the parser
-      - [ ] Stuff
-- [ ] 
+- [ ] Generate or emit SSA instructions in the parser
+      -> idea is to store all instructions in a vector of pairs (basic_block_id, instruction_enum), using the indices as the line numbers
+- [ ] Implement how basic blocks, functions, and program work as a whole together.
+      -> add implementation here...
+- [ ] Add tasks as we go...
 
 #### usage of the tiny language
 ```js
