@@ -32,7 +32,6 @@ pub enum Token {
     Return,
     Variable,
     Let,
-    Call,
     Main,
     Void,
     EOF,
