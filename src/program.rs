@@ -1,4 +1,4 @@
-use crate::{Function, Operand};
+use crate::function::Function;
 use std::collections::HashMap;
 
 #[derive(Debug)]

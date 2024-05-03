@@ -1,15 +1,18 @@
-use core::panic;
-
 use crate::tokenizer::{Token, Tokenizer};
+use crate::{instruction::{Instruction, Operand}, basic_block::BasicBlock, function::Function, program::Program};
 
 pub struct Parser {
     tokenizer: Tokenizer,
+    program: Program,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
-        Self {
-            tokenizer: Tokenizer::new(input),
+        pub fn new(input: String) -> Self {
+            Self {
+                tokenizer: Tokenizer::new(input),
+                program,
+            }
         }
     }
 
@@ -19,6 +22,7 @@ impl Parser {
 
     fn parse_fn_call(&mut self) {
         self.match_token(Token::FunctionCall);
+        self.match_token(Token::Function);
         // implement rest later
 
     }
