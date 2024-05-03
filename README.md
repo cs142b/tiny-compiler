@@ -1,9 +1,11 @@
-# tiny-compiler in Rust :)
+## tiny-compiler in Rust :)
 
-## TODO
+#### TODO
+- [ ] Build the frontend of the compiler by generating/emitting SSA instructions in the parser
+      - [ ] Stuff
+- [ ] 
 
-
-## usage of the tiny language
+#### usage of the tiny language
 ```js
 main 
 var x, var y, var z; 
