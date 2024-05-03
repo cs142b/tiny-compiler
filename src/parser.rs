@@ -9,9 +9,6 @@ pub struct Parser {
 impl Parser {
     pub fn new(input: String) -> Self {
         pub fn new(input: String) -> Self {
-            let mut program = Program::new();
-            let main_function = Function::new("main".to_string());
-            program.functions.push(main_function);  // Add the main function initially if required
             Self {
                 tokenizer: Tokenizer::new(input),
                 program,
