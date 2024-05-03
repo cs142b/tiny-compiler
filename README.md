@@ -1,6 +1,9 @@
-## tiny-compiler in rust :)
+# tiny-compiler in Rust :)
 
-#### usage of the tiny language
+## TODO
+
+
+## usage of the tiny language
 ```js
 main 
 var x, var y, var z; 
