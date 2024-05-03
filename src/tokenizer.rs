@@ -110,7 +110,6 @@ impl Tokenizer {
             "do" => Token::Do,
             "od" => Token::Od,
             "let" => Token::Let,
-            "call" => Token::Call,
             "main" => Token::Main,
             _ => Token::Identifier(identifier),
         }
