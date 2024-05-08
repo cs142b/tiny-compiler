@@ -1,10 +1,10 @@
-use crate::{BasicBlock, Operand};
+use crate::basic_block::BasicBlock;
 
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
     pub parameters: Vec<String>,
-    pub basic_blocks: Vec<BasicBlock>,
+    pub basic_blocks: Vec<BasicBlock>, // change this to graph
 }
 
 impl Function {

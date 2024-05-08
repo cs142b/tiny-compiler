@@ -1,15 +1,18 @@
-use core::panic;
-
 use crate::tokenizer::{Token, Tokenizer};
+use crate::{instruction::{Instruction, Operand}, basic_block::BasicBlock, function::Function, program::Program};
 
 pub struct Parser {
     tokenizer: Tokenizer,
+    program: Program,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
-        Self {
-            tokenizer: Tokenizer::new(input),
+        pub fn new(input: String) -> Self {
+            Self {
+                tokenizer: Tokenizer::new(input),
+                program,
+            }
         }
     }
 
@@ -17,8 +20,75 @@ impl Parser {
     // write base code for:
     // varDecl, funcDecl, formalParam, funcBody, computation
 
+    fn parse_expression(&mut self) {
+        let operand1 = self.parse_term();
+
+        loop {
+            let token = self.tokenizer.peek_token();
+            match token {
+                Token::Plus => {
+                    self.tokenizer.next_token();
+                }
+                Token::Minus => {
+                    self.tokenizer.next_token();
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+    }
+
+    fn parse_term(&mut self) {
+        self.parse_factor();
+
+        loop {
+            let token = self.tokenizer.peek_token();
+            match token {
+                Token::Times => {
+                    self.tokenizer.next_token();
+                }
+                Token::Divide => {
+                    self.tokenizer.next_token();
+                },
+                _ => {
+                    break;
+                }
+            }
+        }
+    }
+
+    
+    fn parse_factor(&mut self) {
+        // NOTE: I could advance it to eliminate extra code, but does it affect readability?
+        let token = self.tokenizer.peek_token();
+
+        match token {
+            Token::Identifier(name) => {
+                self.tokenizer.next_token();
+            },
+            Token::Number(digits) => {
+                self.tokenizer.next_token();
+            },
+            Token::OpenParen => {
+                self.tokenizer.next_token();
+                self.parse_expression();
+                self.match_token(Token::CloseParen);
+            },
+            Token::FunctionCall => {
+                // TODO: implement this function
+                self.parse_fn_call();
+            },
+            _ => {
+                panic!("ERROR: write ...");
+            },
+        }
+
+    }
+    
     fn parse_fn_call(&mut self) {
         self.match_token(Token::FunctionCall);
+        self.match_token(Token::Function);
         // implement rest later
 
     }
@@ -125,72 +195,6 @@ impl Parser {
         } else {
             panic!("ERROR: {:?} is not a valid operator", token);
         }
-    }
-
-    fn parse_expression(&mut self) {
-        self.parse_term();
-
-        loop {
-            let token = self.tokenizer.peek_token();
-            match token {
-                Token::Plus => {
-                    self.tokenizer.next_token();
-                }
-                Token::Minus => {
-                    self.tokenizer.next_token();
-                }
-                _ => {
-                    break;
-                }
-            }
-        }
-    }
-
-    fn parse_term(&mut self) {
-        self.parse_factor();
-
-        loop {
-            let token = self.tokenizer.peek_token();
-            match token {
-                Token::Times => {
-                    self.tokenizer.next_token();
-                }
-                Token::Divide => {
-                    self.tokenizer.next_token();
-                },
-                _ => {
-                    break;
-                }
-            }
-        }
-    }
-
-    
-    fn parse_factor(&mut self) {
-        // NOTE: I could advance it to eliminate extra code, but does it affect readability?
-        let token = self.tokenizer.peek_token();
-
-        match token {
-            Token::Identifier(name) => {
-                self.tokenizer.next_token();
-            },
-            Token::Number(digits) => {
-                self.tokenizer.next_token();
-            },
-            Token::OpenParen => {
-                self.tokenizer.next_token();
-                self.parse_expression();
-                self.match_token(Token::CloseParen);
-            },
-            Token::FunctionCall => {
-                // TODO: implement this function
-                self.parse_fn_call();
-            },
-            _ => {
-                panic!("ERROR: write ...");
-            },
-        }
-
     }
 
 
