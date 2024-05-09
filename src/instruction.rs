@@ -1,31 +1,32 @@
 #[derive(Debug, Clone)]
-pub enum Operand {
-    Variable(String),
-    Number(i32),
-}
-
-#[derive(Debug, Clone)]
-pub enum Instruction {
-    Const(i32),
-    Add(Operand, Operand),
-    Sub(Operand, Operand),
-    Mul(Operand, Operand),
-    Div(Operand, Operand),
-    Cmp(Operand, Operand),
-    Phi(Operand, Operand),
-    Bra(String),
-    Bne(Operand, String),
-    Beq(Operand, String),
-    Ble(Operand, String),
-    Blt(Operand, String),
-    Bge(Operand, String),
-    Bgt(Operand, String),
-    Jsr(String),
-    Ret(Operand),
+pub enum Operation {
+    Const(isize),
+    Add(isize, isize),
+    Sub(isize, isize),
+    Mul(isize, isize),
+    Div(isize, isize),
+    Cmp(isize, isize),
+    Phi(isize, isize),
+    Bra(isize),
+    Bne(isize, isize),
+    Beq(isize, isize),
+    Ble(isize, isize),
+    Blt(isize, isize),
+    Bge(isize, isize),
+    Bgt(isize, isize),
+    Jsr(isize),
+    Ret(isize),
     GetPar1,
     GetPar2,
     GetPar3,
-    SetPar1(Operand),
-    SetPar2(Operand),
-    SetPar3(Operand),
+    SetPar1(isize),
+    SetPar2(isize),
+    SetPar3(isize),
 }
+
+#[derive(Debug)]
+pub struct Instruction {
+    line_number: isize,
+    operation: Operation,
+}
+

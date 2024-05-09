@@ -1,9 +1,9 @@
 ## tiny-compiler in Rust :)
 
 #### TODO
-- [ ] Generate or emit SSA instructions in the parser<br>-> idea is to store all instructions in a vector of pairs (basic_block_id, instruction_enum), using the indices as the line numbers
-- [ ] Implement how basic blocks, functions, and program work as a whole together.<br>-> add implementation like graphs here...
-- [ ] Add tasks as we go...
+- [X] Instruction datatype is implemented
+- [ ] Restructure basic block, function, and program
+- [ ] Finish parser for SSA generation
 
 #### Usage of the tiny Language
 ```js
