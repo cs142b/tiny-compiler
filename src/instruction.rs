@@ -30,6 +30,14 @@ pub struct Instruction {
     operation: Operation,
 }
 
+
+// methods
+impl Instruction {
+    pub fn get_line_number(&self) -> isize {
+        self.line_number
+    }
+}
+// associated functions
 impl Instruction {
     pub fn create_instruction(line_number: isize, operation: Operation) -> Self {
         Instruction {

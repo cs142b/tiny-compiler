@@ -1,10 +1,12 @@
 use crate::tokenizer::{Token, Tokenizer};
-use crate::{instruction::{Instruction, Operation}, basic_block::BasicBlock, function::Function, program::Program};
+use crate::{instruction::{Instruction, Operation}, basic_block::BasicBlock, function::Function, program::Program, constant_block::ConstantBlock};
 
 pub struct Parser {
     tokenizer: Tokenizer,
     program: Program,
     line_number: isize,
+    // move this into program but used here for testing purposes
+    constant_block: ConstantBlock,
 }
 
 impl Parser {
@@ -14,6 +16,7 @@ impl Parser {
                 tokenizer: Tokenizer::new(input),
                 program: Program::new(),
                 line_number: 0,
+                constant_block: ConstantBlock::new(),
             }
         }
     }
@@ -50,10 +53,12 @@ impl Parser {
                 Token::Times => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Add(operand1, operand2)));
+                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Times(operand1, operand2)));
                 }
                 Token::Divide => {
                     self.tokenizer.next_token();
+                    let operand2 = self.parse_factor();
+                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Divide(operand1, operand2)));
                 },
                 _ => {
                     break;
@@ -63,25 +68,28 @@ impl Parser {
     }
 
     // returns an instruction line number 
-    fn parse_factor(&mut self) {
+    fn parse_factor(&mut self) -> isize {
         let token = self.tokenizer.peek_token();
 
         match token {
             Token::Identifier(name) => {
                 self.tokenizer.next_token();
+                0 // placeholder
             },
             Token::Number(digits) => {
                 self.tokenizer.next_token();
-
+                self.constant_block.get_constant(digits)
             },
             Token::OpenParen => {
                 self.tokenizer.next_token();
                 self.parse_expression();
                 self.match_token(Token::CloseParen);
+                0 // placeholder
             },
             Token::FunctionCall => {
                 // TODO: implement this function
                 self.parse_fn_call();
+                0 // placeholder
             },
             _ => {
                 panic!("ERROR: write ...");
@@ -89,7 +97,9 @@ impl Parser {
         }
 
     }
-    
+
+    // UNCOMMENT LATER
+/*    
     fn parse_fn_call(&mut self) {
         self.match_token(Token::FunctionCall);
         self.match_token(Token::Function);
@@ -199,7 +209,7 @@ impl Parser {
         } else {
             panic!("ERROR: {:?} is not a valid operator", token);
         }
-    }
+    }*/
 
 
     fn match_token(&mut self, token_to_match: Token) {

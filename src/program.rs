@@ -13,7 +13,7 @@ impl Program {
         };
         
         // add the main function
-        program.functions.add(Function::new("main".to_string()));
+        // program.functions.add(Function::new("main".to_string()));
 
         program
     }
