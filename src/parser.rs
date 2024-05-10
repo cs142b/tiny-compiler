@@ -42,13 +42,14 @@ impl Parser {
     }
 
     fn parse_term(&mut self) {
-        self.parse_factor();
+        let operand1 = self.parse_factor();
 
         loop {
             let token = self.tokenizer.peek_token();
             match token {
                 Token::Times => {
                     self.tokenizer.next_token();
+                    println!(Instruction
                 }
                 Token::Divide => {
                     self.tokenizer.next_token();
