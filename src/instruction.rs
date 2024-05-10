@@ -30,3 +30,12 @@ pub struct Instruction {
     operation: Operation,
 }
 
+impl Instruction {
+    pub fn create_instruction(line_number: isize, operation: Operation) -> Self {
+        Instruction {
+            line_number,
+            operation
+        }
+    }
+}
+
