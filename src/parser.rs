@@ -50,7 +50,7 @@ impl Parser {
                 Token::Times => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!(Instruction::create_instruction(self.line_number, Operation::Add(operand1, operand2));
+                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Add(operand1, operand2)));
                 }
                 Token::Divide => {
                     self.tokenizer.next_token();
