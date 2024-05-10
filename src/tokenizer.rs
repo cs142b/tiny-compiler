@@ -1,7 +1,7 @@
 /// Token types representing different elements of a simple programming language.
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    Number(i32),
+    Number(isize),
     Identifier(String),
     Plus,
     Minus,
@@ -89,7 +89,7 @@ impl Tokenizer {
     /// Tokenize a sequence of digits into a Number token.
     fn tokenize_number(&mut self) -> Token {
         let number_str = self.consume_while(|c| c.is_digit(10));
-        Token::Number(number_str.parse::<i32>().unwrap())
+        Token::Number(number_str.parse::<isize>().unwrap())
     }
 
     /// Tokenize an identifier or a keyword into the appropriate Token type.

@@ -1,4 +1,7 @@
-#[derive(Debug, Clone)]
+use std::fmt;
+
+
+// #[derive(Debug, Clone)]
 pub enum Operation {
     Const(isize),
     Add(isize, isize),
@@ -24,14 +27,37 @@ pub enum Operation {
     SetPar3(isize),
 }
 
-#[derive(Debug)]
+impl fmt::Debug for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Operation::Add(value1, value2) => write!(f, "Add ({:?}) ({:?})", value1, value2),
+            Operation::Sub(value1, value2) => write!(f, "Sub ({:?}) ({:?})", value1, value2),
+            Operation::Mul(value1, value2) => write!(f, "Mul ({:?}) ({:?})", value1, value2),
+            Operation::Div(value1, value2) => write!(f, "Div ({:?}) ({:?})", value1, value2),
+            _ => panic!("i do this later"),
+        }
+    }
+}
+
+
+// #[derive(Debug)]
 pub struct Instruction {
     line_number: isize,
     operation: Operation,
 }
 
 
+impl fmt::Debug for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:?}: {:?}", 
+            self.line_number, self.operation
+        )
+    }
+}
 // methods
+//
 impl Instruction {
     pub fn get_line_number(&self) -> isize {
         self.line_number

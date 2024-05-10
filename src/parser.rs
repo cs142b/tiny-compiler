@@ -5,25 +5,40 @@ pub struct Parser {
     tokenizer: Tokenizer,
     program: Program,
     line_number: isize,
-    // move this into program but used here for testing purposes
+    // move this into function but used here for testing purposes
     constant_block: ConstantBlock,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
-        pub fn new(input: String) -> Self {
-            Self {
-                tokenizer: Tokenizer::new(input),
-                program: Program::new(),
-                line_number: 0,
-                constant_block: ConstantBlock::new(),
-            }
+         Self {
+            tokenizer: Tokenizer::new(input),
+            program: Program::new(),
+            line_number: 0,
+            constant_block: ConstantBlock::new(),
         }
     }
 
     // TODO: 
     // write base code for:
     // varDecl, funcDecl, formalParam, funcBody, computation
+    
+
+    // TEST CODE
+    pub fn parse_lol(&mut self) {
+        loop {
+            self.parse_expression();
+
+            match self.tokenizer.next_token() {
+                Token::Semicolon => (),
+                Token::EOF => break,
+                _ => panic!("Invalid terminator for expression"),
+            }
+        }
+
+        // for testing display
+        self.constant_block.display_table();
+    }
 
     fn parse_expression(&mut self) {
         let operand1 = self.parse_term();
@@ -33,9 +48,15 @@ impl Parser {
             match token {
                 Token::Plus => {
                     self.tokenizer.next_token();
+                    let operand2 = self.parse_factor();
+                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Add(operand1, operand2)));
+                    self.line_number += 1;
                 }
                 Token::Minus => {
                     self.tokenizer.next_token();
+                    let operand2 = self.parse_factor();
+                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Sub(operand1, operand2)));
+                    self.line_number += 1;
                 }
                 _ => {
                     break;
@@ -44,7 +65,7 @@ impl Parser {
         }
     }
 
-    fn parse_term(&mut self) {
+    fn parse_term(&mut self) -> isize {
         let operand1 = self.parse_factor();
 
         loop {
@@ -53,18 +74,22 @@ impl Parser {
                 Token::Times => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Times(operand1, operand2)));
+                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Mul(operand1, operand2)));
+                    self.line_number += 1;
                 }
                 Token::Divide => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Divide(operand1, operand2)));
+                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Div(operand1, operand2)));
+                    self.line_number += 1;
                 },
                 _ => {
                     break;
                 }
             }
         }
+
+        operand1
     }
 
     // returns an instruction line number 
@@ -74,7 +99,7 @@ impl Parser {
         match token {
             Token::Identifier(name) => {
                 self.tokenizer.next_token();
-                0 // placeholder
+                1 // placeholder
             },
             Token::Number(digits) => {
                 self.tokenizer.next_token();
@@ -84,12 +109,12 @@ impl Parser {
                 self.tokenizer.next_token();
                 self.parse_expression();
                 self.match_token(Token::CloseParen);
-                0 // placeholder
+                1 // placeholder
             },
             Token::FunctionCall => {
                 // TODO: implement this function
-                self.parse_fn_call();
-                0 // placeholder
+//                self.parse_fn_call();
+                1 // placeholder
             },
             _ => {
                 panic!("ERROR: write ...");
