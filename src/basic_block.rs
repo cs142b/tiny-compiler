@@ -5,7 +5,7 @@ use std::collections::HashMap;
 pub struct BasicBlock {
     pub id: usize,
     pub instructions: Vec<Instruction>,
-    pub variable_table: HashMap<String, (usize, usize)>, // (basic block id, instruction index)
+    pub variable_table: HashMap<String, isize>, // (variable, line number)
 }
 
 impl BasicBlock {
