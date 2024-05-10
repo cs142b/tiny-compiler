@@ -1,20 +1,26 @@
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{instruction::{Instruction, Operation}, basic_block::BasicBlock, function::Function, program::Program, constant_block::ConstantBlock};
+use petgraph::graph::{NodeIndex};
 
 pub struct Parser {
     tokenizer: Tokenizer,
     program: Program,
     line_number: isize,
+    current_block: NodeIndex,
     // move this into function but used here for testing purposes
     constant_block: ConstantBlock,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
-         Self {
+        let mut program = Program::new();
+        let main_function = program.add_function("main".to_string(), Vec::new());
+        let initial_block = main_function.add_basic_block();
+        Self {
             tokenizer: Tokenizer::new(input),
-            program: Program::new(),
+            program,
             line_number: 0,
+            current_block: initial_block,
             constant_block: ConstantBlock::new(),
         }
     }

@@ -12,13 +12,12 @@ impl Program {
             functions: Vec::new(),
         };
         
-        // add the main function
-        // program.functions.add(Function::new("main".to_string()));
-
         program
     }
 
-    pub fn add_function(&mut self, function: Function) {
-        self.functions.push(function);
+    pub fn add_function(&mut self, name: String, parameters: Vec<String>) -> &mut Function {
+        let new_fn = Function::new(name, parameters);
+        self.functions.push(new_fn);
+        self.functions.last_mut().expect("Just added function not found")
     }
 }
