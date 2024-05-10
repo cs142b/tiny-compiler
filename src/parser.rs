@@ -1,10 +1,10 @@
 use crate::tokenizer::{Token, Tokenizer};
-use crate::{instruction::{Instruction, Operand}, basic_block::BasicBlock, function::Function, program::Program};
+use crate::{instruction::{Instruction, Operation}, basic_block::BasicBlock, function::Function, program::Program};
 
 pub struct Parser {
     tokenizer: Tokenizer,
     program: Program,
-    instruction_count: isize,
+    line_number: isize,
 }
 
 impl Parser {
@@ -13,7 +13,7 @@ impl Parser {
             Self {
                 tokenizer: Tokenizer::new(input),
                 program: Program::new(),
-                instruction_count: 0,
+                line_number: 0,
             }
         }
     }
@@ -49,7 +49,8 @@ impl Parser {
             match token {
                 Token::Times => {
                     self.tokenizer.next_token();
-                    println!(Instruction
+                    let operand2 = self.parse_factor();
+                    println!(Instruction::create_instruction(self.line_number, Operation::Add(operand1, operand2));
                 }
                 Token::Divide => {
                     self.tokenizer.next_token();
