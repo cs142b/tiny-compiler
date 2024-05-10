@@ -4,6 +4,7 @@ use crate::{instruction::{Instruction, Operand}, basic_block::BasicBlock, functi
 pub struct Parser {
     tokenizer: Tokenizer,
     program: Program,
+    instruction_count: isize,
 }
 
 impl Parser {
@@ -11,7 +12,8 @@ impl Parser {
         pub fn new(input: String) -> Self {
             Self {
                 tokenizer: Tokenizer::new(input),
-                program,
+                program: Program::new(),
+                instruction_count: 0,
             }
         }
     }
@@ -58,9 +60,8 @@ impl Parser {
         }
     }
 
-    
+    // returns an instruction line number 
     fn parse_factor(&mut self) {
-        // NOTE: I could advance it to eliminate extra code, but does it affect readability?
         let token = self.tokenizer.peek_token();
 
         match token {
@@ -69,6 +70,7 @@ impl Parser {
             },
             Token::Number(digits) => {
                 self.tokenizer.next_token();
+
             },
             Token::OpenParen => {
                 self.tokenizer.next_token();

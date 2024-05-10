@@ -3,17 +3,19 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct BasicBlock {
-    pub id: usize,
     pub instructions: Vec<Instruction>,
     pub variable_table: HashMap<String, isize>, // (variable, line number)
 }
 
 impl BasicBlock {
-    pub fn new(id: usize) -> Self {
+    pub fn new() -> Self {
         BasicBlock {
-            id,
             instructions: Vec::new(),
             variable_table: HashMap::new(),
         }
+    }
+
+    pub fn add_instruction(&mut self, instruction: Instruction) {
+        self.instructions.push(instruction);
     }
 }

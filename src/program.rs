@@ -8,8 +8,17 @@ pub struct Program {
 
 impl Program {
     pub fn new() -> Self {
-        Program {
+        let program = Program {
             functions: Vec::new(),
-        }
+        };
+        
+        // add the main function
+        program.functions.add(Function::new("main"));
+
+        program
+    }
+
+    pub fn add_function(&mut self, function: Function) {
+        self.functions.push(function);
     }
 }

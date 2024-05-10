@@ -10,10 +10,19 @@ pub struct Function {
 
 impl Function {
     pub fn new(name: String) -> Self {
-        Function {
+        let mut function = Function {
             name,
             parameters: Vec::new(),
             basic_blocks: DiGraph::<BasicBlock, isize>::new(),
-        }
+        };
+
+        // add the constant block
+        function.basic_blocks.add_node(BasicBlock::new());
+
+        function
     }
+
+    pub fn add_basic_block(&mut self) {
+    }
+
 }
