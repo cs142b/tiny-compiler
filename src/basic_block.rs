@@ -9,7 +9,7 @@ pub struct BasicBlock {
 
 impl BasicBlock {
     pub fn new() -> Self {
-        BasicBlock {
+        Self {
             instructions: Vec::new(),
             variable_table: HashMap::new(),
         }

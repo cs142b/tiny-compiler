@@ -84,9 +84,8 @@ impl Instruction {
         self.line_number
     }
 
-    // associated functions
-    
-    // creates and returns a new instruction
+    // associated functions 
+    /// creates and returns a new instruction
     pub fn new(line_number: isize, operation: Operation) -> Self {
         Self {
             line_number,

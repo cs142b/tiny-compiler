@@ -1,5 +1,4 @@
 use crate::function::Function;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Program {
@@ -8,10 +7,10 @@ pub struct Program {
 
 impl Program {
     pub fn new() -> Self {
-        let program = Program {
+        let program = Self {
             functions: Vec::new(),
         };
-        
+
         program
     }
 

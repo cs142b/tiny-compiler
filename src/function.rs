@@ -10,7 +10,7 @@ pub struct Function {
 
 impl Function {
     pub fn new(name: String, parameters: Vec<String>) -> Self {
-        let mut function = Function {
+        let mut function = Self {
             name,
             parameters,
             basic_blocks: DiGraph::<BasicBlock, ()>::new(),

@@ -47,7 +47,7 @@ pub struct Tokenizer {
 impl Tokenizer {
     /// Create a new tokenizer with the provided input string.
     pub fn new(input: String) -> Self {
-        Tokenizer {
+        Self {
             input: input.into_bytes(),
             pos: 0,
         }

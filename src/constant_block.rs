@@ -8,7 +8,7 @@ pub struct ConstantBlock {
 impl ConstantBlock {
     /// Creates and returns a new constant block
     pub fn new() -> Self {
-        ConstantBlock {
+        Self {
             constant_table: HashMap::<isize, Instruction>::new(),
         }
     }
