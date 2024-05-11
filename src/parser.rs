@@ -46,7 +46,7 @@ impl Parser {
         self.constant_block.display_table();
     }
 
-    fn parse_expression(&mut self) {
+    fn parse_expression(&mut self) -> isize {
         let operand1 = self.parse_term();
 
         loop {
@@ -69,6 +69,8 @@ impl Parser {
                 }
             }
         }
+
+        operand1
     }
 
     fn parse_term(&mut self) -> isize {
@@ -105,7 +107,12 @@ impl Parser {
         match token {
             Token::Identifier(name) => {
                 self.tokenizer.next_token();
-                1 // placeholder
+                // self.current_block.get_variable(name) // this shit wont work bc current_block is a
+                // node index, rather than the actual block where i can retrieve the table from
+                // discuss on how to manage the multiple layers bc the existing layout doesn't
+                // handle this problem
+
+                0 // placeholder
             },
             Token::Number(digits) => {
                 self.tokenizer.next_token();
@@ -113,14 +120,12 @@ impl Parser {
             },
             Token::OpenParen => {
                 self.tokenizer.next_token();
-                self.parse_expression();
+                let result = self.parse_expression();
                 self.match_token(Token::CloseParen);
-                1 // placeholder
+                result
             },
             Token::FunctionCall => {
-                // TODO: implement this function
-//                self.parse_fn_call();
-                1 // placeholder
+                todo!("Implement this later");
             },
             _ => {
                 panic!("ERROR: write ...");

@@ -28,4 +28,8 @@ impl Function {
     pub fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) {
         self.basic_blocks.add_edge(from, to, ());
     }
+
+    pub fn get_graph(&mut self) -> &mut DiGraph::<BasicBlock, ()> {
+        &mut self.basic_blocks
+    }
 }

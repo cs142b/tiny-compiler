@@ -23,8 +23,8 @@ impl BasicBlock {
         self.variable_table.insert(variable, instruction_number);
     }
 
-    pub fn get_variable(&mut self, variable: String) -> isize {
-        match self.variable_table.get(&variable) {
+    pub fn get_variable(&mut self, variable: &String) -> isize {
+        match self.variable_table.get(variable) {
             Some(instruction_number) => *instruction_number,
             None => panic!("ERROR: get_variable() is only used when a known variable exists in the table."),
         }
