@@ -17,6 +17,6 @@ impl Program {
     pub fn add_function(&mut self, name: String, parameters: Vec<String>) -> &mut Function {
         let new_fn = Function::new(name, parameters);
         self.functions.push(new_fn);
-        self.functions.last_mut().expect("Just added function not found")
+        self.functions.last_mut().expect("Unexpected error in adding new function in program.")
     }
 }

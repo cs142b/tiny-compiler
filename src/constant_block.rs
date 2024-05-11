@@ -35,8 +35,8 @@ impl ConstantBlock {
     
     // used for testing purposes to display values
     pub fn display_table(&self) {
-        for (key, value) in &self.constant_table {
-            println!("Constant: {}, Line Number: {:?}", key, value.get_line_number());
+        for instruction in self.constant_table.values() {
+            println!("{:?}", instruction);
         }
     }
 
