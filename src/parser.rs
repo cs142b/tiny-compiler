@@ -55,13 +55,13 @@ impl Parser {
                 Token::Plus => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Add(operand1, operand2)));
+                    println!("{:?}", Instruction::new(self.line_number, Operation::Add(operand1, operand2)));
                     self.line_number += 1;
                 }
                 Token::Minus => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Sub(operand1, operand2)));
+                    println!("{:?}", Instruction::new(self.line_number, Operation::Sub(operand1, operand2)));
                     self.line_number += 1;
                 }
                 _ => {
@@ -80,13 +80,13 @@ impl Parser {
                 Token::Times => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Mul(operand1, operand2)));
+                    println!("{:?}", Instruction::new(self.line_number, Operation::Mul(operand1, operand2)));
                     self.line_number += 1;
                 }
                 Token::Divide => {
                     self.tokenizer.next_token();
                     let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::create_instruction(self.line_number, Operation::Div(operand1, operand2)));
+                    println!("{:?}", Instruction::new(self.line_number, Operation::Div(operand1, operand2)));
                     self.line_number += 1;
                 },
                 _ => {
