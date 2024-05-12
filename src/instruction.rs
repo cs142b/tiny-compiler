@@ -29,6 +29,7 @@ pub enum Operation {
     Read,
     Write(isize),
     WriteNL,
+    Empty,
 }
 
 impl fmt::Debug for Operation {
@@ -58,6 +59,7 @@ impl fmt::Debug for Operation {
             Operation::Read => write!(f, "read"),
             Operation::Write(value1) => write!(f, "write ({})", value1),
             Operation::WriteNL => write!(f, "writeNL"),
+            Operation::Empty => write!(f, "<empty>"),
             _ => unreachable!("No other operations exists."),
         }
     }

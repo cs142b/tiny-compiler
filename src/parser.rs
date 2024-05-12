@@ -1,6 +1,6 @@
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{instruction::{Instruction, Operation}, basic_block::BasicBlock, function::Function, program::Program, constant_block::ConstantBlock};
-use petgraph::graph::{NodeIndex};
+use petgraph::graph::NodeIndex;
 
 pub struct Parser {
     tokenizer: Tokenizer,
@@ -31,6 +31,7 @@ impl Parser {
     
 
     // TEST CODE
+    /*
     pub fn parse_lol(&mut self) {
         loop {
             self.parse_expression();
@@ -44,7 +45,7 @@ impl Parser {
 
         // for testing display
         self.constant_block.display_table();
-    }
+    }*/
 
     fn parse_expression(&mut self) -> isize {
         let operand1 = self.parse_term();
