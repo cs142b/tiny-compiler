@@ -11,5 +11,5 @@ use crate::parser::Parser;
 
 fn main() {
     let mut parser = Parser::new("5 + 5; 5 - 1; 1 * 3; 3 / 3.".to_string());
-    parser.parse_lol();
+    // parser.parse_lol();
 }
