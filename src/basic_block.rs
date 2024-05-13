@@ -1,22 +1,26 @@
 use crate::instruction::Instruction;
 use std::collections::HashMap;
+use std::collections::LinkedList;
+
 
 #[derive(Debug)]
 pub struct BasicBlock {
-    pub instructions: Vec<Instruction>,
+    // pub instructions: Vec<Instruction>,
+    pub instruction_list: LinkedList<Instruction>,
     pub variable_table: HashMap<String, isize>, // (variable, line number)
 }
 
 impl BasicBlock {
     pub fn new() -> Self {
         Self {
-            instructions: Vec::new(),
+            // instructions: Vec::new(),
+            instruction_list: LinkedList::new(),
             variable_table: HashMap::new(),
         }
     }
 
     pub fn add_instruction(&mut self, instruction: Instruction) {
-        self.instructions.push(instruction);
+        self.instruction_list.push_back(instruction);
     }
 
     pub fn add_variable(&mut self, variable: String, instruction_number: isize) {
