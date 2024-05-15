@@ -15,7 +15,7 @@ impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
         let main_function = program.add_function("main".to_string(), Vec::new());
-        let initial_block = main_function.add_basic_block();
+        let initial_block = NodeIndex::new(0);
         Self {
             tokenizer: Tokenizer::new(input),
             program,
@@ -28,226 +28,158 @@ impl Parser {
     // TODO: 
     // write base code for:
     // varDecl, funcDecl, formalParam, funcBody, computation
-    
 
-    // TEST CODE
-    /*
-    pub fn parse_lol(&mut self) {
-        loop {
-            self.parse_expression();
-
-            match self.tokenizer.next_token() {
-                Token::Semicolon => (),
-                Token::EOF => break,
-                _ => panic!("Invalid terminator for expression"),
-            }
-        }
-
-        // for testing display
-        self.constant_block.display_table();
-    }*/
-
+    // Parse an expression (handles addition and subtraction)
     fn parse_expression(&mut self) -> isize {
-        let operand1 = self.parse_term();
+        let mut line_number1 = self.parse_term();
 
         loop {
-            let token = self.tokenizer.peek_token();
-            match token {
+            match self.tokenizer.peek_token() {
                 Token::Plus => {
                     self.tokenizer.next_token();
-                    let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::new(self.line_number, Operation::Add(operand1, operand2)));
-                    self.line_number += 1;
-                }
+                    let line_number2 = self.parse_term();
+                    line_number1 = self.emit_instruction(Operation::Add(line_number1, line_number2));
+                },
                 Token::Minus => {
                     self.tokenizer.next_token();
-                    let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::new(self.line_number, Operation::Sub(operand1, operand2)));
-                    self.line_number += 1;
-                }
-                _ => {
-                    break;
-                }
+                    let line_number2 = self.parse_term();
+                    line_number1 = self.emit_instruction(Operation::Sub(line_number1, line_number2));
+                },
+                _ => break,
             }
         }
 
-        operand1
+        line_number1
     }
 
+    // Parse a term (handles multiplication and division)
     fn parse_term(&mut self) -> isize {
-        let operand1 = self.parse_factor();
+        let mut line_number1 = self.parse_factor();
 
         loop {
-            let token = self.tokenizer.peek_token();
-            match token {
+            match self.tokenizer.peek_token() {
                 Token::Times => {
                     self.tokenizer.next_token();
-                    let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::new(self.line_number, Operation::Mul(operand1, operand2)));
-                    self.line_number += 1;
-                }
+                    let line_number2 = self.parse_factor();
+                    line_number1 = self.emit_instruction(Operation::Mul(line_number1, line_number2));
+                },
                 Token::Divide => {
                     self.tokenizer.next_token();
-                    let operand2 = self.parse_factor();
-                    println!("{:?}", Instruction::new(self.line_number, Operation::Div(operand1, operand2)));
-                    self.line_number += 1;
+                    let line_number2 = self.parse_factor();
+                    line_number1 = self.emit_instruction(Operation::Div(line_number1, line_number2));
                 },
-                _ => {
-                    break;
-                }
+                _ => break,
             }
         }
 
-        operand1
+        line_number1
     }
 
-    // returns an instruction line number 
+    // Parse a factor (handles numbers, identifiers, and parenthesized expressions)
     fn parse_factor(&mut self) -> isize {
-        let token = self.tokenizer.peek_token();
-
+        let token = self.tokenizer.next_token();
         match token {
-            Token::Identifier(name) => {
-                self.tokenizer.next_token();
-                // self.current_block.get_variable(name) // this shit wont work bc current_block is a
-                // node index, rather than the actual block where i can retrieve the table from
-                // discuss on how to manage the multiple layers bc the existing layout doesn't
-                // handle this problem
-
-                0 // placeholder
+            Token::Number(value) => {
+                self.constant_block.get_constant(value)
             },
-            Token::Number(digits) => {
-                self.tokenizer.next_token();
-                self.constant_block.get_constant(digits)
+            Token::Identifier(name) => {
+                self.program.functions[0].basic_blocks[self.current_block]
+                    .get_variable(&name)
             },
             Token::OpenParen => {
-                self.tokenizer.next_token();
                 let result = self.parse_expression();
                 self.match_token(Token::CloseParen);
                 result
             },
-            Token::FunctionCall => {
-                todo!("Implement this later");
-            },
-            _ => {
-                panic!("ERROR: write ...");
-            },
+            _ => panic!("Syntax error in factor"),
         }
-
     }
 
-    // UNCOMMENT LATER
-/*    
-    fn parse_fn_call(&mut self) {
-        self.match_token(Token::FunctionCall);
-        self.match_token(Token::Function);
-        // implement rest later
-
+    // Parse an assignment statement
+    fn parse_assignment(&mut self) {
+        self.match_token(Token::Let);
+        let variable_name = match self.tokenizer.next_token() {
+            Token::Identifier(name) => name,
+            _ => panic!("Expected identifier after 'let'"),
+        };
+        self.match_token(Token::Assignment);
+        let expr_result = self.parse_expression();
+        self.program.functions[0].basic_blocks[self.current_block]
+            .add_variable(variable_name, expr_result);
     }
 
+    // Parse an if statement
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
-        self.parse_relation();
+        let condition = self.parse_expression();
+        let then_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
+        let else_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
+        let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
+
+        self.emit_instruction(Operation::Beq(condition, then_block.index() as isize));
+        self.current_block = then_block;
         self.match_token(Token::Then);
-        self.parse_stats_sequence();
+        self.parse_stat_sequence();
+        self.emit_instruction(Operation::Bra(end_block.index() as isize));
 
         if self.tokenizer.peek_token() == Token::Else {
             self.tokenizer.next_token();
-            self.parse_stats_sequence();
+            self.current_block = else_block;
+            self.parse_stat_sequence();
+            self.emit_instruction(Operation::Bra(end_block.index() as isize));
         }
 
+        self.current_block = end_block;
         self.match_token(Token::Fi);
     }
 
+    // Parse a while statement
     fn parse_while_statement(&mut self) {
         self.match_token(Token::While);
-        self.parse_relation();
+        let condition_block = self.current_block;
+        let body_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
+        let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
+
+        let condition = self.parse_expression();
+        self.emit_instruction(Operation::Beq(condition, end_block.index() as isize));
+        self.current_block = body_block;
         self.match_token(Token::Do);
-        self.parse_stats_sequence();
+        self.parse_stat_sequence();
+        self.emit_instruction(Operation::Bra(condition_block.index() as isize));
+        self.current_block = end_block;
         self.match_token(Token::Od);
     }
 
-    fn parse_return_statement(&mut self) {
-        self.match_token(Token::Return);
-        // implement optional
-        self.parse_expression();
-    }
-
-    fn parse_statement(&mut self) {
-        let token = self.tokenizer.peek_token();
-
-        match token {
-            Token::Let => {
-                self.parse_assignment();
-            },
-            Token::FunctionCall => {
-                self.parse_fn_call();
-            },
-            Token::If => {
-                self.parse_if_statement();
-            },
-            Token::While => {
-                self.parse_while_statement();
-            },
-            Token::Return => {
-                self.parse_return_statement();
-            }
-            _ => {
-                panic!("ERROR: write ...");
-            },
-        }
-
-    }
-
-    fn parse_stats_sequence(&mut self) {
+    // Parse a sequence of statements
+    fn parse_stat_sequence(&mut self) {
         loop {
-            self.parse_statement();
+            match self.tokenizer.peek_token() {
+                Token::Let => self.parse_assignment(),
+                Token::If => self.parse_if_statement(),
+                Token::While => self.parse_while_statement(),
+                Token::Return => self.parse_return_statement(),
+                _ => break,
+            }
 
-            match self.tokenizer.next_token() {
-                Token::Semicolon => (),
+            match self.tokenizer.peek_token() {
+                Token::Semicolon => {
+                    self.tokenizer.next_token();
+                },
                 _ => break,
             }
         }
     }
 
-
-    fn parse_assignment(&mut self) {
-        self.match_token(Token::Let);
-        self.get_identifier();
-        self.match_token(Token::Assignment);
-        self.parse_expression();
-    }
-
-    fn parse_relation(&mut self) {
-        self.parse_expression();
-        self.get_operator();
-        self.parse_expression();
-    }
-
-    // !!! Below are just skeleton code, just to get started. Remove anytime. !!!
-
-    /// Retrieves the next token and returns if it's a valid identifier 
-    fn get_identifier(&mut self) -> Token {
-        let token = self.tokenizer.next_token();
-
-        match token {
-            Token::Identifier(_) => token, 
-            _ => panic!("ERROR: {:?} is not a valid identifier", token),
-        }
-    }
-
-    /// Retrieves the next token and returns if it's a valid operator 
-    fn get_operator(&mut self) -> Token {
-        let operator_tokens = vec![Token::Equal, Token::NotEqual, Token::Greater, Token::GreaterEqual, Token::Less, Token::LessEqual];
-
-        let token = self.tokenizer.next_token();
-
-        if operator_tokens.contains(&token) {
-            return token;
+    // Parse a return statement
+    fn parse_return_statement(&mut self) {
+        self.match_token(Token::Return);
+        if self.tokenizer.peek_token() != Token::Semicolon {
+            let expr_result = self.parse_expression();
+            self.emit_instruction(Operation::Ret(expr_result));
         } else {
-            panic!("ERROR: {:?} is not a valid operator", token);
+            self.emit_instruction(Operation::Ret(0));
         }
-    }*/
-
+    }
 
     fn match_token(&mut self, token_to_match: Token) {
         // advances regardless of token, should always match, else syntax error
@@ -258,4 +190,122 @@ impl Parser {
         }
     }
 
+    // Function to emit an instruction and get the line number
+    fn emit_instruction(&mut self, operation: Operation) -> isize {
+        self.line_number += 1;
+        let instruction = Instruction::create_instruction(self.line_number, operation);
+        self.program.functions[0].basic_blocks[self.current_block].add_instruction(instruction);
+        self.line_number
+    }
+}
+
+//Tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::constant_block::ConstantBlock;
+
+    #[test]
+    fn test_parse_expression_add() {
+        let input = "2+3.".to_string();
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_expression();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.program.functions[0].basic_blocks[parser.current_block].instructions;
+
+        let b = &parser.program.functions[0].basic_blocks;
+        for node_index in b.node_indices() {
+            let node_value = b.node_weight(node_index).unwrap();
+            println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
+        }
+
+        assert_eq!(instructions.len(), 1);
+        assert_eq!(format!("{:?}", instructions[0]), "1: add (-1) (-2)");
+    }
+
+    #[test]
+    fn test_parse_expression_mul() {
+        let input = "2*3.".to_string();
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_expression();
+
+        // Verify that the mul operation is correct
+        let instructions = &parser.program.functions[0].basic_blocks[parser.current_block].instructions;
+        assert_eq!(instructions.len(), 1);
+        assert_eq!(format!("{:?}", instructions[0]), "1: mul (-1) (-2)");
+    }
+
+    #[test]
+    fn test_parse_assignment() {
+        let input = "let x <- 5.".to_string();
+        let mut parser = Parser::new(input);
+
+        parser.parse_assignment();
+
+        // Verify that the variable x is correctly assigned
+        let block = &parser.program.functions[0].basic_blocks[parser.current_block];
+        let x_line_number = block.get_variable(&"x".to_string());
+        assert_eq!(x_line_number, -1); // The line number for the constant 5
+    }
+
+    #[test]
+    fn test_parse_if_statement() {
+        let input = "if 1 then let x <- 2; fi".to_string();
+        let mut parser = Parser::new(input);
+
+        parser.parse_if_statement();
+
+        let b = &parser.program.functions[0].basic_blocks;
+        for node_index in b.node_indices() {
+            let node_value = b.node_weight(node_index).unwrap();
+            println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
+        }
+
+        // Verify that the if statement creates the correct basic blocks and instructions
+        let blocks = &parser.program.functions[0].basic_blocks;
+        let then_block = blocks.node_indices().nth(1).unwrap(); // then block
+        let else_block = blocks.node_indices().nth(2).unwrap(); // else block
+        let end_block = blocks.node_indices().nth(3).unwrap(); // end block
+
+        assert_eq!(blocks[parser.current_block].instructions.len(), 1); // end block should have 1 instruction
+        assert_eq!(blocks[then_block].instructions.len(), 2); // then block should have 2 instructions
+        assert_eq!(blocks[else_block].instructions.len(), 1); // else block should have 1 instruction
+
+        let then_instructions = &blocks[then_block].instructions;
+        let else_instructions = &blocks[else_block].instructions;
+        let end_instructions = &blocks[end_block].instructions;
+
+        assert_eq!(format!("{:?}", then_instructions[0]), "0: add (-2) (-2)");
+        assert_eq!(format!("{:?}", then_instructions[1]), "1: bra (3)");
+        assert_eq!(format!("{:?}", else_instructions[0]), "0: bra (3)");
+    }
+
+    #[test]
+    fn test_parse_while_statement() {
+        let input = "while 1 do let x <- 2; od".to_string();
+        let mut parser = Parser::new(input);
+
+        // Manually populate constant block to match expected constants
+        parser.constant_block.add_constant(1);
+        parser.constant_block.add_constant(2);
+
+        parser.parse_while_statement();
+
+        // Verify that the while statement creates the correct basic blocks and instructions
+        let blocks = &parser.program.functions[0].basic_blocks;
+        let condition_block = blocks.node_indices().nth(0).unwrap(); // condition block
+        let body_block = blocks.node_indices().nth(1).unwrap(); // body block
+        let end_block = blocks.node_indices().nth(2).unwrap(); // end block
+
+        assert_eq!(blocks[parser.current_block].instructions.len(), 0); // end block should have no instructions
+        assert_eq!(blocks[body_block].instructions.len(), 2); // body block should have 2 instructions
+
+        let body_instructions = &blocks[body_block].instructions;
+
+        assert_eq!(format!("{:?}", body_instructions[0]), "0: add (-2) (-2)");
+        assert_eq!(format!("{:?}", body_instructions[1]), "1: bra (0)");
+    }
 }

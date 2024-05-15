@@ -94,5 +94,8 @@ impl Instruction {
             operation
         }
     }
-}
 
+    pub fn create_instruction(line_number: isize, operation: Operation) -> Self {
+        Instruction::new(line_number, operation)
+    }
+}
