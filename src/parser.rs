@@ -201,7 +201,7 @@ impl Parser {
 
 //Tests
 #[cfg(test)]
-mod tests {
+mod parser_tests{
     use super::*;
     use crate::constant_block::ConstantBlock;
 
