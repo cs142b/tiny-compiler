@@ -29,4 +29,12 @@ impl BasicBlock {
             None => panic!("ERROR: get_variable() is only used when a known variable exists in the table."),
         }
     }
+
+    pub fn get_first_instruction_line_number(&self) -> isize {
+        if let Some(instruction) = self.instructions.first() {
+            instruction.get_line_number()
+        } else {
+            panic!("Basic block is empty")
+        }
+    }
 }
