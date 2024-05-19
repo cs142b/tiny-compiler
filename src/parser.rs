@@ -135,14 +135,14 @@ impl Parser {
     // Parse an if statement
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
-        let condition = self.parse_relation(); // this returns the cmp line number and the operator
+        let condition = self.parse_expression(); // this returns the cmp line number and the operator
         // (which will affect what kind of branch it is)
         // so any lines of code down here, will need to be changed accordingly
         let then_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let else_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
 
-//        self.emit_instruction(Operation::Beq(condition, then_block.index() as isize));
+        self.emit_instruction(Operation::Beq(condition, then_block.index() as isize));
         self.current_block = then_block;
         self.match_token(Token::Then);
         self.parse_stat_sequence();
