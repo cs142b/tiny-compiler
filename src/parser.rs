@@ -30,7 +30,7 @@ impl Parser {
     // varDecl, funcDecl, formalParam, funcBody, computation
 
     // Parse an expression (handles addition and subtraction)
-    fn parse_expression(&mut self) -> isize {
+    pub fn parse_expression(&mut self) -> isize {
         let line_number1 = self.parse_term();
 
         loop {
@@ -109,14 +109,14 @@ impl Parser {
     }
 
     // Parse a relation 
-    fn parse_relation(&mut self) -> (isize, Token) {
+    fn parse_relation(&mut self) -> isize {
         let line_number1 = self.parse_expression();
-        let operator = self.parse_operator();
+        let operator = self.parse_operator(); // for later
         let line_number2 = self.parse_expression();
         
         let cmp_line_number = self.emit_instruction(Operation::Cmp(line_number1, line_number2));
 
-        (cmp_line_number, operator)
+        cmp_line_number
     }
 
     // return operator
@@ -142,7 +142,7 @@ impl Parser {
         let else_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
 
-        self.emit_instruction(Operation::Beq(condition, then_block.index() as isize));
+//        self.emit_instruction(Operation::Beq(condition, then_block.index() as isize));
         self.current_block = then_block;
         self.match_token(Token::Then);
         self.parse_stat_sequence();

@@ -10,6 +10,7 @@ use crate::constant_block::ConstantBlock;
 use crate::parser::Parser;
 
 fn main() {
-    let mut parser = Parser::new("5 + 5; 5 - 1; 1 * 3; 3 / 3.".to_string());
-    // parser.parse_lol();
+    let mut parser = Parser::new("5".to_string());
+    let num = parser.parse_expression();
+    println!("{:?}", num);
 }
