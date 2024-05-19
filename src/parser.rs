@@ -38,12 +38,12 @@ impl Parser {
                 Token::Plus => {
                     self.tokenizer.next_token();
                     let line_number2 = self.parse_term();
-                    line_number1 = self.emit_instruction(Operation::Add(line_number1, line_number2));
+                    return self.emit_instruction(Operation::Add(line_number1, line_number2));
                 },
                 Token::Minus => {
                     self.tokenizer.next_token();
                     let line_number2 = self.parse_term();
-                    line_number1 = self.emit_instruction(Operation::Sub(line_number1, line_number2));
+                    return self.emit_instruction(Operation::Sub(line_number1, line_number2));
                 },
                 _ => break,
             }
@@ -61,12 +61,12 @@ impl Parser {
                 Token::Times => {
                     self.tokenizer.next_token();
                     let line_number2 = self.parse_factor();
-                    line_number1 = self.emit_instruction(Operation::Mul(line_number1, line_number2));
+                    return self.emit_instruction(Operation::Mul(line_number1, line_number2));
                 },
                 Token::Divide => {
                     self.tokenizer.next_token();
                     let line_number2 = self.parse_factor();
-                    line_number1 = self.emit_instruction(Operation::Div(line_number1, line_number2));
+                    return self.emit_instruction(Operation::Div(line_number1, line_number2));
                 },
                 _ => break,
             }
