@@ -108,10 +108,36 @@ impl Parser {
             .add_variable(variable_name, expr_result);
     }
 
+    // Parse a relation 
+    fn parse_relation(&mut self) -> (isize, Token) {
+        let mut line_number1 = self.parse_expression();
+        let operator = self.parse_operator();
+        let line_number2 = self.parse_expression();
+        
+        line_number1 = self.emit_instruction(Operation::Cmp(line_number1, line_number2));
+
+        (line_number1, operator)
+    }
+
+    // return operator
+    fn parse_operator(&mut self) -> Token {
+        let operator_tokens = vec![Token::Equal, Token::NotEqual, Token::Greater, Token::GreaterEqual, Token::Less, Token::LessEqual];
+
+        let token = self.tokenizer.next_token();
+
+        if operator_tokens.contains(&token) {
+            return token;
+        } else {
+            panic!("ERROR: {:?} is not a valid operator", token);
+        }
+    }
+
     // Parse an if statement
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
-        let condition = self.parse_expression();
+        let condition = self.parse_relation(); // this returns the cmp line number and the operator
+        // (which will affect what kind of branch it is)
+        // so any lines of code down here, will need to be changed accordingly
         let then_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let else_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
