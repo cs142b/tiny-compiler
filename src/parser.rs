@@ -30,7 +30,7 @@ impl Parser {
     // varDecl, funcDecl, formalParam, funcBody, computation
 
     // Parse an expression (handles addition and subtraction)
-    pub fn parse_expression(&mut self) -> isize {
+    fn parse_expression(&mut self) -> isize {
         let line_number1 = self.parse_term();
 
         loop {
