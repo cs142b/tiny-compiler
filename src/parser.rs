@@ -31,7 +31,7 @@ impl Parser {
 
     // Parse an expression (handles addition and subtraction)
     fn parse_expression(&mut self) -> isize {
-        let mut line_number1 = self.parse_term();
+        let line_number1 = self.parse_term();
 
         loop {
             match self.tokenizer.peek_token() {
@@ -54,7 +54,7 @@ impl Parser {
 
     // Parse a term (handles multiplication and division)
     fn parse_term(&mut self) -> isize {
-        let mut line_number1 = self.parse_factor();
+        let line_number1 = self.parse_factor();
 
         loop {
             match self.tokenizer.peek_token() {
@@ -110,13 +110,13 @@ impl Parser {
 
     // Parse a relation 
     fn parse_relation(&mut self) -> (isize, Token) {
-        let mut line_number1 = self.parse_expression();
+        let line_number1 = self.parse_expression();
         let operator = self.parse_operator();
         let line_number2 = self.parse_expression();
         
-        line_number1 = self.emit_instruction(Operation::Cmp(line_number1, line_number2));
+        let cmp_line_number = self.emit_instruction(Operation::Cmp(line_number1, line_number2));
 
-        (line_number1, operator)
+        (cmp_line_number, operator)
     }
 
     // return operator
