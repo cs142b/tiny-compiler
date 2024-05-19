@@ -247,7 +247,7 @@ mod parser_tests{
         }
 
         assert_eq!(instructions.len(), 1);
-        assert_eq!(format!("{:?}", instructions[0]), "1: add (-1) (-2)");
+        assert_eq!(format!("{:?}", instructions[0]), "1: add (-2) (-3)");
     }
 
     #[test]
@@ -260,7 +260,7 @@ mod parser_tests{
         // Verify that the mul operation is correct
         let instructions = &parser.program.functions[0].basic_blocks[parser.current_block].instructions;
         assert_eq!(instructions.len(), 1);
-        assert_eq!(format!("{:?}", instructions[0]), "1: mul (-1) (-2)");
+        assert_eq!(format!("{:?}", instructions[0]), "1: mul (-2) (-3)");
     }
 
     #[test]
@@ -273,7 +273,7 @@ mod parser_tests{
         // Verify that the variable x is correctly assigned
         let block = &parser.program.functions[0].basic_blocks[parser.current_block];
         let x_line_number = block.get_variable(&"x".to_string());
-        assert_eq!(x_line_number, -1); // The line number for the constant 5
+        assert_eq!(x_line_number, -5); // The line number for the constant 5
     }
 
     #[test]

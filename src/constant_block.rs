@@ -16,7 +16,7 @@ impl ConstantBlock {
     /// Adds a constant into the table
     pub fn add_constant(&mut self, constant: isize) {
         let operation = Operation::Const(constant);
-        let line_number = (self.constant_table.len() as isize) * -1 - 1; // len() returns usize
+        let line_number = constant * -1; // (self.constant_table.len() as isize) * -1 - 1; // len() returns usize
         let instruction = Instruction::new(line_number, operation);
 
         self.constant_table.insert(constant, instruction);
