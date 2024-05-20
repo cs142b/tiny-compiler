@@ -24,10 +24,44 @@ impl Parser {
             constant_block: ConstantBlock::new(),
         }
     }
+    
+    // parse_computation, var_decl, and var are used for later in the future
+    fn parse_computation(&mut self) {
+        self.match_token(Token::Main);
+        
+        // varDecl
+        if self.tokenizer.peek_token() == Token::Variable {
+            self.parse_var_decl();
+        }
 
-    // TODO: 
-    // write base code for:
-    // varDecl, funcDecl, formalParam, funcBody, computation
+        // funcDecl can be done later, ^^ varDecl and funcDecl can be turned into a match later
+
+        self.match_token(Token::OpenBrace);
+        self.parse_stat_sequence();
+        self.match_token(Token::CloseBrace);
+        self.match_token(Token::EOF);
+    }
+
+    fn parse_var_decl(&mut self) {
+        self.match_token(Token::Variable);
+        loop {
+            self.parse_var();
+            match self.tokenizer.next_token() {
+                Token::Comma => (),
+                Token::Semicolon => break,
+                _ => panic!("error in parse_var_decl"),
+            }
+        }
+    }
+
+    fn parse_var(&mut self) {
+        match self.tokenizer.next_token() {
+            Token::Identifier(name) => {
+                self.program.functions[0].basic_blocks[self.current_block].add_variable(&name);
+            },
+            _ => panic!("unexpected error in parse_var"),
+        }
+    }
 
     // Parse an expression (handles addition and subtraction)
     fn parse_expression(&mut self) -> isize {
@@ -104,8 +138,9 @@ impl Parser {
         };
         self.match_token(Token::Assignment);
         let expr_result = self.parse_expression();
-        self.program.functions[0].basic_blocks[self.current_block]
-            .add_variable(variable_name, expr_result);
+        // this is used for testing, but will eventually be ONLY set_variable
+        self.program.functions[0].basic_blocks[self.current_block].add_variable(&variable_name);
+        self.program.functions[0].basic_blocks[self.current_block].set_variable(&variable_name, expr_result);
     }
 
     // Parse a relation 
