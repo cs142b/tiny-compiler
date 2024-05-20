@@ -146,7 +146,7 @@ impl Parser {
     // Parse a relation 
     fn parse_relation(&mut self) -> isize {
         let line_number1 = self.parse_expression();
-        let operator = self.parse_operator(); // for later
+        // let operator = self.parse_operator(); // for later
         let line_number2 = self.parse_expression();
         
         let cmp_line_number = self.emit_instruction(Operation::Cmp(line_number1, line_number2));
@@ -154,25 +154,11 @@ impl Parser {
         cmp_line_number
     }
 
-    // return operator
-    fn parse_operator(&mut self) -> Token {
-        let operator_tokens = vec![Token::Equal, Token::NotEqual, Token::Greater, Token::GreaterEqual, Token::Less, Token::LessEqual];
-
-        let token = self.tokenizer.next_token();
-
-        if operator_tokens.contains(&token) {
-            return token;
-        } else {
-            panic!("ERROR: {:?} is not a valid operator", token);
-        }
-    }
 
     // Parse an if statement
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
-        let condition = self.parse_expression(); // this returns the cmp line number and the operator
-        // (which will affect what kind of branch it is)
-        // so any lines of code down here, will need to be changed accordingly
+        let condition = self.parse_expression();
         let then_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let else_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
@@ -210,6 +196,23 @@ impl Parser {
         self.current_block = end_block;
         self.match_token(Token::Od);
     }
+    
+    // matches the comparison operator and returns its respective SSA branch instruction
+    fn parse_operator(&mut self, operator: Token, left_block: isize, right_block: isize) -> Operation {
+
+        // returns 0, 0 (just placeholder numbers that WILL be changed later)
+        // could also accept a token as an argument instead, cuz this branching instruction will 
+        // be added AFTER the then and else blocks are created
+        match self.tokenizer.next_token() {
+            Token::Equal => Operation::Bne(left_block, right_block),
+            Token::NotEqual => Operation::Beq(left_block, right_block),
+            Token::Greater => Operation::Ble(left_block, right_block),
+            Token::GreaterEqual => Operation::Blt(left_block, right_block),
+            Token::Less => Operation::Bge(left_block, right_block),
+            Token::LessEqual => Operation::Bgt(left_block, right_block),
+            _ => panic!("Expected a valid operator"),
+        }
+    }
 
     // Parse a sequence of statements
     fn parse_stat_sequence(&mut self) {
@@ -245,7 +248,7 @@ impl Parser {
     fn match_token(&mut self, token_to_match: Token) {
         // advances regardless of token, should always match, else syntax error
         let token = self.tokenizer.next_token();
-        match token {
+        match self.tokenizer.next_token() {
             token_to_match => (),
             _ => panic!("ERROR: Unexpected token, expected {:?}, instead got {:?}", token_to_match, token),
         }
