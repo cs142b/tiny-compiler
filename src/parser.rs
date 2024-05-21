@@ -177,6 +177,9 @@ impl Parser {
         self.program.functions[0].add_edge(self.current_block, then_block);
         self.program.functions[0].add_edge(self.current_block, else_block);
 
+        self.program.functions[0].propagate_variables(self.current_block, then_block);
+        self.program.functions[0].propagate_variables(self.current_block, else_block);
+
         self.current_block = then_block;
         self.match_token(Token::Then);
         self.parse_stat_sequence();
@@ -207,6 +210,9 @@ impl Parser {
         self.emit_instruction(self.get_branch_type(comparison_operator, condition, body_block.index() as isize));
         self.program.functions[0].add_edge(self.current_block, body_block);
         self.program.functions[0].add_edge(self.current_block, end_block);
+
+        self.program.functions[0].propagate_variables(self.current_block, body_block);
+        self.program.functions[0].propagate_variables(self.current_block, end_block);
 
         self.current_block = body_block;
         self.match_token(Token::Do);

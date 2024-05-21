@@ -35,6 +35,22 @@ impl Function {
         &mut self.basic_blocks
     }
 
+    pub fn propagate_variables(&mut self, from_block_index: NodeIndex, to_block_index: NodeIndex) {
+        // Collect variables from the source block
+        let from_block = self.basic_blocks.node_weight(from_block_index).unwrap();
+        let variables: Vec<(String, isize)> = from_block
+            .variable_table
+            .iter()
+            .filter_map(|(var, &line_num)| line_num.map(|line| (var.clone(), line)))
+            .collect();
+
+        // Apply variables to the destination block
+        let to_block = self.basic_blocks.node_weight_mut(to_block_index).unwrap();
+        for (var, line) in variables {
+            to_block.set_variable(&var, line);
+        }
+    }
+
     pub fn generate_phi_instructions(&mut self, join_block_index: NodeIndex) {
         // First pass: collect variable information from predecessors
         let predecessors: Vec<NodeIndex> = self.basic_blocks.neighbors_directed(join_block_index, petgraph::Direction::Incoming).collect();
