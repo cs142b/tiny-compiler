@@ -1,5 +1,5 @@
 use crate::tokenizer::{Token, Tokenizer};
-use crate::{instruction::{Instruction, Operation}, basic_block::BasicBlock, function::Function, program::Program, constant_block::ConstantBlock};
+use crate::{instruction::{Instruction, Operation}, basic_block::{BasicBlock, BasicBlockType}, function::Function, program::Program, constant_block::ConstantBlock};
 use petgraph::graph::NodeIndex;
 pub struct Parser {
     tokenizer: Tokenizer,
@@ -61,7 +61,7 @@ impl Parser {
                 // wtf is this abstraction???
                 // can easily create a wrapper function for this
                 // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
-                self.program.functions[0].get_basic_block(self.current_block).add_variable(&name);
+                self.program.functions[0].get_current_block().add_variable(&name);
             },
             _ => panic!("unexpected error in parse_var"),
         }
@@ -121,7 +121,7 @@ impl Parser {
                 self.constant_block.get_constant(value)
             },
             Token::Identifier(name) => {
-                self.program.functions[0].get_basic_block(self.current_block).get_variable(&name)
+                self.program.functions[0].get_current_block().get_variable(&name)
             },
             Token::OpenParen => {
                 let result = self.parse_expression();
@@ -142,8 +142,8 @@ impl Parser {
         self.match_token(Token::Assignment);
         let expr_result = self.parse_expression();
         // this is used for testing, but will eventually be ONLY set_variable
-        self.program.functions[0].get_basic_block(self.current_block).add_variable(&variable_name);
-        self.program.functions[0].get_basic_block(self.current_block).set_variable(&variable_name, expr_result);
+        self.program.functions[0].get_current_block().add_variable(&variable_name);
+        self.program.functions[0].get_current_block().set_variable(&variable_name, expr_result);
     }
 
     // Parse a relation 
@@ -172,20 +172,21 @@ impl Parser {
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
         let (condition, comparison_operator) = self.parse_relation();
-        let then_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
-        let else_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
-        let end_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
+        // let else_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
+        // let end_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
+        
+        // i can assume since its an if statement, it will branch + 2
+        let branch_index = self.program.functions[0].get_current_index().index() as isize + 2;
+        self.emit_instruction(self.get_branch_type(comparison_operator, condition, branch_index));
+        // self.program.functions[0].bb_list.add_edge(self.current_block, then_block)
+        // self.program.functions[0].bb_list.add_edge(self.current_block, else_block);
 
-        self.emit_instruction(self.get_branch_type(comparison_operator, condition, then_block.index() as isize));
-        // this could also get abstracted, maybe a wrapper function?
-        self.program.functions[0].bb_list.add_edge(self.current_block, then_block);
-        self.program.functions[0].bb_list.add_edge(self.current_block, else_block);
-
-        // self.program.functions[0].propagate_variables(self.current_block, then_block);
-        // self.program.functions[0].propagate_variables(self.current_block, else_block);
-
-        self.current_block = then_block;
         self.match_token(Token::Then);
+        let then_block = self.program.functions[0].add_fall_thru_block(BasicBlockType::FallThrough);
+        
+        // this shit is not real, i have to calculate the end_index like branch_index cuz im forced
+        // to go in one direction 
+        // and its 2am and i cant think straight
         self.parse_stat_sequence();
         self.emit_instruction(Operation::Bra(end_block.index() as isize));
         self.program.functions[0].bb_list.add_edge(self.current_block, end_block);
@@ -198,7 +199,6 @@ impl Parser {
             self.program.functions[0].bb_list.add_edge(self.current_block, end_block);
         }
 
-        // self.program.functions[0].generate_phi_instructions(end_block);
         self.current_block = end_block;
         self.match_token(Token::Fi);
     }
@@ -215,8 +215,6 @@ impl Parser {
         self.program.functions[0].bb_list.add_edge(self.current_block, body_block);
         self.program.functions[0].bb_list.add_edge(self.current_block, end_block);
 
-        // self.program.functions[0].propagate_variables(self.current_block, body_block);
-        // self.program.functions[0].propagate_variables(self.current_block, end_block);
 
         self.current_block = body_block;
         self.match_token(Token::Do);
@@ -224,7 +222,6 @@ impl Parser {
         self.emit_instruction(Operation::Bra(condition_block.index() as isize));
         self.program.functions[0].bb_list.add_edge(self.current_block, condition_block);
 
-        // self.program.functions[0].generate_phi_instructions(end_block);
         self.current_block = end_block;
         self.match_token(Token::Od);
     }
@@ -290,6 +287,8 @@ impl Parser {
     fn emit_instruction(&mut self, operation: Operation) -> isize {
         self.line_number += 1;
         let instruction = Instruction::create_instruction(self.line_number, operation);
+        // also REMINDER TO CHANGE THIS BECAUSE IT SHOULD BE USING THE INDEX FROM THE BASIC BLOCK
+        // LIST BUT IM TOO LAZY RN
         self.program.functions[0].bb_list.bb_graph[self.current_block].add_instruction(instruction);
         self.line_number
     }

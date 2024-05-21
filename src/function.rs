@@ -21,8 +21,22 @@ impl Function {
         function
     }
 
-    pub fn get_basic_block(&mut self, block_index: NodeIndex) -> &mut BasicBlock {
-        &mut self.bb_list.bb_graph[block_index]
+    pub fn get_current_block(&mut self) -> &mut BasicBlock {
+        &mut self.bb_list.bb_graph[self.bb_list.get_current_index()]
+    }
+
+    pub fn get_current_index(&mut self) -> NodeIndex {
+        self.bb_list.get_current_index()
+    }
+    
+    // wrapper function for add_node_to_curr
+    pub fn add_fall_thru_block(&mut self, bb_type: BasicBlockType) -> NodeIndex {
+        self.bb_list.add_node_to_curr(bb_type).unwrap()
+    }
+    
+    // wrapper function for add_node_to_prev
+    pub fn add_branch_block(&mut self, bb_type: BasicBlockType) -> NodeIndex {
+        self.bb_list.add_node_to_prev(bb_type).unwrap()
     }
 
     // TODO: MERGE THIS WITH EXISTING CODE FOR IT TO WORK

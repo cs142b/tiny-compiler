@@ -35,6 +35,10 @@ impl BasicBlockList {
         self.bb_graph.add_edge(from, to, ());
     }
 
+    pub fn get_current_index(&self) -> NodeIndex {
+        self.curr_node.unwrap()
+    }
+
     /// adds a child node to the current node and returns the current node index
     /// always used if you want to go straight down
     pub fn add_node_to_curr(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
