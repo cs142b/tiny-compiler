@@ -203,7 +203,7 @@ impl Parser {
         // returns 0, 0 (just placeholder numbers that WILL be changed later)
         // could also accept a token as an argument instead, cuz this branching instruction will 
         // be added AFTER the then and else blocks are created
-        match self.tokenizer.next_token() {
+        match operator {
             Token::Equal => Operation::Bne(left_block, right_block),
             Token::NotEqual => Operation::Beq(left_block, right_block),
             Token::Greater => Operation::Ble(left_block, right_block),
@@ -267,6 +267,20 @@ impl Parser {
 #[cfg(test)]
 mod parser_tests{
     use super::*;
+
+    #[test]
+    fn test_parse_operator() {
+        let input = "1+1.".to_string(); // this doesnt matter, im testing the parse_operation fn
+        let mut parser = Parser::new(input);
+        
+        // basic block 1 and 2 as an example
+        let equal = parser.parse_operator(Token::Equal, 1, 2);
+        assert_eq!(format!("{:?}", equal), "bne (1) (2)");
+        
+        let less_equal = parser.parse_operator(Token::LessEqual, 1, 2);
+        assert_eq!(format!("{:?}", less_equal), "bgt (1) (2)");
+    }
+
 
     #[test]
     fn test_parse_expression_add() {
