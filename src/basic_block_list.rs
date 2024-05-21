@@ -6,6 +6,7 @@ use petgraph::{
     Direction::{Incoming, Outgoing},
 };
 
+#[derive(Debug)]
 pub struct BasicBlockList {
     pub bb_graph: DiGraph<BasicBlock, BasicBlock>,
     pub curr_node: Option<NodeIndex<u32>>,
@@ -208,7 +209,7 @@ mod basic_block_tests {
 
     use crate::{
         basic_block::{self, BasicBlock},
-        Basic_Block_List::{in_iter, iter_len},
+        basic_block_list::{in_iter, iter_len},
     };
 
     use super::BasicBlockList;
