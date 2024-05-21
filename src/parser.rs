@@ -59,6 +59,7 @@ impl Parser {
             Token::Identifier(name) => {
                 // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
                 // wtf is this abstraction???
+                // can easily create a wrapper function for this
                 self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
             },
             _ => panic!("unexpected error in parse_var"),
