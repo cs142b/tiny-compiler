@@ -17,7 +17,6 @@ pub enum BasicBlockType {
 pub struct BasicBlock {
     pub instructions: Vec<Instruction>,
     pub variable_table: HashMap<String, Option<isize>>, // (variable, line number)
-    pub successors: Vec<NodeIndex>, // list of successor blocks
     pub block_type: BasicBlockType,
 }
 
@@ -26,7 +25,6 @@ impl BasicBlock {
         Self {
             instructions: Vec::new(),
             variable_table: HashMap::new(),
-            successors: Vec::new(),
             block_type: BasicBlockType::Entry,
         }
     }
@@ -35,7 +33,6 @@ impl BasicBlock {
         Self {
             instructions: Vec::new(),
             variable_table: HashMap::new(),
-            successors: Vec::new(),
             block_type: new_type
         }
     }
@@ -67,9 +64,6 @@ impl BasicBlock {
         }
     }
 
-    pub fn add_successor(&mut self, successor: NodeIndex) {
-        self.successors.push(successor);
-    }
 
     pub fn propagate_variables(&self, next_block: &mut BasicBlock) {
         for (var, &line_num) in &self.variable_table {
