@@ -1,4 +1,5 @@
 use crate::basic_block_list::BasicBlockList;
+
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
