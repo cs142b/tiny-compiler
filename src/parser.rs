@@ -144,26 +144,37 @@ impl Parser {
     }
 
     // Parse a relation 
-    fn parse_relation(&mut self) -> isize {
+    fn parse_relation(&mut self) -> (isize, Token) {
         let line_number1 = self.parse_expression();
-        // let operator = self.parse_operator(); // for later
-        let line_number2 = self.parse_expression();
-        
+        let operator = self.parse_operator();
+        let line_number2 = self.parse_expression(); 
         let cmp_line_number = self.emit_instruction(Operation::Cmp(line_number1, line_number2));
 
-        cmp_line_number
+        (cmp_line_number, operator)
     }
 
+    fn parse_operator(&mut self) -> Token {
+        let operator_tokens = vec![Token::Equal, Token::NotEqual, Token::Greater, Token::GreaterEqual, Token::Less, Token::LessEqual];
+
+        let token = self.tokenizer.next_token();
+
+        if operator_tokens.contains(&token) {
+            return token;
+        } else {
+            panic!("ERROR: {:?} is not a valid operator", token);
+        }
+    }
 
     // Parse an if statement
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
-        let condition = self.parse_expression();
+        let (condition, comparison_operator) = self.parse_relation();
         let then_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let else_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
 
-        self.emit_instruction(Operation::Beq(condition, then_block.index() as isize));
+        // self.emit_instruction(Operation::Beq(condition, then_block.index() as isize)); old code
+        self.emit_instruction(self.get_branch_type(comparison_operator, condition, then_block.index() as isize));
         self.current_block = then_block;
         self.match_token(Token::Then);
         self.parse_stat_sequence();
@@ -198,7 +209,7 @@ impl Parser {
     }
     
     // matches the comparison operator and returns its respective SSA branch instruction
-    fn parse_operator(&mut self, operator: Token, left_block: isize, right_block: isize) -> Operation {
+    fn get_branch_type(&self, operator: Token, left_block: isize, right_block: isize) -> Operation {
 
         // returns 0, 0 (just placeholder numbers that WILL be changed later)
         // could also accept a token as an argument instead, cuz this branching instruction will 
@@ -274,10 +285,10 @@ mod parser_tests{
         let mut parser = Parser::new(input);
         
         // basic block 1 and 2 as an example
-        let equal = parser.parse_operator(Token::Equal, 1, 2);
+        let equal = parser.get_branch_type(Token::Equal, 1, 2);
         assert_eq!(format!("{:?}", equal), "bne (1) (2)");
         
-        let less_equal = parser.parse_operator(Token::LessEqual, 1, 2);
+        let less_equal = parser.get_branch_type(Token::LessEqual, 1, 2);
         assert_eq!(format!("{:?}", less_equal), "bgt (1) (2)");
     }
 
