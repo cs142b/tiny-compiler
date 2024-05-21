@@ -8,14 +8,14 @@ use petgraph::{
 
 #[derive(Debug)]
 pub struct BasicBlockList {
-    pub bb_graph: DiGraph<BasicBlock, BasicBlock>,
+    pub bb_graph: DiGraph<BasicBlock, ()>,
     pub curr_node: Option<NodeIndex<u32>>,
 }
 
 impl BasicBlockList {
     pub fn new() -> Self {
         Self {
-            bb_graph: DiGraph::<BasicBlock, BasicBlock>::new(),
+            bb_graph: DiGraph::<BasicBlock, ()>::new(),
             curr_node: None,
         }
     }
@@ -29,6 +29,10 @@ impl BasicBlockList {
 
     pub fn is_empty(&self) -> bool {
         self.bb_graph.node_count() == 0
+    }
+
+    pub fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) {
+        self.bb_graph.add_edge(from, to, ());
     }
 
     /// adds a child node to the current node and returns the current node index
@@ -46,8 +50,7 @@ impl BasicBlockList {
         self.curr_node = Some(new_child_node);
 
         if parent_node != None {
-            self.bb_graph
-                .add_edge(parent_node.unwrap(), new_child_node, bb.clone());
+            self.add_edge(parent_node.unwrap(), new_child_node);
         }
 
         parent_node
@@ -71,8 +74,7 @@ impl BasicBlockList {
 
         let added_node = self.bb_graph.add_node(bb.clone());
 
-        self.bb_graph
-            .add_edge(parent_node.unwrap(), added_node, bb.clone());
+        self.add_edge(parent_node.unwrap(), added_node);
 
         self.curr_node = Some(added_node);
         parent_node
@@ -115,10 +117,8 @@ impl BasicBlockList {
 
         let added_node = self.bb_graph.add_node(bb.clone());
 
-        self.bb_graph
-            .add_edge(left_parent.unwrap(), added_node, bb.clone());
-        self.bb_graph
-            .add_edge(right_parent.unwrap(), added_node, bb.clone());
+        self.add_edge(left_parent.unwrap(), added_node);
+        self.add_edge(right_parent.unwrap(), added_node);
 
         self.curr_node = Some(added_node);
         (left_parent, right_parent)
@@ -180,7 +180,7 @@ impl BasicBlockList {
 }
 
 // used for testing purposes
-fn iter_len(x: &petgraph::graph::Neighbors<BasicBlock, u32>) -> usize {
+fn iter_len(x: &petgraph::graph::Neighbors<(), u32>) -> usize {
     let mut i: usize = 0;
     for _el in x.clone() {
         i += 1;
@@ -190,7 +190,7 @@ fn iter_len(x: &petgraph::graph::Neighbors<BasicBlock, u32>) -> usize {
 
 // used for testing purposes
 fn in_iter(
-    neighbor_iter: &petgraph::graph::Neighbors<BasicBlock, u32>,
+    neighbor_iter: &petgraph::graph::Neighbors<(), u32>,
     needle: &NodeIndex<u32>,
 ) -> bool {
     let l = needle.clone();

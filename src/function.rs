@@ -1,4 +1,5 @@
 use crate::basic_block_list::BasicBlockList;
+use crate::basic_block::BasicBlock;
 
 #[derive(Debug)]
 pub struct Function {
@@ -9,11 +10,14 @@ pub struct Function {
 
 impl Function {
     pub fn new(name: String, parameters: Vec<String>) -> Self {
-        Self {
+        let mut function = Self {
             name,
             parameters,
             bb_list: BasicBlockList::new(),
-        }
+        };
+
+        function.bb_list.add_node_to_curr(&BasicBlock::new());
+        function
     }
 
     // TODO: MERGE THIS WITH EXISTING CODE FOR IT TO WORK

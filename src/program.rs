@@ -19,9 +19,4 @@ impl Program {
         self.functions.push(new_fn);
         self.functions.last_mut().expect("Unexpected error in adding new function in program.")
     }
-    
-    //pub fn get_function(&mut self, name: &String) -> &mut Function {
-         
-    //}
-
 }
