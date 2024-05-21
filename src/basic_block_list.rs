@@ -1,4 +1,4 @@
-use crate::basic_block::BasicBlock;
+use crate::basic_block::{BasicBlock, BasicBlockType};
 use petgraph::{
     data::{Build, DataMap},
     graph::{DiGraph, Graph, Node, NodeIndex},
@@ -22,7 +22,7 @@ impl BasicBlockList {
 
     pub fn new_with_graph() -> Self {
         let mut m = BasicBlockList::new();
-        m.add_node_to_curr(&BasicBlock::new());
+        m.add_node_to_curr(BasicBlockType::Entry);
 
         m
     }
@@ -37,7 +37,9 @@ impl BasicBlockList {
 
     /// adds a child node to the current node and returns the current node index
     /// always used if you want to go straight down
-    pub fn add_node_to_curr(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
+    pub fn add_node_to_curr(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+        let bb = BasicBlock::new_with_type(bb_type);
+
         let parent_node = self.curr_node;
 
         if parent_node != None {
@@ -46,7 +48,7 @@ impl BasicBlockList {
             }
         }
 
-        let new_child_node = self.bb_graph.add_node(bb.clone());
+        let new_child_node = self.bb_graph.add_node(bb);
         self.curr_node = Some(new_child_node);
 
         if parent_node != None {
@@ -58,7 +60,9 @@ impl BasicBlockList {
 
     /// adds a child node to the previous node and returns the previous node 
     /// should only be used in a fall-through block (or left child)
-    pub fn add_node_to_prev(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
+    pub fn add_node_to_prev(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+        let bb = BasicBlock::new_with_type(bb_type);
+
         let parent_node = self.get_prev();
         if !self.validate_addition(parent_node) {
             panic!("Cannot make addition");
@@ -72,7 +76,7 @@ impl BasicBlockList {
             return parent_node;
         }
 
-        let added_node = self.bb_graph.add_node(bb.clone());
+        let added_node = self.bb_graph.add_node(bb);
 
         self.add_edge(parent_node.unwrap(), added_node);
 
@@ -82,14 +86,14 @@ impl BasicBlockList {
 
     /// wrapper for [`add_node_to_curr`](#method.add_node_to_curr)
     /// returns the current node index
-    pub fn add_fall_thru_block(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
-        return self.add_node_to_curr(bb);
+    pub fn add_fall_thru_block(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+        return self.add_node_to_curr(bb_type);
     }
 
     /// wrapper for [`add_node_to_prev`](#method.add_node_to_prev)
     /// returns the previous node index
-    pub fn add_branch_block(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
-        return self.add_node_to_prev(bb);
+    pub fn add_branch_block(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+        return self.add_node_to_prev(bb_type);
     }
 
     /// returns the parent of the current node
@@ -103,8 +107,10 @@ impl BasicBlockList {
     /// add a join block to the current set of siblings at the bottom
     pub fn add_join_block(
         &mut self,
-        bb: &BasicBlock,
+        bb_type: BasicBlockType,
     ) -> (Option<NodeIndex<u32>>, Option<NodeIndex<u32>>) {
+
+        let bb = BasicBlock::new_with_type(bb_type);
         let left_parent = self.get_sibling_of_curr();
         let right_parent = self.curr_node;
 
@@ -115,7 +121,7 @@ impl BasicBlockList {
             panic!("Can no longer add any new children");
         }
 
-        let added_node = self.bb_graph.add_node(bb.clone());
+        let added_node = self.bb_graph.add_node(bb);
 
         self.add_edge(left_parent.unwrap(), added_node);
         self.add_edge(right_parent.unwrap(), added_node);
@@ -208,7 +214,7 @@ mod basic_block_tests {
     use petgraph::Direction::{Incoming, Outgoing};
 
     use crate::{
-        basic_block::{self, BasicBlock},
+        basic_block::BasicBlock,
         basic_block_list::{in_iter, iter_len},
     };
 
@@ -217,8 +223,7 @@ mod basic_block_tests {
     #[test]
     fn first_add_test() {
         let mut x = BasicBlockList::new();
-        let j = BasicBlock::new();
-        let ret_val = x.add_node_to_curr(&j);
+        let ret_val = x.add_node_to_curr(BasicBlockType::Entry);
 
         assert_eq!(ret_val, None);
         assert_eq!(x.bb_graph.node_count(), 1);
@@ -226,13 +231,11 @@ mod basic_block_tests {
     #[test]
     fn second_add_test_curr() {
         let mut x = BasicBlockList::new();
-        let j = BasicBlock::new();
-        let ret_val = x.add_node_to_curr(&j);
+        let ret_val = x.add_node_to_curr(BasicBlockType::Entry);
 
         assert_eq!(ret_val, None);
 
-        let new_bb_2 = BasicBlock::new();
-        let _ret_val_2 = x.add_node_to_curr(&new_bb_2);
+        let _ret_val_2 = x.add_node_to_curr(BasicBlockType::Entry);
 
         // assert_eq!()
         assert_eq!(x.bb_graph.node_count(), 2);
@@ -241,8 +244,7 @@ mod basic_block_tests {
     #[test]
     fn add_curr_twice_then_prev() {
         let mut x = BasicBlockList::new();
-        let j = BasicBlock::new_with_type(BasicBlockType::Conditional);
-        let ret_val = x.add_node_to_curr(&j);
+        let ret_val = x.add_node_to_curr(BasicBlockType::Conditional);
 
         let conditional_node = x.curr_node;
 
@@ -258,8 +260,7 @@ mod basic_block_tests {
         }
 
         assert_eq!(ret_val, None);
-        let g = BasicBlock::new_with_type(BasicBlockType::FallThrough);
-        let ret_val_2 = x.add_node_to_curr(&j);
+        let ret_val_2 = x.add_node_to_curr(BasicBlockType::FallThrough);
 
         println!("Edge count second addtion {:?}", x.bb_graph.edge_count());
         let fall_thru_node = x.curr_node;
@@ -275,8 +276,7 @@ mod basic_block_tests {
         assert_eq!(ret_val_2, conditional_node);
         assert_ne!(ret_val_2, x.curr_node);
 
-        let else_block = BasicBlock::new_with_type(BasicBlockType::Branch);
-        let ret_val_3 = x.add_node_to_prev(&else_block);
+        let ret_val_3 = x.add_node_to_prev(BasicBlockType::Branch);
 
         println!(
             "Edge count third node addtion {:?}",
@@ -300,8 +300,7 @@ mod basic_block_tests {
     #[test]
     fn add_curr_twice_then_prev_then_join() {
         let mut x = BasicBlockList::new();
-        let j = BasicBlock::new_with_type(BasicBlockType::Conditional);
-        let ret_val = x.add_node_to_curr(&j);
+        let ret_val = x.add_node_to_curr(BasicBlockType::Conditional);
 
         let conditional_node = x.curr_node;
 
@@ -317,8 +316,7 @@ mod basic_block_tests {
         }
 
         assert_eq!(ret_val, None);
-        let g = BasicBlock::new_with_type(BasicBlockType::FallThrough);
-        let ret_val_2 = x.add_node_to_curr(&j);
+        let ret_val_2 = x.add_node_to_curr(BasicBlockType::FallThrough);
 
         println!("Edge count second addtion {:?}", x.bb_graph.edge_count());
         let fall_thru_node = x.curr_node;
@@ -334,8 +332,7 @@ mod basic_block_tests {
         assert_eq!(ret_val_2, conditional_node);
         assert_ne!(ret_val_2, x.curr_node);
 
-        let else_block = BasicBlock::new_with_type(BasicBlockType::Branch);
-        let ret_val_3 = x.add_node_to_prev(&else_block);
+        let ret_val_3 = x.add_node_to_prev(BasicBlockType::Branch);
 
         println!(
             "Edge count third node addtion {:?}",
@@ -360,9 +357,8 @@ mod basic_block_tests {
             &x.get_sibling_of_curr().unwrap()
         ));
 
-        let join_block = BasicBlock::new_with_type(BasicBlockType::Join);
         let else_node = x.curr_node;
-        let return_add_join = x.add_join_block(&join_block);
+        let return_add_join = x.add_join_block(BasicBlockType::Join);
 
         assert_eq!(return_add_join.0, fall_thru_node);
         assert_eq!(return_add_join.1, else_node);

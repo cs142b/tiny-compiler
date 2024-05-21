@@ -1,5 +1,5 @@
 use crate::basic_block_list::BasicBlockList;
-use crate::basic_block::BasicBlock;
+use crate::basic_block::{BasicBlock, BasicBlockType};
 
 #[derive(Debug)]
 pub struct Function {
@@ -16,7 +16,7 @@ impl Function {
             bb_list: BasicBlockList::new(),
         };
 
-        function.bb_list.add_node_to_curr(&BasicBlock::new());
+        function.bb_list.add_node_to_curr(BasicBlockType::Entry);
         function
     }
 
