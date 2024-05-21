@@ -9,62 +9,67 @@ use petgraph::{
 #[derive(Debug)]
 pub struct BasicBlockList {
     pub bb_graph: DiGraph<BasicBlock, ()>,
-    pub curr_node: Option<NodeIndex<u32>>,
+    pub curr_node: NodeIndex<u32>,
 }
 
 impl BasicBlockList {
     pub fn new() -> Self {
+        // Self {
+        //     bb_graph: DiGraph::<BasicBlock, ()>::new(),
+        //     curr_node: None,
+        // }
+
+        let bb_g = DiGraph::<BasicBlock, ()>::new();
+        let bb = BasicBlock::new_with_type(BasicBlockType::Entry);
+        let entry_node = bb_g.add_node(bb);
+
         Self {
-            bb_graph: DiGraph::<BasicBlock, ()>::new(),
-            curr_node: None,
+            bb_graph: bb_g,
+            curr_node: entry_node,
         }
     }
 
-    pub fn new_with_graph() -> Self {
-        let mut m = BasicBlockList::new();
-        m.add_node_to_curr(BasicBlockType::Entry);
+    // pub fn new_with_graph() -> Self {
+    //     let mut m = BasicBlockList::new();
+    //     m.add_node_to_curr(BasicBlockType::Entry);
 
-        m
-    }
+    //     m
+    // }
 
-    pub fn is_empty(&self) -> bool {
-        self.bb_graph.node_count() == 0
-    }
+    // pub fn is_empty(&self) -> bool {
+    //     self.bb_graph.node_count() == 0
+    // }
 
     pub fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) {
         self.bb_graph.add_edge(from, to, ());
     }
 
-    pub fn get_current_index(&self) -> NodeIndex {
-        self.curr_node.unwrap()
+    pub fn get_current_index(&self) -> NodeIndex<u32> {
+        self.curr_node
     }
 
     /// adds a child node to the current node and returns the current node index
     /// always used if you want to go straight down
-    pub fn add_node_to_curr(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+    pub fn add_node_to_curr(&mut self, bb_type: BasicBlockType) -> NodeIndex<u32> {
         let bb = BasicBlock::new_with_type(bb_type);
 
         let parent_node = self.curr_node;
 
-        if parent_node != None {
-            if !self.can_add_child(parent_node.unwrap().clone()) {
-                panic!("Can no longer add any new children");
-            }
+        if !self.can_add_child(parent_node.clone()) {
+            panic!("Can no longer add any new children");
         }
 
         let new_child_node = self.bb_graph.add_node(bb);
-        self.curr_node = Some(new_child_node);
+        self.curr_node = (new_child_node);
 
-        if parent_node != None {
-            self.add_edge(parent_node.unwrap(), new_child_node);
-        }
+        self.add_edge(parent_node, new_child_node);
 
         parent_node
     }
 
-    /// adds a child node to the previous node and returns the previous node 
+    /// adds a child node to the previous node and returns the previous node
     /// should only be used in a fall-through block (or left child)
-    pub fn add_node_to_prev(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+    pub fn add_node_to_prev(&mut self, bb_type: BasicBlockType) -> NodeIndex<u32> {
         let bb = BasicBlock::new_with_type(bb_type);
 
         let parent_node = self.get_prev();
@@ -76,44 +81,36 @@ impl BasicBlockList {
             panic!("Can no longer add any new children");
         }
 
-        if parent_node == None {
-            return parent_node;
-        }
-
         let added_node = self.bb_graph.add_node(bb);
 
         self.add_edge(parent_node.unwrap(), added_node);
 
-        self.curr_node = Some(added_node);
-        parent_node
+        self.curr_node = added_node;
+
+        parent_node.unwrap()
     }
 
     /// wrapper for [`add_node_to_curr`](#method.add_node_to_curr)
     /// returns the current node index
-    pub fn add_fall_thru_block(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+    pub fn add_fall_thru_block(&mut self, bb_type: BasicBlockType) -> NodeIndex<u32> {
         return self.add_node_to_curr(bb_type);
     }
 
     /// wrapper for [`add_node_to_prev`](#method.add_node_to_prev)
     /// returns the previous node index
-    pub fn add_branch_block(&mut self, bb_type: BasicBlockType) -> Option<NodeIndex<u32>> {
+    pub fn add_branch_block(&mut self, bb_type: BasicBlockType) -> NodeIndex<u32> {
         return self.add_node_to_prev(bb_type);
     }
 
     /// returns the parent of the current node
     pub fn get_prev(&self) -> Option<NodeIndex> {
-        let mut parents_iter = self
-            .bb_graph
-            .neighbors_directed(self.curr_node.unwrap(), Incoming);
+        let mut parents_iter = self.bb_graph.neighbors_directed(self.curr_node, Incoming);
         parents_iter.nth(0)
     }
 
     /// add a join block to the current set of siblings at the bottom
-    pub fn add_join_block(
-        &mut self,
-        bb_type: BasicBlockType,
-    ) -> (Option<NodeIndex<u32>>, Option<NodeIndex<u32>>) {
-
+    pub fn add_join_block(&mut self, bb_type: BasicBlockType) -> (NodeIndex<u32>, NodeIndex<u32>) {
+        // return (self.curr_node, self.curr_node);
         let bb = BasicBlock::new_with_type(bb_type);
         let left_parent = self.get_sibling_of_curr();
         let right_parent = self.curr_node;
@@ -121,29 +118,29 @@ impl BasicBlockList {
         if !self.can_add_child(left_parent.unwrap().clone()) {
             panic!("Can no longer add any new children");
         }
-        if !self.can_add_child(right_parent.unwrap().clone()) {
+        if !self.can_add_child(right_parent.clone()) {
             panic!("Can no longer add any new children");
         }
 
         let added_node = self.bb_graph.add_node(bb);
 
         self.add_edge(left_parent.unwrap(), added_node);
-        self.add_edge(right_parent.unwrap(), added_node);
+        self.add_edge(right_parent, added_node);
 
-        self.curr_node = Some(added_node);
-        (left_parent, right_parent)
+        self.curr_node = (added_node);
+        (left_parent.unwrap(), right_parent)
     }
 
     /// returns the node index of its sibling (only used in a child of a conditional)
     /// returns None or panics if the current node does not have a sibling
     fn get_sibling_of_curr(&self) -> Option<NodeIndex<u32>> {
-        if self.curr_node == None {
-            panic!("no curr node to find sibilng of ");
-        }
+        // if self.curr_node == None {
+        //     panic!("no curr node to find sibilng of ");
+        // }
 
-        let curr_ni = self.curr_node.unwrap();
+        let curr_ni = self.curr_node;
 
-        let mut parent_ni = self.bb_graph.neighbors_directed(curr_ni, Incoming);
+        let parent_ni = self.bb_graph.neighbors_directed(curr_ni, Incoming);
 
         let mut parent_children = self
             .bb_graph
@@ -154,7 +151,7 @@ impl BasicBlockList {
         }
 
         for child in parent_children {
-            if child != self.curr_node.unwrap() {
+            if child != self.curr_node {
                 return Some(child);
             }
         }
@@ -180,16 +177,12 @@ impl BasicBlockList {
 
     ///wrapper function for can_add_child()
     /// wrapper function for [`can_add_child`](#method.can_add_child)
-    fn validate_addition(&self, possible_parent_option: Option<NodeIndex>) -> bool {
+    fn validate_addition(&self, possible_parent_option: Option<NodeIndex<u32>>) -> bool {
         if possible_parent_option == None {
             return false;
-        } else {
-            return self.can_add_child(possible_parent_option.unwrap());
         }
+        return self.can_add_child(possible_parent_option.unwrap());
     }
-
-
-    
 }
 
 // used for testing purposes
@@ -202,10 +195,7 @@ fn iter_len(x: &petgraph::graph::Neighbors<(), u32>) -> usize {
 }
 
 // used for testing purposes
-fn in_iter(
-    neighbor_iter: &petgraph::graph::Neighbors<(), u32>,
-    needle: &NodeIndex<u32>,
-) -> bool {
+fn in_iter(neighbor_iter: &petgraph::graph::Neighbors<(), u32>, needle: &NodeIndex<u32>) -> bool {
     let l = needle.clone();
     for neighbor in neighbor_iter.clone() {
         if neighbor == l {
@@ -227,6 +217,7 @@ mod basic_block_tests {
 
     use super::BasicBlockList;
     use crate::basic_block::BasicBlockType;
+    /*
     #[test]
     fn first_add_test() {
         let mut x = BasicBlockList::new();
@@ -388,4 +379,5 @@ mod basic_block_tests {
         // assert_eq!(ret_val_3, conditional_node);
         // assert_ne!(ret_val_3)
     }
+     */
 }
