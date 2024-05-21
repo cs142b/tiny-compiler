@@ -283,7 +283,7 @@ mod parser_tests{
     #[test]
     fn test_parse_operator() {
         let input = "1+1.".to_string(); // this doesnt matter, im testing the parse_operation fn
-        let mut parser = Parser::new(input);
+        let parser = Parser::new(input);
         
         // basic block 1 and 2 as an example
         let equal = parser.get_branch_type(Token::Equal, 1, 2);
