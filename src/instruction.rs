@@ -3,6 +3,7 @@ use std::fmt;
 
 // #[derive(Debug, Clone)] 
 // not needed since the display format already implements it
+#[derive(Clone)]
 pub enum Operation {
     Const(isize),
     Add(isize, isize),
@@ -68,6 +69,7 @@ impl fmt::Debug for Operation {
 
 // #[derive(Debug)]
 // not needed since the display format already implements it
+#[derive(Clone)]
 pub struct Instruction {
     line_number: isize,
     operation: Operation,
