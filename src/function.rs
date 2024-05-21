@@ -216,6 +216,8 @@ impl Function {
     // }
     //
     // pub fn get_graph(&mut self) -> &mut DiGraph::<BasicBlock, ()> {
+    //      &mut self.basic_blocks
+    // }
 
     // pub fn propagate_variables(&mut self, from_block_index: NodeIndex, to_block_index: NodeIndex) {
     //     // Collect variables from the source block
@@ -231,6 +233,14 @@ impl Function {
     //     for (var, line) in variables {
     //         to_block.set_variable(&var, line);
     //     }
+    // }
+    //
+    // pub fn propagate_variables(&self) -> HashMap<String, Option<isize>>{
+    //     self.variable_table.clone()
+    // }
+    //
+    // pub fn propagate_variables_to_block(&self, next_block: &mut BasicBlock) {
+    //     next_block.variable_table = self.propagate_variables();
     // }
     //
     // pub fn generate_phi_instructions(&mut self, join_block_index: NodeIndex) {
