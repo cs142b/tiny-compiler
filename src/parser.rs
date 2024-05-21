@@ -60,7 +60,8 @@ impl Parser {
                 // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
                 // wtf is this abstraction???
                 // can easily create a wrapper function for this
-                self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
+                // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
+                self.program.functions[0].get_basic_block(self.current_block).add_variable(&name);
             },
             _ => panic!("unexpected error in parse_var"),
         }
@@ -120,8 +121,7 @@ impl Parser {
                 self.constant_block.get_constant(value)
             },
             Token::Identifier(name) => {
-                self.program.functions[0].bb_list.bb_graph[self.current_block]
-                    .get_variable(&name)
+                self.program.functions[0].get_basic_block(self.current_block).get_variable(&name)
             },
             Token::OpenParen => {
                 let result = self.parse_expression();
@@ -142,8 +142,8 @@ impl Parser {
         self.match_token(Token::Assignment);
         let expr_result = self.parse_expression();
         // this is used for testing, but will eventually be ONLY set_variable
-        self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&variable_name);
-        self.program.functions[0].bb_list.bb_graph[self.current_block].set_variable(&variable_name, expr_result);
+        self.program.functions[0].get_basic_block(self.current_block).add_variable(&variable_name);
+        self.program.functions[0].get_basic_block(self.current_block).set_variable(&variable_name, expr_result);
     }
 
     // Parse a relation 
@@ -177,6 +177,7 @@ impl Parser {
         let end_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
 
         self.emit_instruction(self.get_branch_type(comparison_operator, condition, then_block.index() as isize));
+        // this could also get abstracted, maybe a wrapper function?
         self.program.functions[0].bb_list.add_edge(self.current_block, then_block);
         self.program.functions[0].bb_list.add_edge(self.current_block, else_block);
 

@@ -1,5 +1,6 @@
 use crate::basic_block_list::BasicBlockList;
 use crate::basic_block::{BasicBlock, BasicBlockType};
+use petgraph::graph::NodeIndex;
 
 #[derive(Debug)]
 pub struct Function {
@@ -18,6 +19,10 @@ impl Function {
 
         function.bb_list.add_node_to_curr(BasicBlockType::Entry);
         function
+    }
+
+    pub fn get_basic_block(&mut self, block_index: NodeIndex) -> &mut BasicBlock {
+        &mut self.bb_list.bb_graph[block_index]
     }
 
     // TODO: MERGE THIS WITH EXISTING CODE FOR IT TO WORK
