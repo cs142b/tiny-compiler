@@ -181,4 +181,32 @@ mod tests {
         assert_eq!(format!("{:?}", instructions[1]), "2: phi (5) (2)");
         assert_eq!(format!("{:?}", instructions[2]), "3: phi (4) (1)");
     }
+    
+    #[test]
+    fn test_generate_phi_instructions_with_repeated_assignments() {
+        // Create a function
+        let mut function = Function::new("test_function".to_string(), vec![]);
+
+        // Add basic blocks
+        let block1 = function.add_basic_block();
+        let block2 = function.add_basic_block();
+        let join_block = function.add_basic_block();
+
+        // Add edges
+        function.add_edge(block1, join_block);
+        function.add_edge(block2, join_block);
+
+        // Add variables to predecessors
+        {
+            let mut block1 = function.basic_blocks.node_weight_mut(block1).unwrap();
+            // this already works because set_variable will always override :)
+            block1.set_variable(&"x".to_string(), 1);
+            block1.set_variable(&"y".to_string(), 2);
+            block1.set_variable(&"y".to_string(), 3);
+
+            let mut block2 = function.basic_blocks.node_weight_mut(block2).unwrap();
+            block2.set_variable(&"x".to_string(), -1);
+            block2.set_variable(&"y".to_string(), -3);
+        }
+    }
 }
