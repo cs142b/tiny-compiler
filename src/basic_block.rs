@@ -2,11 +2,23 @@ use crate::instruction::Instruction;
 use std::collections::HashMap;
 use petgraph::graph::NodeIndex;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Default)]
+pub enum BasicBlockType {
+    #[default]
+    Entry, 
+    Conditional, 
+    FallThrough, 
+    Branch,
+    Join, 
+    Exit 
+}
+
+#[derive(Debug, Default, Clone)]
 pub struct BasicBlock {
     pub instructions: Vec<Instruction>,
     pub variable_table: HashMap<String, Option<isize>>, // (variable, line number)
     pub successors: Vec<NodeIndex>, // list of successor blocks
+    pub block_type: BasicBlockType,
 }
 
 impl BasicBlock {
@@ -15,6 +27,16 @@ impl BasicBlock {
             instructions: Vec::new(),
             variable_table: HashMap::new(),
             successors: Vec::new(),
+            block_type: BasicBlockType::Entry,
+        }
+    }
+
+    pub fn new_with_type(new_type: BasicBlockType) -> Self {
+        Self {
+            instructions: Vec::new(),
+            variable_table: HashMap::new(),
+            successors: Vec::new(),
+            block_type: new_type
         }
     }
 
@@ -54,6 +76,24 @@ impl BasicBlock {
             if let Some(line) = line_num {
                 next_block.set_variable(var, line);
             }
+        }
+    }
+
+    pub fn get_max_parents(&self) -> usize{
+        match self.block_type {
+            BasicBlockType::Entry => return 0,
+            BasicBlockType::Conditional | BasicBlockType::Branch | BasicBlockType::FallThrough => return 1, 
+            BasicBlockType::Join => return 2, 
+            BasicBlockType::Exit =>  return 1
+        }
+    }
+    pub fn get_max_children(&self) -> usize{
+        match self.block_type {
+            BasicBlockType::Entry => return 1,
+            BasicBlockType::Branch | BasicBlockType::FallThrough => return 1, 
+            BasicBlockType::Conditional => return 2, 
+            BasicBlockType::Join => return 1, 
+            BasicBlockType::Exit =>  return 0
         }
     }
 }
