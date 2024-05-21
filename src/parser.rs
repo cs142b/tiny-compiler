@@ -198,8 +198,9 @@ impl Parser {
         let body_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
 
-        let condition = self.parse_expression();
-        self.emit_instruction(Operation::Beq(condition, end_block.index() as isize));
+        let (condition, comparison_operator) = self.parse_relation();
+        // self.emit_instruction(Operation::Beq(condition, end_block.index() as isize));
+        self.emit_instruction(self.get_branch_type(comparison_operator, condition, body_block.index() as isize));
         self.current_block = body_block;
         self.match_token(Token::Do);
         self.parse_stat_sequence();
