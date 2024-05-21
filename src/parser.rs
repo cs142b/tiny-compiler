@@ -248,7 +248,7 @@ impl Parser {
     fn match_token(&mut self, token_to_match: Token) {
         // advances regardless of token, should always match, else syntax error
         let token = self.tokenizer.next_token();
-        match self.tokenizer.next_token() {
+        match token {
             token_to_match => (),
             _ => panic!("ERROR: Unexpected token, expected {:?}, instead got {:?}", token_to_match, token),
         }
