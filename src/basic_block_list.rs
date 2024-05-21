@@ -101,7 +101,7 @@ impl BasicBlockList {
     }
 
     /// returns the parent of the current node
-    fn get_prev(&self) -> Option<NodeIndex> {
+    pub fn get_prev(&self) -> Option<NodeIndex> {
         let mut parents_iter = self
             .bb_graph
             .neighbors_directed(self.curr_node.unwrap(), Incoming);
@@ -187,6 +187,9 @@ impl BasicBlockList {
             return self.can_add_child(possible_parent_option.unwrap());
         }
     }
+
+
+    
 }
 
 // used for testing purposes
