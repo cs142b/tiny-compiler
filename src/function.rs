@@ -1,12 +1,10 @@
 use crate::basic_block_list::BasicBlockList;
-use petgraph::graph::NodeIndex; 
 
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
     pub parameters: Vec<String>,
-    pub bb_graph: BasicBlockList, // import this
-    pub curr_node: Option<NodeIndex<u32>>,
+    pub bb_list: BasicBlockList, // import this
 }
 
 impl Function {
@@ -14,8 +12,7 @@ impl Function {
         let mut function = Self {
             name,
             parameters,
-            bb_graph: BasicBlockList::new(),
-            curr_node: None,
+            bb_list: BasicBlockList::new(),
         };
 
         // function.add_basic_block(); // need to DO THIS after updating changes
