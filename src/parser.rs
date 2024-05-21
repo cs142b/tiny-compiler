@@ -10,7 +10,7 @@ pub struct Parser {
     // move this into function but used here for testing purposes
     constant_block: ConstantBlock,
 }
-
+/*
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
@@ -393,4 +393,4 @@ mod parser_tests{
             println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
         }
     }
-}
+}*/

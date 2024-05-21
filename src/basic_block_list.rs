@@ -21,16 +21,17 @@ impl BasicBlockList {
 
     pub fn new_with_graph() -> Self {
         let mut m = BasicBlockList::new();
-
         m.add_node_to_curr(&BasicBlock::new());
+
         m
     }
 
     pub fn is_empty(&self) -> bool {
         self.bb_graph.node_count() == 0
     }
-    /// adds node to curr node
-    /// allows user access to new parent which is now the curr node
+
+    /// adds a child node to the current node and returns the current node index
+    /// always used if you want to go straight down
     pub fn add_node_to_curr(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
         let parent_node = self.curr_node;
 
@@ -51,14 +52,10 @@ impl BasicBlockList {
         parent_node
     }
 
-    ///adds node to the previous node and allows user access to parent node to which it is adding upon return
-    /// fails if validation fails
+    /// adds a child node to the previous node and returns the previous node 
+    /// should only be used in a fall-through block (or left child)
     pub fn add_node_to_prev(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
-        // if (self.curr_node.neighbors_directed(n, d))
-        // if (self.curr_node.neighbors_directed(a, dir))
-
         let parent_node = self.get_prev();
-        // println!("parent node = {:?}", parent_node);
         if !self.validate_addition(parent_node) {
             panic!("Cannot make addition");
         }
@@ -66,6 +63,7 @@ impl BasicBlockList {
         if !self.can_add_child(parent_node.unwrap().clone()) {
             panic!("Can no longer add any new children");
         }
+
         if parent_node == None {
             return parent_node;
         }
@@ -79,17 +77,19 @@ impl BasicBlockList {
         parent_node
     }
 
-    ///wrapper for [`add_node_to_curr`](#method.add_node_to_curr), gives access to block which is now being added to
+    /// wrapper for [`add_node_to_curr`](#method.add_node_to_curr)
+    /// returns the current node index
     pub fn add_fall_thru_block(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
         return self.add_node_to_curr(bb);
     }
 
-    ///wrapper for [`add_node_to_prev`](#method.add_node_to_prev), gives access to block which is now being added to
+    /// wrapper for [`add_node_to_prev`](#method.add_node_to_prev)
+    /// returns the previous node index
     pub fn add_branch_block(&mut self, bb: &BasicBlock) -> Option<NodeIndex<u32>> {
         return self.add_node_to_prev(bb);
     }
 
-    ///returns the parent of the current node
+    /// returns the parent of the current node
     fn get_prev(&self) -> Option<NodeIndex> {
         let mut parents_iter = self
             .bb_graph
@@ -97,19 +97,11 @@ impl BasicBlockList {
         parents_iter.nth(0)
     }
 
-    ///add a join block to the current set of siblings at the bottom
+    /// add a join block to the current set of siblings at the bottom
     pub fn add_join_block(
         &mut self,
         bb: &BasicBlock,
     ) -> (Option<NodeIndex<u32>>, Option<NodeIndex<u32>>) {
-        // let left_parent = self.add_node_to_prev(bb);
-        // let right_parent = self.add_node_to_prev(bb);
-
-        // let right_parent
-
-        // (left_parent, right_parent)
-
-        // let right_parent =
         let left_parent = self.get_sibling_of_curr();
         let right_parent = self.curr_node;
 
@@ -119,9 +111,6 @@ impl BasicBlockList {
         if !self.can_add_child(right_parent.unwrap().clone()) {
             panic!("Can no longer add any new children");
         }
-        // if left_parent == None || right_parent == None {
-        //     return (None, None);
-        // }
 
         let added_node = self.bb_graph.add_node(bb.clone());
 
@@ -134,13 +123,13 @@ impl BasicBlockList {
         (left_parent, right_parent)
     }
 
-    ///gets the sibling of the current node or returns none/panics if the current node does not have a current node
+    /// returns the node index of its sibling (only used in a child of a conditional)
+    /// returns None or panics if the current node does not have a sibling
     fn get_sibling_of_curr(&self) -> Option<NodeIndex<u32>> {
-        // to get sibiling of curr, must be in the right sibilng as left sibling may not have been created yet
-
         if self.curr_node == None {
             panic!("no curr node to find sibilng of ");
         }
+
         let curr_ni = self.curr_node.unwrap();
 
         let mut parent_ni = self.bb_graph.neighbors_directed(curr_ni, Incoming);
@@ -153,8 +142,6 @@ impl BasicBlockList {
             panic!("Not enough children");
         }
 
-        // parent_children.nth(0)
-
         for child in parent_children {
             if child != self.curr_node.unwrap() {
                 return Some(child);
@@ -164,9 +151,7 @@ impl BasicBlockList {
         None
     }
 
-    ///validates whether or not a child can be added to an instnace of a node index
-    ///
-
+    /// validates whether or not a child can be added to an instnace of a node index
     fn can_add_child(&self, possible_parent: petgraph::graph::NodeIndex) -> bool {
         let parent_bb = self.bb_graph.node_weight(possible_parent);
 
@@ -181,6 +166,7 @@ impl BasicBlockList {
 
         false
     }
+
     ///wrapper function for can_add_child()
     /// wrapper function for [`can_add_child`](#method.can_add_child)
     fn validate_addition(&self, possible_parent_option: Option<NodeIndex>) -> bool {
@@ -192,6 +178,7 @@ impl BasicBlockList {
     }
 }
 
+// used for testing purposes
 fn iter_len(x: &petgraph::graph::Neighbors<BasicBlock, u32>) -> usize {
     let mut i: usize = 0;
     for _el in x.clone() {
@@ -200,6 +187,7 @@ fn iter_len(x: &petgraph::graph::Neighbors<BasicBlock, u32>) -> usize {
     i
 }
 
+// used for testing purposes
 fn in_iter(
     neighbor_iter: &petgraph::graph::Neighbors<BasicBlock, u32>,
     needle: &NodeIndex<u32>,
@@ -213,19 +201,6 @@ fn in_iter(
     false
 }
 
-// pub fn add(left: usize, right: usize) -> usize {
-//     left + right
-// }
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn it_works() {
-//         let result = add(2, 2);
-//         assert_eq!(result, 4);
-//     }
-// }
 #[cfg(test)]
 mod basic_block_tests {
 

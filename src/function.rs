@@ -4,19 +4,16 @@ use crate::basic_block_list::BasicBlockList;
 pub struct Function {
     pub name: String,
     pub parameters: Vec<String>,
-    pub bb_list: BasicBlockList, // import this
+    pub bb_list: BasicBlockList,
 }
 
 impl Function {
     pub fn new(name: String, parameters: Vec<String>) -> Self {
-        let mut function = Self {
+        Self {
             name,
             parameters,
             bb_list: BasicBlockList::new(),
-        };
-
-        // function.add_basic_block(); // need to DO THIS after updating changes
-        function
+        }
     }
 
     // TODO: MERGE THIS WITH EXISTING CODE FOR IT TO WORK
