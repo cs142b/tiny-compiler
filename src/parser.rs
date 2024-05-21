@@ -173,20 +173,25 @@ impl Parser {
         let else_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
 
-        // self.emit_instruction(Operation::Beq(condition, then_block.index() as isize)); old code
         self.emit_instruction(self.get_branch_type(comparison_operator, condition, then_block.index() as isize));
+        self.program.functions[0].add_edge(self.current_block, then_block);
+        self.program.functions[0].add_edge(self.current_block, else_block);
+
         self.current_block = then_block;
         self.match_token(Token::Then);
         self.parse_stat_sequence();
         self.emit_instruction(Operation::Bra(end_block.index() as isize));
+        self.program.functions[0].add_edge(self.current_block, end_block);
 
         if self.tokenizer.peek_token() == Token::Else {
             self.tokenizer.next_token();
             self.current_block = else_block;
             self.parse_stat_sequence();
             self.emit_instruction(Operation::Bra(end_block.index() as isize));
+            self.program.functions[0].add_edge(self.current_block, end_block);
         }
 
+        self.program.functions[0].generate_phi_instructions(end_block);
         self.current_block = end_block;
         self.match_token(Token::Fi);
     }
@@ -199,12 +204,17 @@ impl Parser {
         let end_block = self.program.functions[0].basic_blocks.add_node(BasicBlock::new());
 
         let (condition, comparison_operator) = self.parse_relation();
-        // self.emit_instruction(Operation::Beq(condition, end_block.index() as isize));
         self.emit_instruction(self.get_branch_type(comparison_operator, condition, body_block.index() as isize));
+        self.program.functions[0].add_edge(self.current_block, body_block);
+        self.program.functions[0].add_edge(self.current_block, end_block);
+
         self.current_block = body_block;
         self.match_token(Token::Do);
         self.parse_stat_sequence();
         self.emit_instruction(Operation::Bra(condition_block.index() as isize));
+        self.program.functions[0].add_edge(self.current_block, condition_block);
+
+        self.program.functions[0].generate_phi_instructions(end_block);
         self.current_block = end_block;
         self.match_token(Token::Od);
     }
@@ -362,5 +372,19 @@ mod parser_tests{
         let end_instructions = &blocks[end_block].instructions;
 
         assert_eq!(format!("{:?}", then_instructions[0]), "2: bra (3)");
+    }
+
+    #[test]
+    fn test_parse_while_statement() {
+        let input = "while 10 >= 6 do let x <- 2; od".to_string();
+        let mut parser = Parser::new(input);
+
+        parser.parse_while_statement();
+
+        let b = &parser.program.functions[0].basic_blocks;
+        for node_index in b.node_indices() {
+            let node_value = b.node_weight(node_index).unwrap();
+            println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
+        }
     }
 }
