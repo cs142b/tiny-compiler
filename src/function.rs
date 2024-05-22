@@ -1,6 +1,5 @@
 use crate::basic_block_list::BasicBlockList;
 use crate::basic_block::{BasicBlock, BasicBlockType};
-use petgraph::graph::NodeIndex;
 
 #[derive(Debug)]
 pub struct Function {

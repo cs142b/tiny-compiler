@@ -1,6 +1,5 @@
 use crate::instruction::Instruction;
 use std::collections::HashMap;
-use petgraph::graph::NodeIndex;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub enum BasicBlockType {

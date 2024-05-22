@@ -1,8 +1,6 @@
 use crate::basic_block::{BasicBlock, BasicBlockType};
 use petgraph::{
-    data::{Build, DataMap},
-    graph::{DiGraph, Graph, Node, NodeIndex},
-    visit::IntoNeighborsDirected,
+    graph::{DiGraph, NodeIndex},
     Direction::{Incoming, Outgoing},
 };
 
@@ -127,11 +125,15 @@ impl BasicBlockList {
 
         let parent_ni = self.bb_graph.neighbors_directed(curr_ni, Incoming);
 
+        if iter_len(&parent_ni) >= 2 {
+            panic!("too many parents");
+        }
+
         let parent_children = self
             .bb_graph
-            .neighbors_directed(parent_ni.nth(0).unwrap(), Outgoing);
+            .neighbors_directed(parent_ni.last().unwrap(), Outgoing);
 
-        if iter_len(&mut parent_children) != 2 {
+        if iter_len(&parent_children) != 2 {
             panic!("Not enough children");
         }
 
@@ -192,16 +194,16 @@ fn in_iter(neighbor_iter: &petgraph::graph::Neighbors<(), u32>, needle: &NodeInd
 
 #[cfg(test)]
 mod basic_block_tests {
-
+    /*
     use petgraph::Direction::{Incoming, Outgoing};
 
     use crate::{
         basic_block::BasicBlock,
         basic_block_list::{in_iter, iter_len},
-    };
+    };*/
 
-    use super::BasicBlockList;
-    use crate::basic_block::BasicBlockType;
+    //use super::BasicBlockList;
+    //use crate::basic_block::BasicBlockType;
     /*
     #[test]
     fn first_add_test() {
