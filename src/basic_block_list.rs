@@ -14,11 +14,6 @@ pub struct BasicBlockList {
 
 impl BasicBlockList {
     pub fn new() -> Self {
-        // Self {
-        //     bb_graph: DiGraph::<BasicBlock, ()>::new(),
-        //     curr_node: None,
-        // }
-
         let bb_g = DiGraph::<BasicBlock, ()>::new();
         let bb = BasicBlock::new_with_type(BasicBlockType::Entry);
         let entry_node = bb_g.add_node(bb);
@@ -29,16 +24,6 @@ impl BasicBlockList {
         }
     }
 
-    // pub fn new_with_graph() -> Self {
-    //     let mut m = BasicBlockList::new();
-    //     m.add_node_to_curr(BasicBlockType::Entry);
-
-    //     m
-    // }
-
-    // pub fn is_empty(&self) -> bool {
-    //     self.bb_graph.node_count() == 0
-    // }
 
     pub fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) {
         self.bb_graph.add_edge(from, to, ());
@@ -142,7 +127,7 @@ impl BasicBlockList {
 
         let parent_ni = self.bb_graph.neighbors_directed(curr_ni, Incoming);
 
-        let mut parent_children = self
+        let parent_children = self
             .bb_graph
             .neighbors_directed(parent_ni.nth(0).unwrap(), Outgoing);
 

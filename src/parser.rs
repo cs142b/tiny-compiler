@@ -289,7 +289,7 @@ impl Parser {
         let instruction = Instruction::create_instruction(self.line_number, operation);
         // also REMINDER TO CHANGE THIS BECAUSE IT SHOULD BE USING THE INDEX FROM THE BASIC BLOCK
         // LIST BUT IM TOO LAZY RN
-        self.program.functions[0].bb_list.bb_graph[self.current_block].add_instruction(instruction);
+        self.program.functions[0].get_current_block().add_instruction(instruction);
         self.line_number
     }
 }

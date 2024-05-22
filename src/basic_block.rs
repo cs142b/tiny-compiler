@@ -21,21 +21,14 @@ pub struct BasicBlock {
 }
 
 impl BasicBlock {
-    pub fn new() -> Self {
+    pub fn new(block_type: BasicBlockType) -> Self {
         Self {
             instructions: Vec::new(),
             variable_table: HashMap::new(),
-            block_type: BasicBlockType::Entry,
+            block_type,
         }
     }
 
-    pub fn new_with_type(new_type: BasicBlockType) -> Self {
-        Self {
-            instructions: Vec::new(),
-            variable_table: HashMap::new(),
-            block_type: new_type
-        }
-    }
 
     pub fn add_instruction(&mut self, instruction: Instruction) {
         self.instructions.push(instruction);
@@ -73,7 +66,7 @@ impl BasicBlock {
         }
     }
 
-    pub fn get_max_parents(&self) -> usize{
+    pub fn get_max_parents(&self) -> usize {
         match self.block_type {
             BasicBlockType::Entry => return 0,
             BasicBlockType::Conditional | BasicBlockType::Branch | BasicBlockType::FallThrough => return 1, 
@@ -81,7 +74,8 @@ impl BasicBlock {
             BasicBlockType::Exit =>  return 1
         }
     }
-    pub fn get_max_children(&self) -> usize{
+
+    pub fn get_max_children(&self) -> usize {
         match self.block_type {
             BasicBlockType::Entry => return 1,
             BasicBlockType::Branch | BasicBlockType::FallThrough => return 1, 
