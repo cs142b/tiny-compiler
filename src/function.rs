@@ -34,12 +34,27 @@ impl Function {
     
     /// wrapper function for [`add_node_to_curr`](../basic_block_list/struct.BasicBlockList.html#method.add_node_to_curr)
     pub fn add_fall_thru_block(&mut self) {
+        
         self.bb_list.add_node_to_curr(BasicBlockType::FallThrough);
+        self.propagate_variables();
     }
     
     /// wrapper function for [`add_node_to_prev`](../basic_block_list/struct.BasicBlockList.html#method.add_node_to_prev)
     pub fn add_branch_block(&mut self) {
         self.bb_list.add_node_to_prev(BasicBlockType::Branch);
+        self.propagate_variables(); 
+    }
+
+    pub fn add_cond_block(&mut self) {
+        self.bb_list.add_node_to_curr(BasicBlockType::Conditional);
+        self.propagate_variables(); 
+    }
+
+    /// returns left parent and right parent in that order as their NodeIndexes
+    /// a wrapper for [`bb_list.add_join_block()`](../basic_block_list/struct.BasicBlockList.html#method.add_join_block)
+    pub fn add_join_block(&mut self) {
+        self.bb_list.add_join_block(BasicBlockType::Join); 
+        self.propagate_variables_join(); 
     }
 
     pub fn get_parent(&mut self) -> &mut BasicBlock {
@@ -51,15 +66,7 @@ impl Function {
         &self.bb_list.bb_graph[self.bb_list.get_prev().unwrap()]
     }
 
-    /// returns left parent and right parent in that order as their NodeIndexes
-    /// a wrapper for [`bb_list.add_join_block()`](../basic_block_list/struct.BasicBlockList.html#method.add_join_block)
-    pub fn add_join_block(&mut self) {
-        self.bb_list.add_join_block(BasicBlockType::Join); 
-    }
 
-    pub fn add_cond_block(&mut self) {
-        self.bb_list.add_node_to_curr(BasicBlockType::Conditional);
-    }
 
     fn propagate_variables (&mut self) {
 
