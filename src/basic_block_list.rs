@@ -12,8 +12,8 @@ pub struct BasicBlockList {
 
 impl BasicBlockList {
     pub fn new() -> Self {
-        let bb_g = DiGraph::<BasicBlock, ()>::new();
-        let bb = BasicBlock::new_with_type(BasicBlockType::Entry);
+        let mut bb_g = DiGraph::<BasicBlock, ()>::new();
+        let bb = BasicBlock::new(BasicBlockType::Entry);
         let entry_node = bb_g.add_node(bb);
 
         Self {
@@ -34,7 +34,7 @@ impl BasicBlockList {
     /// adds a child node to the current node and returns the current node index
     /// always used if you want to go straight down
     pub fn add_node_to_curr(&mut self, bb_type: BasicBlockType) -> NodeIndex<u32> {
-        let bb = BasicBlock::new_with_type(bb_type);
+        let bb = BasicBlock::new(bb_type);
 
         let parent_node = self.curr_node;
 
@@ -53,7 +53,7 @@ impl BasicBlockList {
     /// adds a child node to the previous node and returns the previous node
     /// should only be used in a fall-through block (or left child)
     pub fn add_node_to_prev(&mut self, bb_type: BasicBlockType) -> NodeIndex<u32> {
-        let bb = BasicBlock::new_with_type(bb_type);
+        let bb = BasicBlock::new(bb_type);
 
         let parent_node = self.get_prev();
         if !self.validate_addition(parent_node) {
@@ -94,7 +94,7 @@ impl BasicBlockList {
     /// add a join block to the current set of siblings at the bottom
     pub fn add_join_block(&mut self, bb_type: BasicBlockType) -> (NodeIndex<u32>, NodeIndex<u32>) {
         // return (self.curr_node, self.curr_node);
-        let bb = BasicBlock::new_with_type(bb_type);
+        let bb = BasicBlock::new(bb_type);
         let left_parent = self.get_sibling_of_curr();
         let right_parent = self.curr_node;
 
