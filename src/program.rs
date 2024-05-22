@@ -35,7 +35,8 @@ impl Program {
     }
 
     pub fn get_curr_fn_mut(&mut self) -> &mut Function {
-        &mut self.functions[self.get_curr_function_pos()]
+        let pos = self.get_curr_function_pos();
+        &mut self.functions[pos]
     }
 
     pub fn get_curr_block_mut(&mut self) -> &mut BasicBlock {
