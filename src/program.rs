@@ -1,4 +1,4 @@
-use crate::{basic_block::BasicBlock, function::Function};
+use crate::{basic_block::BasicBlock, function::Function, instruction::Instruction};
 
 #[derive(Debug)]
 pub struct Program {
@@ -55,4 +55,33 @@ impl Program {
     pub fn add_fall_thru_block(&mut self) {
         self.get_curr_fn_mut().add_fall_thru_block();
     }
+
+    pub fn add_cond_block(&mut self) {
+        self.get_curr_fn_mut().add_cond_block();
+    }
+
+    ///returns the basic block that you are altering in mutable form 
+    pub fn add_instruction_to_curr_block(&mut self, instruction_to_add: Instruction) {
+        let curr_block = self.get_curr_fn_mut().get_current_block(); 
+        curr_block.add_instruction(instruction_to_add); 
+    }
+
+    ///adds a vector of instructions to the current block on which you are operating
+    pub fn add_instructions_to_curr_block(&mut self, instructions_to_add: &mut Vec<Instruction>) {
+        let curr_block = self.get_curr_fn_mut().get_current_block(); 
+        curr_block.instructions.append(instructions_to_add);
+    }
+
+    pub fn assign_variable_to_curr_block(&mut self, var_name: String, line_num: isize){
+        self.get_curr_block_mut().assign_variable(&var_name, line_num);
+    }
+
+    pub fn add_uninitialized_variable_to_curr_block(&mut self, var_name: String){
+        self.get_curr_block_mut().initalize_variable(&var_name);
+    }
+
+    
+
+
+
 }

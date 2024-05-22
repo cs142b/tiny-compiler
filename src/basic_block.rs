@@ -33,7 +33,7 @@ impl BasicBlock {
         self.instructions.push(instruction);
     }
 
-    pub fn add_variable(&mut self, variable: &String) {
+    pub fn initalize_variable(&mut self, variable: &String) {
         self.variable_table.insert(variable.to_string(), None);
     }
 
@@ -44,9 +44,10 @@ impl BasicBlock {
         }
     }
 
-    pub fn set_variable(&mut self, variable: &String, instruction_number: isize) {
+    pub fn assign_variable(&mut self, variable: &String, instruction_number: isize) {
         self.variable_table.insert(variable.to_string(), Some(instruction_number)); // will override the add
     }
+
 
     pub fn get_first_instruction_line_number(&self) -> isize {
         if let Some(instruction) = self.instructions.first() {
@@ -57,13 +58,13 @@ impl BasicBlock {
     }
 
 
-    pub fn propagate_variables(&self, next_block: &mut BasicBlock) {
-        for (var, &line_num) in &self.variable_table {
-            if let Some(line) = line_num {
-                next_block.set_variable(var, line);
-            }
-        }
-    }
+    // pub fn propagate_variables(&self, next_block: &mut BasicBlock) {
+    //     for (var, &line_num) in &self.variable_table {
+    //         if let Some(line) = line_num {
+    //             next_block.assign_variable(var, line);
+    //         }
+    //     }
+    // }
 
     pub fn get_max_parents(&self) -> usize {
         match self.block_type {
