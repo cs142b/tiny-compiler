@@ -1,5 +1,6 @@
 use crate::instruction::Instruction;
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub enum BasicBlockType {
@@ -12,10 +13,27 @@ pub enum BasicBlockType {
     Exit 
 }
 
+#[derive(Clone)]
+pub enum VariableType {
+    Phi(isize, isize),
+    NotPhi(isize),
+}
+
+impl fmt::Debug for VariableType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            VariableType::Phi(value1, value2) => write!(f, "{} != {}", value1, value2),
+            VariableType::NotPhi(value) => write!(f, "{}", value),
+            _ => unreachable!("should never hit here in debug formatting for variable type"),
+        }
+    }
+
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct BasicBlock {
     pub instructions: Vec<Instruction>,
-    pub variable_table: HashMap<String, Option<isize>>, // (variable, line number)
+    pub variable_table: HashMap<String, Option<VariableType>>, 
     pub block_type: BasicBlockType,
 }
 
