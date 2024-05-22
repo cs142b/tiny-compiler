@@ -6,8 +6,6 @@ pub struct Parser {
     program: Program,
     line_number: isize,
     current_block: NodeIndex,
-    // move this into function but used here for testing purposes
-    constant_block: ConstantBlock,
 }
 
 impl Parser {
@@ -21,7 +19,6 @@ impl Parser {
             program,
             line_number: 0,
             current_block: initial_block,
-            constant_block: ConstantBlock::new(),
         }
     }
 

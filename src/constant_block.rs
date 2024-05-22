@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::instruction::{Instruction, Operation};
 
+#[derive(Debug)]
 pub struct ConstantBlock {
     constant_table: HashMap<isize, Instruction>,
 }
