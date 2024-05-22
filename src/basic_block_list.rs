@@ -43,7 +43,7 @@ impl BasicBlockList {
         }
 
         let new_child_node = self.bb_graph.add_node(bb);
-        self.curr_node = (new_child_node);
+        self.curr_node = new_child_node;
 
         self.add_edge(parent_node, new_child_node);
 
@@ -110,7 +110,7 @@ impl BasicBlockList {
         self.add_edge(left_parent.unwrap(), added_node);
         self.add_edge(right_parent, added_node);
 
-        self.curr_node = (added_node);
+        self.curr_node = added_node;
         (left_parent.unwrap(), right_parent)
     }
 

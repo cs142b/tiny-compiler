@@ -40,7 +40,7 @@ impl Function {
         &mut self.bb_list.bb_graph[self.bb_list.add_node_to_prev(BasicBlockType::Branch)]
     }
 
-    pub fn get_parent(&self) -> &mut BasicBlock{
+    pub fn get_parent(&mut self) -> &mut BasicBlock{
         &mut self.bb_list.bb_graph[self.bb_list.get_prev().unwrap()]
     }
 
