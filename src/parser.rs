@@ -30,6 +30,7 @@ impl Parser {
         self.match_token(Token::Main);
 
         // varDecl
+        // stupid comment
         if self.tokenizer.peek_token() == Token::Variable {
             self.parse_var_decl();
         }
