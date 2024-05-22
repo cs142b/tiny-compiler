@@ -51,6 +51,10 @@ impl Function {
         (&mut self.bb_list.bb_graph[res.0], &mut self.bb_list.bb_graph[res.1])
     }
 
+    pub fn add_cond_block(&mut self) -> &mut BasicBlock {
+        &mut self.bb_list.bb_graph[self.bb_list.add_node_to_curr(BasicBlockType::Conditional)]
+    }
+
 
 
 
