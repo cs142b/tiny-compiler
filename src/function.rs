@@ -20,6 +20,12 @@ impl Function {
         function
     }
 
+    // fn get_prev_and_curr(&mut self) ->  (&mut BasicBlock, &mut BasicBlock) {
+    //     let current_index = self.bb_list.get_current_index();
+    //     let prev_index = self.bb_list.get_prev().unwrap(); 
+    //     (&mut self.bb_list.bb_graph[current_index], &mut self.bb_list.bb_graph[prev_index])
+    // }
+
     pub fn get_current_block(&mut self) -> &mut BasicBlock {
         let current_index = self.bb_list.get_current_index();
         &mut self.bb_list.bb_graph[current_index]
@@ -28,12 +34,27 @@ impl Function {
     
     /// wrapper function for [`add_node_to_curr`](../basic_block_list/struct.BasicBlockList.html#method.add_node_to_curr)
     pub fn add_fall_thru_block(&mut self) {
+        
         self.bb_list.add_node_to_curr(BasicBlockType::FallThrough);
+        self.propagate_variables();
     }
     
     /// wrapper function for [`add_node_to_prev`](../basic_block_list/struct.BasicBlockList.html#method.add_node_to_prev)
     pub fn add_branch_block(&mut self) {
         self.bb_list.add_node_to_prev(BasicBlockType::Branch);
+        self.propagate_variables(); 
+    }
+
+    pub fn add_cond_block(&mut self) {
+        self.bb_list.add_node_to_curr(BasicBlockType::Conditional);
+        self.propagate_variables(); 
+    }
+
+    /// returns left parent and right parent in that order as their NodeIndexes
+    /// a wrapper for [`bb_list.add_join_block()`](../basic_block_list/struct.BasicBlockList.html#method.add_join_block)
+    pub fn add_join_block(&mut self) {
+        self.bb_list.add_join_block(BasicBlockType::Join); 
+        self.propagate_variables_join(); 
     }
 
     pub fn get_parent(&mut self) -> &mut BasicBlock {
@@ -41,14 +62,24 @@ impl Function {
         &mut self.bb_list.bb_graph[index]
     }
 
-    /// returns left parent and right parent in that order as their NodeIndexes
-    /// a wrapper for [`bb_list.add_join_block()`](../basic_block_list/struct.BasicBlockList.html#method.add_join_block)
-    pub fn add_join_block(&mut self) {
-        self.bb_list.add_join_block(BasicBlockType::Join); 
+    fn get_parent_non_mut(&self) -> &BasicBlock {
+        &self.bb_list.bb_graph[self.bb_list.get_prev().unwrap()]
     }
 
-    pub fn add_cond_block(&mut self) {
-        self.bb_list.add_node_to_curr(BasicBlockType::Conditional);
+
+
+    fn propagate_variables (&mut self) {
+
+        let prev = self.get_parent(); 
+        let curr = self.get_current_block(); 
+
+        curr.variable_table = curr.variable_table.clone();
+
+    }
+
+    fn propagate_variables_join(&mut self) {
+        self.propagate_variables();
+
     }
 
 
@@ -104,4 +135,6 @@ impl Function {
     //         }
     //     }
     // }
+
+    
 }
