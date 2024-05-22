@@ -1,9 +1,11 @@
-use crate::{basic_block::BasicBlock, function::Function, instruction::Instruction};
+use crate::{basic_block::BasicBlock, function::Function, instruction::Instruction, constant_block::ConstantBlock};
 
 #[derive(Debug)]
 pub struct Program {
     pub functions: Vec<Function>,
-    num_functions: usize
+    pub num_functions: usize,
+    pub current_function: usize, 
+    pub constant_block: ConstantBlock,
 }
 
 impl Program {
@@ -11,7 +13,9 @@ impl Program {
     pub fn new() -> Self {
         Self {
             functions: Vec::new(),
-            num_functions: 0
+            num_functions: 0,
+            current_function: 0,
+            constant_block: ConstantBlock::new(),
         }
 
     }
@@ -79,9 +83,18 @@ impl Program {
     pub fn add_uninitialized_variable_to_curr_block(&mut self, var_name: String){
         self.get_curr_block_mut().initalize_variable(&var_name);
     }
-
     
+    pub fn get_variable(&self, variable: &String) -> isize {
+        self.get_curr_block_mut().get_variable(variable)
+    }
 
+    pub fn add_constant(&mut self, constant: isize) {
+        self.constant_block.add_constant(constant);
+    }
+
+    pub fn get_constant(&mut self, constant: isize) -> isize {
+        self.constant_block.get_constant(constant)
+    }
 
 
 }
