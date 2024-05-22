@@ -3,9 +3,8 @@ use crate::{basic_block::BasicBlock, function::Function, instruction::Instructio
 #[derive(Debug)]
 pub struct Program {
     pub functions: Vec<Function>,
-    pub num_functions: usize,
-    pub current_function: usize, 
     pub constant_block: ConstantBlock,
+    num_functions: usize,
 }
 
 impl Program {
@@ -13,9 +12,8 @@ impl Program {
     pub fn new() -> Self {
         Self {
             functions: Vec::new(),
-            num_functions: 0,
-            current_function: 0,
             constant_block: ConstantBlock::new(),
+            num_functions: 0,
         }
 
     }
@@ -24,7 +22,7 @@ impl Program {
         let new_fn = Function::new(name, parameters);
         self.num_functions += 1; 
         self.functions.push(new_fn);
-        self.functions.last_mut().expect("Unexpected error in adding new function in program.")
+        self.get_curr_fn_mut()
     }
 
     //returns the position of the current function in the program vector
@@ -36,12 +34,13 @@ impl Program {
         &self.functions[self.get_curr_function_pos()]
     }
 
-    pub fn get_curr_fn_mut(&self) -> &mut Function {
-        &mut self.functions[self.get_curr_function_pos()]
+    pub fn get_curr_fn_mut(&mut self) -> &mut Function {
+        let pos = self.get_curr_function_pos();
+        &mut self.functions[pos]
     }
 
     pub fn get_curr_block_mut(&mut self) -> &mut BasicBlock {
-        &mut self.get_curr_fn_mut().get_current_block()
+        self.get_curr_fn_mut().get_current_block()
     }
 
     pub fn get_prev_block_mut(&mut self) -> &mut BasicBlock {
@@ -76,15 +75,15 @@ impl Program {
         curr_block.instructions.append(instructions_to_add);
     }
 
-    pub fn assign_variable_to_curr_block(&mut self, var_name: String, line_num: isize){
+    pub fn assign_variable_to_curr_block(&mut self, var_name: &String, line_num: isize){
         self.get_curr_block_mut().assign_variable(&var_name, line_num);
     }
 
-    pub fn add_uninitialized_variable_to_curr_block(&mut self, var_name: String){
+    pub fn add_uninitialized_variable_to_curr_block(&mut self, var_name: &String){
         self.get_curr_block_mut().initalize_variable(&var_name);
     }
     
-    pub fn get_variable(&self, variable: &String) -> isize {
+    pub fn get_variable(&mut self, variable: &String) -> isize {
         self.get_curr_block_mut().get_variable(variable)
     }
 

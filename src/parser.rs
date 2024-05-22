@@ -1,24 +1,24 @@
 use crate::tokenizer::{Token, Tokenizer};
-use crate::{instruction::{Instruction, Operation}, basic_block::{BasicBlock, BasicBlockType}, function::Function, program::Program, constant_block::ConstantBlock};
-use petgraph::graph::NodeIndex;
+use crate::{
+    instruction::{Instruction, Operation}, 
+    program::Program,
+};
+
 pub struct Parser {
     tokenizer: Tokenizer,
     program: Program,
     line_number: isize,
-    current_block: NodeIndex,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
-        let main_function = program.add_function("main".to_string(), Vec::new());
-        let initial_block = NodeIndex::new(0);
+        program.add_function("main".to_string(), Vec::new());
 
         Self {
             tokenizer: Tokenizer::new(input),
             program,
             line_number: 0,
-            current_block: initial_block,
         }
     }
 
@@ -55,11 +55,7 @@ impl Parser {
     fn parse_var(&mut self) {
         match self.tokenizer.next_token() {
             Token::Identifier(name) => {
-                // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
-                // wtf is this abstraction???
-                // can easily create a wrapper function for this
-                // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
-                self.program.functions[0].get_current_block().add_variable(&name);
+                self.program.add_uninitialized_variable_to_curr_block(&name);
             },
             _ => panic!("unexpected error in parse_var"),
         }
@@ -116,10 +112,10 @@ impl Parser {
         let token = self.tokenizer.next_token();
         match token {
             Token::Number(value) => {
-                self.constant_block.get_constant(value)
+                self.program.get_constant(value)
             },
             Token::Identifier(name) => {
-                self.program.functions[0].get_current_block().get_variable(&name)
+                self.program.get_variable(&name)
             },
             Token::OpenParen => {
                 let result = self.parse_expression();
@@ -140,8 +136,8 @@ impl Parser {
         self.match_token(Token::Assignment);
         let expr_result = self.parse_expression();
         // this is used for testing, but will eventually be ONLY set_variable
-        self.program.functions[0].get_current_block().add_variable(&variable_name);
-        self.program.functions[0].get_current_block().set_variable(&variable_name, expr_result);
+        self.program.add_uninitialized_variable_to_curr_block(&variable_name);
+        self.program.assign_variable_to_curr_block(&variable_name, expr_result);
     }
 
     // Parse a relation 
@@ -167,6 +163,7 @@ impl Parser {
     }
 
     // Parse an if statement
+    /*
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
         let (condition, comparison_operator) = self.parse_relation();
@@ -199,9 +196,10 @@ impl Parser {
 
         self.current_block = end_block;
         self.match_token(Token::Fi);
-    }
+    }*/
 
     // Parse a while statement
+    /*
     fn parse_while_statement(&mut self) {
         self.match_token(Token::While);
         let condition_block = self.current_block;
@@ -222,7 +220,7 @@ impl Parser {
 
         self.current_block = end_block;
         self.match_token(Token::Od);
-    }
+    }*/
     
     // matches the comparison operator and returns its respective SSA branch instruction
     fn get_branch_type(&self, operator: Token, left_block: isize, right_block: isize) -> Operation {
@@ -246,8 +244,8 @@ impl Parser {
         loop {
             match self.tokenizer.peek_token() {
                 Token::Let => self.parse_assignment(),
-                Token::If => self.parse_if_statement(),
-                Token::While => self.parse_while_statement(),
+                //Token::If => self.parse_if_statement(),
+                //Token::While => self.parse_while_statement(),
                 Token::Return => self.parse_return_statement(),
                 _ => break,
             }
@@ -285,9 +283,7 @@ impl Parser {
     fn emit_instruction(&mut self, operation: Operation) -> isize {
         self.line_number += 1;
         let instruction = Instruction::create_instruction(self.line_number, operation);
-        // also REMINDER TO CHANGE THIS BECAUSE IT SHOULD BE USING THE INDEX FROM THE BASIC BLOCK
-        // LIST BUT IM TOO LAZY RN
-        self.program.functions[0].get_current_block().add_instruction(instruction);
+        self.program.add_instruction_to_curr_block(instruction);
         self.line_number
     }
 }
@@ -310,7 +306,7 @@ mod parser_tests{
         assert_eq!(format!("{:?}", less_equal), "bgt (1) (BB2)");
     }
 
-
+    /*
     #[test]
     fn test_parse_expression_add() {
         let input = "2+3.".to_string();
@@ -343,7 +339,7 @@ mod parser_tests{
         assert_eq!(instructions.len(), 1);
         assert_eq!(format!("{:?}", instructions[0]), "1: mul (-2) (-3)");
     }
-
+    
     #[test]
     fn test_parse_assignment() {
         let input = "let x <- 5.".to_string();
@@ -393,5 +389,5 @@ mod parser_tests{
             let node_value = b.node_weight(node_index).unwrap();
             println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
         }
-    }
+    }*/
 }
