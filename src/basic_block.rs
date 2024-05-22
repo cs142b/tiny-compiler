@@ -30,6 +30,31 @@ impl fmt::Debug for VariableType {
 
 }
 
+impl VariableType {
+    fn is_phi(&self) -> bool {
+        match self {
+            VariableType::Phi(_, _) => true,
+            VariableType::NotPhi(_) => false,
+        }
+    }
+
+    fn get_phi_values(&self) -> (isize, isize) {
+        if let VariableType::Phi(value1, value2) = self {
+            return (*value1, *value2);
+        } 
+
+        panic!("this function should only be used if variabletype is known to be a phi");
+    }
+
+    fn get_not_phi_value(&self) -> isize {
+        if let VariableType::NotPhi(value) = self {
+            return *value;
+        }
+        
+        panic!("this function should only be used if variabletype is known to be a not phi");
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct BasicBlock {
     pub instructions: Vec<Instruction>,
@@ -55,7 +80,7 @@ impl BasicBlock {
         self.variable_table.insert(variable.to_string(), None);
     }
 
-    pub fn get_variable(&self, variable: &String) -> isize {
+    pub fn get_variable(&self, variable: &String) -> VariableType {
         match self.variable_table.get(variable) {
             Some(&instruction_number) => instruction_number.unwrap(),
             None => panic!("ERROR: get_variable() is only used when a known variable exists in the table."),
