@@ -3,7 +3,7 @@ use std::os::unix::process::parent_id;
 
 use petgraph::adj::NodeIndex;
 
-use crate::basic_block::{BasicBlock, BasicBlockType};
+use crate::basic_block::{BasicBlock, BasicBlockType, VariableType};
 use crate::basic_block_list::BasicBlockList;
 
 #[derive(Debug)]
@@ -74,15 +74,11 @@ impl Function {
 
         let left_parent = &graph[parents.0];
         let right_parent = &graph[parents.1];
-        // let left_parent = &mut self.bb_list.bb_graph[parents.0];
-        // let right_parent = &mut self.bb_list.bb_graph[parents.1];
 
         (left_parent, right_parent)
     }
 
-    // fn x<'a>(&mut self) -> &'a BasicBlock{
-    //     return &self.get_current_block()
-    // }
+ 
 
     fn get_parent_non_mut(&self) -> &BasicBlock {
         &self.bb_list.bb_graph[self.bb_list.get_prev().unwrap()]
@@ -103,7 +99,19 @@ impl Function {
         for (var_name, variable) in &parent_bbs.0.variable_table {
             let var_left = parent_bbs.0.get_variable(var_name);
             let var_right = parent_bbs.1.get_variable(var_name);
+
+            let mut var_to_add = var_left;
+
+            if !var_left.is_phi() && !var_right.is_phi() {
+                if var_left.get_not_phi_value() != var_right.get_not_phi_value(){
+                    var_to_add = VariableType::Phi(var_left.get_not_phi_value(), var_right.get_not_phi_value());
+                }
+            }
+
+            curr.assign_variable(var_name, var_to_add); 
+
         }
+
     }
 
     // TODO: MERGE THIS WITH EXISTING CODE FOR IT TO WORK
