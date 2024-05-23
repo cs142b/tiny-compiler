@@ -2,7 +2,7 @@ use crate::instruction::Instruction;
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum BasicBlockType {
     #[default]
     Entry,
