@@ -1,5 +1,10 @@
-use crate::basic_block_list::BasicBlockList;
+use std::collections::HashMap;
+use std::os::unix::process::parent_id;
+
+use petgraph::adj::NodeIndex;
+
 use crate::basic_block::{BasicBlock, BasicBlockType};
+use crate::basic_block_list::BasicBlockList;
 
 #[derive(Debug)]
 pub struct Function {
@@ -22,7 +27,7 @@ impl Function {
 
     // fn get_prev_and_curr(&mut self) ->  (&mut BasicBlock, &mut BasicBlock) {
     //     let current_index = self.bb_list.get_current_index();
-    //     let prev_index = self.bb_list.get_prev().unwrap(); 
+    //     let prev_index = self.bb_list.get_prev().unwrap();
     //     (&mut self.bb_list.bb_graph[current_index], &mut self.bb_list.bb_graph[prev_index])
     // }
 
@@ -31,30 +36,28 @@ impl Function {
         &mut self.bb_list.bb_graph[current_index]
     }
 
-    
     /// wrapper function for [`add_node_to_curr`](../basic_block_list/struct.BasicBlockList.html#method.add_node_to_curr)
     pub fn add_fall_thru_block(&mut self) {
-        
         self.bb_list.add_node_to_curr(BasicBlockType::FallThrough);
         self.propagate_variables();
     }
-    
+
     /// wrapper function for [`add_node_to_prev`](../basic_block_list/struct.BasicBlockList.html#method.add_node_to_prev)
     pub fn add_branch_block(&mut self) {
         self.bb_list.add_node_to_prev(BasicBlockType::Branch);
-        self.propagate_variables(); 
+        self.propagate_variables();
     }
 
     pub fn add_cond_block(&mut self) {
         self.bb_list.add_node_to_curr(BasicBlockType::Conditional);
-        self.propagate_variables(); 
+        self.propagate_variables();
     }
 
     /// returns left parent and right parent in that order as their NodeIndexes
     /// a wrapper for [`bb_list.add_join_block()`](../basic_block_list/struct.BasicBlockList.html#method.add_join_block)
     pub fn add_join_block(&mut self) {
-        self.bb_list.add_join_block(BasicBlockType::Join); 
-        self.propagate_variables_join(); 
+        self.bb_list.add_join_block(BasicBlockType::Join);
+        self.propagate_variables_join();
     }
 
     pub fn get_parent(&mut self) -> &mut BasicBlock {
@@ -62,29 +65,46 @@ impl Function {
         &mut self.bb_list.bb_graph[index]
     }
 
+    ///returns left parent and then right parent
+    /// note these basic blocks are **NOT** mutable
+    fn get_parents_join(&mut self) -> (&BasicBlock, &BasicBlock) {
+        let parents = self.bb_list.get_parents_join();
+
+        let graph = &self.bb_list.bb_graph;
+
+        let left_parent = &graph[parents.0];
+        let right_parent = &graph[parents.1];
+        // let left_parent = &mut self.bb_list.bb_graph[parents.0];
+        // let right_parent = &mut self.bb_list.bb_graph[parents.1];
+
+        (left_parent, right_parent)
+    }
+
+    // fn x<'a>(&mut self) -> &'a BasicBlock{
+    //     return &self.get_current_block()
+    // }
+
     fn get_parent_non_mut(&self) -> &BasicBlock {
         &self.bb_list.bb_graph[self.bb_list.get_prev().unwrap()]
     }
 
-
-
-    fn propagate_variables (&mut self) {
-
-        let prev = self.get_parent(); 
-        let curr = self.get_current_block(); 
+    fn propagate_variables(&mut self) {
+        let prev = self.get_parent();
+        let curr = self.get_current_block();
 
         curr.variable_table = curr.variable_table.clone();
-
     }
 
     fn propagate_variables_join(&mut self) {
-        self.propagate_variables();
+        let parent_bbs = self.get_parents_join();
 
+        let curr = self.get_current_block();
+
+        for (var_name, variable) in &parent_bbs.0.variable_table {
+            let var_left = parent_bbs.0.get_variable(var_name);
+            let var_right = parent_bbs.1.get_variable(var_name);
+        }
     }
-
-
-
-
 
     // TODO: MERGE THIS WITH EXISTING CODE FOR IT TO WORK
     //
@@ -135,6 +155,4 @@ impl Function {
     //         }
     //     }
     // }
-
-    
 }

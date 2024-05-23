@@ -91,6 +91,30 @@ impl BasicBlockList {
         parents_iter.nth(0)
     }
 
+    pub fn get_parents_join(&self) -> (NodeIndex, NodeIndex) {
+        // if self.bb_graph[self.curr_node].block_type != crate::basic_block_list::BasicBlockType::Join {
+        //     panic!("type is not join");
+        // }
+
+        let curr_node = self.curr_node; 
+        let incoming = self.bb_graph.neighbors_directed(curr_node, Incoming);
+
+        let mut left_parent: Option<NodeIndex> = None; 
+        let mut right_parent: Option<NodeIndex> = None; 
+
+        for parent in incoming {
+            if parent == self.get_prev().unwrap() {
+                left_parent = Some(parent);
+            } else {
+                right_parent = Some(parent);
+            }
+        }
+
+        (left_parent.unwrap(), right_parent.unwrap())
+    }
+
+   
+
     /// add a join block to the current set of siblings at the bottom
     pub fn add_join_block(&mut self, bb_type: BasicBlockType) -> (NodeIndex<u32>, NodeIndex<u32>) {
         // return (self.curr_node, self.curr_node);
