@@ -5,8 +5,8 @@ use petgraph::{csr::NodeIdentifiers, graph::{DiGraph, NodeIndex}, Direction::Inc
 
 use crate::{basic_block::{BasicBlock, BasicBlockType}, basic_block_list::BasicBlockList};
 #[derive(Debug)]
-struct DominatorTree {
-    bb_vec: Vec<BasicBlock>,
+struct DominatorTree <'a> {
+    bb_vec: Vec<&'a BasicBlock>,
 
 }
 
@@ -102,7 +102,7 @@ fn go_up <T> (curr_ni: &NodeIndex, graph: &DiGraph<T, ()>) -> NodeIndex {
     *ret_val.unwrap()
 }
 
-impl DominatorTree {
+impl<'a> DominatorTree <'a> {
     pub fn new() -> Self {
         Self {
             bb_vec: Vec::new()
@@ -152,6 +152,14 @@ impl DominatorTree {
         dtree
         
 
+    }
+
+    fn push_bb(&mut self, bb: &BasicBlock) {
+        self.bb_vec.push(bb);
+    }
+
+    fn pop_bb(&mut self) -> Option<&BasicBlock> {
+        self.bb_vec.pop()
     }
 
 
