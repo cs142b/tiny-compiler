@@ -13,7 +13,7 @@ pub enum BasicBlockType {
     Exit,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum VariableType {
     Phi(isize, isize),
     NotPhi(isize),

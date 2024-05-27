@@ -109,7 +109,6 @@ impl Function {
             }
 
             curr.assign_variable(var_name, var_to_add); 
-
         }
 
     }
