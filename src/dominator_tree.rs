@@ -1,4 +1,5 @@
 
+use core::num;
 use std::collections::btree_map::Entry;
 
 use petgraph::{csr::NodeIdentifiers, graph::{DiGraph, NodeIndex}, Direction::Incoming, Graph};
@@ -13,12 +14,65 @@ struct DominatorTree <'a> {
 // fn find_next_shared_block() {
     
 // }
+
+fn go_up_conditionals_resolving_all_joins(curr_ni: &NodeIndex, graph: &DiGraph<BasicBlock, ()>, num_conditionals: usize) {
+    let mut num_conditionals = num_conditionals;
+    for i in 0..num_conditionals {
+        num_conditionals += go_up_til_conditional_shortest_path_always_up(curr_ni, graph); 
+    }
+}
+
+fn go_up_til_conditional_shortest_path_always_up(curr_ni: &NodeIndex, graph: &DiGraph<BasicBlock, ()>) -> usize {
+    // let parent_to_go = curr_ni;
+
+    let actual_node_inc = &go_up_shortest_path(curr_ni, graph); 
+    go_up_til_conditional_shortest_path(actual_node_inc, graph)
+
+    
+}
 /// uses heuristics to estimate shortest path upwards
-fn go_up_til_conditional_shortest_path(curr_ni: &NodeIndex, graph: &DiGraph<BasicBlock, ()>) {
-    let parent_to_go_up = *curr_ni; 
+fn go_up_til_conditional_shortest_path(curr_ni: &NodeIndex, graph: &DiGraph<BasicBlock, ()>) -> usize {
+    let mut parent_to_go_up = *curr_ni; 
+    let mut num_joins_seen:usize  = 0; 
     // let j = graph[parent_to_go_up]; 
 
-    while (graph[parent_to_go_up].block_type != BasicBlockType::Conditional)
+    while graph[parent_to_go_up].block_type != BasicBlockType::Conditional {
+        if graph[parent_to_go_up].block_type == BasicBlockType::Join {
+            num_joins_seen += 1; 
+        }
+
+        parent_to_go_up = go_up_shortest_path(&parent_to_go_up, graph);
+    }
+
+    num_joins_seen
+}
+
+fn go_up_shortest_path(curr_ni: &NodeIndex, graph: &DiGraph<BasicBlock, ()>) -> NodeIndex {
+    //desinged to be used when there are two parents and want to go up on non_join block 
+    // (in ideal case, will still work on join block go up but will be random)
+    let parents = graph.neighbors_directed(*curr_ni, Incoming); 
+
+    let mut parents = parents.peekable(); 
+
+    let first_parent_selected = parents.peek().unwrap(); 
+
+    if graph[*first_parent_selected].block_type != BasicBlockType::Join {
+        return *first_parent_selected; 
+    } else {
+        parents.next(); 
+
+
+        if parents.peek() != None {
+            return *parents.peek().unwrap();
+        } else {
+            return *first_parent_selected;
+        }
+    }
+
+
+    
+
+
 }
 
 fn find_next_shared_block_non_join(curr_ni: &NodeIndex, graph: &DiGraph<BasicBlock, ()>) -> NodeIndex{
@@ -31,14 +85,7 @@ fn find_next_shared_block_join(curr_ni: &NodeIndex, graph: &DiGraph<BasicBlock, 
     let mut right_parent = parents.0.unwrap(); 
 
     while left_parent != right_parent {
-        while graph[left_parent].block_type != BasicBlockType::Conditional {
-
-        }
-
-        while graph[right_parent].block_type != BasicBlockType::Conditional {
-
-        }
-
+       
     }
 }
 
@@ -126,7 +173,7 @@ impl<'a> DominatorTree <'a> {
 
         while bbl.bb_graph[curr_node].block_type != BasicBlockType::Entry {
             let mut curr_bb = &bbl.bb_graph[curr_node]; 
-            dtree.bb_vec.push(*curr_bb);
+            dtree.bb_vec.push(curr_bb);
 
             // let mut tmp_node = curr_node; 
 
@@ -139,13 +186,7 @@ impl<'a> DominatorTree <'a> {
             while curr_bb.block_type == BasicBlockType::Join && curr_bb.block_type != BasicBlockType::Entry{
                 //go up two
                 let parents = bbl.bb_graph.neighbors_directed(curr_node, Incoming); 
-
-
             }
-                
-            
-            
-
         }
 
 
