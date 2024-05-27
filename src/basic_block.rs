@@ -1,6 +1,7 @@
 use crate::instruction::Instruction;
 use std::collections::HashMap;
-
+///Determines the type of basic block for internal debugging and ease of use
+/// also allows for error checking in terms of addition to cfg tree
 #[derive(Debug, Clone, Copy, Default)]
 pub enum BasicBlockType {
     #[default]
