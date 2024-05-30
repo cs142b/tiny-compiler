@@ -1,6 +1,6 @@
 use std::collections::btree_map::Values;
 use std::collections::HashMap;
-use std::intrinsics::simd::simd_reduce_all;
+// use std::intrinsics::simd::simd_reduce_all;
 use crate::declared_types::var_map;
 use crate::dominator_tree::DominatorTree; 
 use crate::basic_block::{BasicBlock, BasicBlockType};

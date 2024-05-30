@@ -2,6 +2,8 @@ use crate::instruction::Instruction;
 use std::collections::HashMap;
 use std::fmt;
 
+
+// pub type Predecessors
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum BasicBlockType {
     #[default]
@@ -111,10 +113,10 @@ impl BasicBlock {
     pub fn get_max_parents(&self) -> usize {
         match self.block_type {
             BasicBlockType::Entry => return 0,
-            BasicBlockType::Conditional | BasicBlockType::Branch | BasicBlockType::FallThrough => {
+            BasicBlockType::Branch | BasicBlockType::FallThrough => {
                 return 1
             }
-            BasicBlockType::Join => return 2,
+            BasicBlockType::Conditional | BasicBlockType::Join => return 2,
             BasicBlockType::Exit => return 1,
         }
     }
