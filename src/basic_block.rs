@@ -1,5 +1,5 @@
 use crate::instruction::Instruction;
-use std::collections::HashMap;
+use std::collections::{HashMap};
 use std::fmt;
 
 
@@ -15,7 +15,7 @@ pub enum BasicBlockType {
     Exit,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq,  Copy)]
 pub enum VariableType {
     Phi(isize, isize),
     NotPhi(isize),
@@ -32,6 +32,8 @@ impl fmt::Debug for VariableType {
 }
 
 impl VariableType {
+
+    
     pub fn is_phi(&self) -> bool {
         match self {
             VariableType::Phi(_, _) => true,
@@ -81,12 +83,20 @@ impl BasicBlock {
     }
 
     pub fn get_variable(&self, variable: &String) -> VariableType {
-        match self.variable_table.get(variable) {
-            Some(&instruction_number) => instruction_number.unwrap(),
-            None => panic!(
-                "ERROR: get_variable() is only used when a known variable exists in the table."
-            ),
+
+        let var = self.variable_table.get(variable); 
+        let var = var.unwrap(); 
+        // let var = *var; 
+        match var {
+            Some(var_type) => *var_type,
+            None => panic!("Attempting to access inaccessible variable")
         }
+        // match self.variable_table.get(variable) {
+        //     Some(&ref instruction_number) => instruction_number.as_ref().unwrap(),
+        //     None => panic!(
+        //         "ERROR: get_variable() is only used when a known variable exists in the table."
+        //     ),
+        // }
     }
 
     pub fn assign_variable(&mut self, variable: &String, var: VariableType) {
@@ -130,4 +140,97 @@ impl BasicBlock {
             BasicBlockType::Exit => return 0,
         }
     }
+}
+
+
+
+#[cfg(test)]
+pub mod var_type_tests {
+    use super::*;
+    // #[test]
+    fn test_creation() {
+
+
+    }
+}
+
+
+#[cfg(test)]
+pub mod bb_tests {
+    use super::*; 
+
+    #[test]
+    fn test_creation(){
+
+        let bb = BasicBlock::new(BasicBlockType::Entry); 
+        assert_eq!(bb.block_type, BasicBlockType::Entry);
+        assert_eq!((bb.instructions).len(), 0);
+        assert_eq!(bb.variable_table.len(), 0);
+
+        let bb = BasicBlock::new(BasicBlockType::Exit); 
+        assert_eq!(bb.block_type, BasicBlockType::Exit);
+        assert_eq!((bb.instructions).len(), 0);
+        assert_eq!(bb.variable_table.len(), 0);
+
+        let bb = BasicBlock::new(BasicBlockType::Conditional); 
+        assert_eq!(bb.block_type, BasicBlockType::Conditional);
+        assert_eq!((bb.instructions).len(), 0);
+        assert_eq!(bb.variable_table.len(), 0);
+
+        let bb = BasicBlock::new(BasicBlockType::Join); 
+        assert_eq!(bb.block_type, BasicBlockType::Join);
+        assert_eq!((bb.instructions).len(), 0);
+        assert_eq!(bb.variable_table.len(), 0);
+        
+        let bb = BasicBlock::new(BasicBlockType::FallThrough); 
+        assert_eq!(bb.block_type, BasicBlockType::FallThrough);
+        assert_eq!((bb.instructions).len(), 0);
+        assert_eq!(bb.variable_table.len(), 0);
+    }
+
+    #[test]
+    fn test_variable_creation() {
+
+        let mut bb = BasicBlock::new(BasicBlockType::Entry); 
+        let var_name = "non_phi";
+        bb.initalize_variable(&var_name.to_string());
+
+        assert_eq!(bb.variable_table[var_name], None);
+    }
+    #[test]
+    fn test_variable_assignment() {
+        let mut bb = BasicBlock::new(BasicBlockType::Entry); 
+        let var_name = "non_phi";
+        let var_name: String = var_name.to_string();
+        let var_val = VariableType::NotPhi(10);
+        bb.assign_variable(&var_name, var_val);
+
+        assert_eq!(bb.get_variable(&var_name), VariableType::NotPhi(10));
+
+        let mut bb = BasicBlock::new(BasicBlockType::Entry); 
+        let var_name = "phi";
+        let var_name: String = var_name.to_string();
+        let var_val = VariableType::Phi(10, 10);
+        bb.assign_variable(&var_name, var_val);
+
+        assert_eq!(bb.get_variable(&var_name), VariableType::Phi(10, 10));
+
+
+    }
+    
+
+    #[test]
+    fn test_add_instruction () {
+        let mut bb = BasicBlock::new(BasicBlockType::FallThrough);
+        let instruction = Instruction::new(10, crate::instruction::Operation::Add(12, 12));
+        bb.add_instruction(instruction);
+
+        let first_instruction = bb.get_first_instruction_line_number(); 
+
+        assert_eq!(10, first_instruction);
+        assert_eq!(bb.instructions[0],  instruction);
+    }
+
+    
+
 }
