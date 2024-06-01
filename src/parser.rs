@@ -1,30 +1,99 @@
+use std::collections::btree_map::Values;
+use std::collections::HashMap;
+// use std::intrinsics::simd::simd_reduce_all;
+use crate::declared_types::var_map;
+use crate::dominator_tree::DominatorTree; 
+use crate::basic_block::{BasicBlock, BasicBlockType};
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{
     instruction::{Instruction, Operation}, 
     program::Program,
 };
 
-pub struct Parser {
+pub struct Parser <'a> {
     tokenizer: Tokenizer,
-    program: Program,
-    line_number: isize,
+    internal_program: Program,
+    internal_dtree: DominatorTree<'a>, 
+
+    
 }
 
-impl Parser {
+impl <'a> Parser <'a>{
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
         program.add_function("main".to_string(), Vec::new());
 
         Self {
             tokenizer: Tokenizer::new(input),
-            program,
-            line_number: 0,
+            internal_program: Program::new(),
+            internal_dtree: DominatorTree::new(), 
+            
+
+
         }
     }
 
+    fn parse_opening_input(&mut self) -> BasicBlock {
+
+        // let option_var_decl: Option<HashMap<String, isize> = 
+
+        let mut option_var_declr : Option<var_map> = None;
+         
+        // if self.tokenizer.peek_token() == Token::Variable {
+        //     self.parse_var_decl(); 
+        // }
+
+
+        match self.tokenizer.peek_token() {
+            Token::Variable => option_var_declr = Some(self.parse_var_decl()), 
+            _ => println!("Does not have any variables to declare")
+        }
+
+        let mut main_bb = self.parse_main(); 
+
+        if option_var_declr != None {
+            main_bb.variable_table = option_var_declr.unwrap(); 
+        }
+
+        main_bb
+
+
+        
+    }
+
+    fn parse_var_decl(&mut self) -> var_map {
+        let var_map: var_map = var_map::new(); 
+        self.match_token(Token::Variable);
+        loop {
+            self.parse_var();
+            match self.tokenizer.next_token() {
+                Token::Comma => (),
+                Token::Semicolon => break,
+                _ => panic!("error in parse_var_decl"),
+            }
+        }
+    }
+
+
+
+    fn parse_main(&mut self) -> BasicBlock{
+        self.match_token(Token::Main); 
+
+        return BasicBlock { instructions: Vec::new(), variable_table: HashMap::new(), block_type: BasicBlockType::Entry};
+
+    }
+
     // parse_computation, var_decl, and var are used for later in the future
-    fn parse_computation(&mut self) {
+    fn parse_computation(&mut self){
+        /*
         self.match_token(Token::Main);
+        This should not be here
+        There should be another function called parse_main that should return this basic block
+
+
+        */
+
+
 
         // varDecl
         // stupid comment
@@ -40,22 +109,12 @@ impl Parser {
         self.match_token(Token::EOF);
     }
 
-    fn parse_var_decl(&mut self) {
-        self.match_token(Token::Variable);
-        loop {
-            self.parse_var();
-            match self.tokenizer.next_token() {
-                Token::Comma => (),
-                Token::Semicolon => break,
-                _ => panic!("error in parse_var_decl"),
-            }
-        }
-    }
+    
 
     fn parse_var(&mut self) {
         match self.tokenizer.next_token() {
             Token::Identifier(name) => {
-                self.program.add_uninitialized_variable_to_curr_block(&name);
+                self.internal_program.add_uninitialized_variable_to_curr_block(&name);
             },
             _ => panic!("unexpected error in parse_var"),
         }
@@ -112,10 +171,10 @@ impl Parser {
         let token = self.tokenizer.next_token();
         match token {
             Token::Number(value) => {
-                self.program.get_constant(value)
+                self.internal_program.get_constant(value)
             },
             Token::Identifier(name) => {
-                self.program.get_variable(&name)
+                self.internal_program.get_variable(&name)
             },
             Token::OpenParen => {
                 let result = self.parse_expression();
@@ -136,8 +195,8 @@ impl Parser {
         self.match_token(Token::Assignment);
         let expr_result = self.parse_expression();
         // this is used for testing, but will eventually be ONLY set_variable
-        self.program.add_uninitialized_variable_to_curr_block(&variable_name);
-        self.program.assign_variable_to_curr_block(&variable_name, expr_result);
+        self.internal_program.add_uninitialized_variable_to_curr_block(&variable_name);
+        self.internal_program.assign_variable_to_curr_block(&variable_name, expr_result);
     }
 
     // Parse a relation 
@@ -283,7 +342,7 @@ impl Parser {
     fn emit_instruction(&mut self, operation: Operation) -> isize {
         self.line_number += 1;
         let instruction = Instruction::create_instruction(self.line_number, operation);
-        self.program.add_instruction_to_curr_block(instruction);
+        self.internal_program.add_instruction_to_curr_block(instruction);
         self.line_number
     }
 }

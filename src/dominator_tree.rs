@@ -6,7 +6,7 @@ use petgraph::{csr::NodeIdentifiers, graph::{DiGraph, NodeIndex}, Direction::Inc
 
 use crate::{basic_block::{BasicBlock, BasicBlockType}, basic_block_list::BasicBlockList};
 #[derive(Debug)]
-struct DominatorTree <'a> {
+pub struct DominatorTree <'a> {
     bb_vec: Vec<&'a BasicBlock>,
 
 }
