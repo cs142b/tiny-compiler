@@ -2,30 +2,18 @@ use crate::basic_block::{BasicBlock, BasicBlockType};
 use petgraph::{
     graph::{DiGraph, NodeIndex},
     Direction::{Incoming, Outgoing},
-    visit::NodeIndexable, 
-    visit::GraphBase
 };
 
 #[derive(Debug, Clone)]
 pub struct BasicBlockList {
     pub bb_graph: DiGraph<BasicBlock, ()>,
     pub curr_node: NodeIndex<u32>,
+    entry_node: NodeIndex<u32>
 }
 
-// impl GraphBase for BasicBlockList {
-//     type EdgeId = petgraph::graph::EdgeIndex;
-//     type NodeId = NodeIndex;
-// }
-
-// impl NodeIndexable for BasicBlockList {
-//     fn node_bound(&self) -> usize { self.bb_graph.node_bound() }
-
-//     fn to_index(&self, _: <Self as GraphBase>::NodeId) -> usize { self.bb_graph.to_index(NodeId) }
-
-//     fn from_index(&self, _: usize) -> <Self as GraphBase>::NodeId { self.bb_graph.from_index() }
-//     //  `fn node_bound(&self) -> usize { todo!() }
-// }
 impl BasicBlockList {
+    // creates a graph and automatically adds in an entry block
+    // returns itself
     pub fn new() -> Self {
         let mut bb_g = DiGraph::<BasicBlock, ()>::new();
         let bb = BasicBlock::new(BasicBlockType::Entry);
@@ -34,52 +22,62 @@ impl BasicBlockList {
         Self {
             bb_graph: bb_g,
             curr_node: entry_node,
+            entry_node
         }
     }
 
-
+    pub fn get_entry_node(&self) -> NodeIndex<u32> {
+        self.entry_node
+    }
+    
+    // returns an immutable reference to the current basic block
     pub fn get_curr_bb(&self) -> &BasicBlock{
         &self.bb_graph[self.curr_node]
     }
 
+    // returns an mutable reference to the current basic block
     pub fn get_curr_bb_mut(&mut self) -> &mut BasicBlock {
         return &mut self.bb_graph[self.curr_node]; 
     }
 
-    pub fn get_bb(&self, ni: NodeIndex) -> Option<&BasicBlock>{
-
-        if self.bb_graph.node_count() <= ni.index() {
-            Some(&self.bb_graph[ni])
+    // accepts a node index and returns an option of an immutable reference to the basic block 
+    // living at the index
+    pub fn get_bb(&self, node_index: NodeIndex) -> Option<&BasicBlock>{
+        if node_index.index() < self.bb_graph.node_count() { 
+            Some(&self.bb_graph[node_index])
         } else {
             None
         }
     }
 
-    pub fn get_bb_mut(&mut self, ni: NodeIndex) -> &mut BasicBlock {
-        // if self.bb_graph.node_count() <= ni.index() {
-        //     Some(&mut self.bb_graph[ni])
-        // } else {
-        //     None
-        // }
-
-        &mut self.bb_graph[ni]
+    // accepts a node index and returns an option of an mutable reference to the basic block 
+    // living at the index
+    pub fn get_bb_mut(&mut self, node_index: NodeIndex) -> Option<&mut BasicBlock> {
+        if node_index.index() < self.bb_graph.node_count() { 
+            Some(&mut self.bb_graph[node_index])
+        } else {
+            None
+        }
     }
 
-    pub fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) {
-        self.bb_graph.add_edge(from, to, ());
+    // adds an edge FROM a node index TO a node index
+    pub fn add_edge(&mut self, from_index: NodeIndex, to_index: NodeIndex) {
+        self.bb_graph.add_edge(from_index, to_index, ());
     }
 
+    // returns the current index of the graph
     pub fn get_current_index(&self) -> NodeIndex<u32> {
         self.curr_node
     }
 
-    pub fn add_node_to_index(&mut self, node_to_change: NodeIndex, bb: BasicBlock) -> NodeIndex<u32> {
-        let added_node = self.bb_graph.add_node(bb);
-        let added_node_mut_block = self.get_bb_mut(added_node);
-        added_node_mut_block.id = added_node; 
-        self.add_edge(node_to_change, added_node);
+    // adds a basic block as a child to the node_to_add
+    pub fn add_node_to_index(&mut self, node_to_add: NodeIndex, bb_child: BasicBlock) -> NodeIndex<u32> {
+        let added_node_index = self.bb_graph.add_node(bb_child);
+        let added_node_mut_block = self.get_bb_mut(added_node_index);
+        added_node_mut_block.id = added_node_index; 
+        self.add_edge(node_to_add, added_node_index);
 
-        added_node
+        added_node_index
     }
 
     pub fn add_node_to_index_change_curr(&mut self, node_to_change: NodeIndex, bb: BasicBlock) -> NodeIndex {
