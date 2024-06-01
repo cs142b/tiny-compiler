@@ -1,8 +1,6 @@
 use petgraph::graph::NodeIndex;
-
 use crate::instruction::Instruction;
-use std::collections::{HashMap};
-
+use std::collections::HashMap;
 use std::fmt;
 
 
@@ -68,7 +66,7 @@ impl VariableType {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct BasicBlock {
     pub id: NodeIndex,
     pub instructions: Vec<Instruction>,
@@ -76,6 +74,11 @@ pub struct BasicBlock {
     pub block_type: BasicBlockType,
 }
 
+impl fmt::Debug for BasicBlock {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.block_type)
+    }
+}
 
 impl PartialEq for BasicBlock {
     fn eq(&self, other: &Self) -> bool {
