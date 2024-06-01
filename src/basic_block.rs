@@ -88,7 +88,8 @@ pub struct BasicBlock {
 
 impl fmt::Debug for BasicBlock {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.block_type)
+        let id_unwrap = self.id.index();
+        write!(f, "<b>BB{} | {:?}", id_unwrap, self.block_type)
     }
 }
 
