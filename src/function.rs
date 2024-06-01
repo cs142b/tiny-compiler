@@ -93,26 +93,35 @@ impl Function {
 
     fn propagate_variables_join(&mut self) {
         let parent_bbs = self.get_parents_join();
-
-        let curr = self.get_current_block();
-
+    
+        // Collect the variables to be assigned first
+        let mut variables_to_assign = Vec::new();
+    
         for (var_name, variable) in &parent_bbs.0.variable_table {
             let var_left = parent_bbs.0.get_variable(var_name);
             let var_right = parent_bbs.1.get_variable(var_name);
-
+    
             let mut var_to_add = var_left;
-
+    
             if !var_left.is_phi() && !var_right.is_phi() {
                 if var_left.get_not_phi_value() != var_right.get_not_phi_value(){
                     var_to_add = VariableType::Phi(var_left.get_not_phi_value(), var_right.get_not_phi_value());
                 }
             }
-
-            curr.assign_variable(var_name, var_to_add); 
-
+    
+            variables_to_assign.push((var_name.clone(), var_to_add));
         }
-
+    
+        // Mutably borrow `self` to assign the variables
+        {
+            let curr = self.get_current_block();
+    
+            for (var_name, var_to_add) in variables_to_assign {
+                curr.assign_variable(&var_name, var_to_add); 
+            }
+        }
     }
+    
 
     // TODO: MERGE THIS WITH EXISTING CODE FOR IT TO WORK
     //
