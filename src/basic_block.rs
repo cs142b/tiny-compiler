@@ -9,7 +9,7 @@ use std::fmt;
 /// in our implementation, all basic blocks have a type 
 /// conditional blocks should only store two pieces of information for bookkeeping which are the cmp and then the jmp instruction
 /// blocks that loop back to the conditional block will loop back to the block and not the instruction number in the IR
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub enum BasicBlockType {
     #[default]
     Entry,
@@ -18,6 +18,19 @@ pub enum BasicBlockType {
     Branch, 
     Join,
     Exit,
+}
+
+impl fmt::Debug for BasicBlockType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            BasicBlockType::Entry => write!(f, "Entry"),
+            BasicBlockType::Conditional=> write!(f, "Conditional"),
+            BasicBlockType::FallThrough=> write!(f, "FallThrough"),
+            BasicBlockType::Branch=> write!(f, "Branch"),
+            BasicBlockType::Join=> write!(f, "Join"),
+            BasicBlockType::Exit=> write!(f, "Exit"),
+        }
+    }
 }
 
 
@@ -41,7 +54,6 @@ impl fmt::Debug for VariableType {
 
 impl VariableType {
 
-    
     pub fn is_phi(&self) -> bool {
         match self {
             VariableType::Phi(_, _) => true,
