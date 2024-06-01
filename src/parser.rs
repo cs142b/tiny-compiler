@@ -198,7 +198,7 @@ impl Parser {
         let expr_result = self.parse_expression();
         // this is used for testing, but will eventually be ONLY set_variable
         self.internal_program.add_uninitialized_variable_to_curr_block(&variable_name);
-        self.internal_program.assign_variable_to_curr_block(&variable_name, expr_result);
+        self.internal_program.assign_variable_to_curr_block(&variable_name, VariableType::NotPhi(expr_result));
     }
 
     // Parse a relation 
