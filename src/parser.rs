@@ -173,7 +173,9 @@ impl Parser {
             Token::Identifier(name) => {
                 match self.internal_program.get_variable(&name) {
                     VariableType::NotPhi(value) => value,
-                    VariableType::Phi(value1, value2) => todo!(),
+                    VariableType::Phi(value1, value2) => {
+                        self.emit_instruction(Operation::Phi(value1, value2))
+                    },
                 }
             },
             Token::OpenParen => {
