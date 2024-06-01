@@ -2,6 +2,8 @@ use crate::basic_block::{BasicBlock, BasicBlockType};
 use petgraph::{
     graph::{DiGraph, NodeIndex},
     Direction::{Incoming, Outgoing},
+    visit::NodeIndexable, 
+    visit::GraphBase
 };
 
 #[derive(Debug)]
@@ -10,6 +12,19 @@ pub struct BasicBlockList {
     pub curr_node: NodeIndex<u32>,
 }
 
+// impl GraphBase for BasicBlockList {
+//     type EdgeId = petgraph::graph::EdgeIndex;
+//     type NodeId = NodeIndex;
+// }
+
+// impl NodeIndexable for BasicBlockList {
+//     fn node_bound(&self) -> usize { self.bb_graph.node_bound() }
+
+//     fn to_index(&self, _: <Self as GraphBase>::NodeId) -> usize { self.bb_graph.to_index(NodeId) }
+
+//     fn from_index(&self, _: usize) -> <Self as GraphBase>::NodeId { self.bb_graph.from_index() }
+//     //  `fn node_bound(&self) -> usize { todo!() }
+// }
 impl BasicBlockList {
     pub fn new() -> Self {
         let mut bb_g = DiGraph::<BasicBlock, ()>::new();
@@ -23,6 +38,33 @@ impl BasicBlockList {
     }
 
 
+    pub fn get_curr_bb(&self) -> &BasicBlock{
+        &self.bb_graph[self.curr_node]
+    }
+
+    pub fn get_curr_bb_mut(&mut self) -> &mut BasicBlock {
+        return &mut self.bb_graph[self.curr_node]; 
+    }
+
+    pub fn get_bb(&self, ni: NodeIndex) -> Option<&BasicBlock>{
+
+        if self.bb_graph.node_count() <= ni.index() {
+            Some(&self.bb_graph[ni])
+        } else {
+            None
+        }
+    }
+
+    pub fn get_bb_mut(&mut self, ni: NodeIndex) -> &mut BasicBlock {
+        // if self.bb_graph.node_count() <= ni.index() {
+        //     Some(&mut self.bb_graph[ni])
+        // } else {
+        //     None
+        // }
+
+        &mut self.bb_graph[ni]
+    }
+
     pub fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) {
         self.bb_graph.add_edge(from, to, ());
     }
@@ -31,8 +73,80 @@ impl BasicBlockList {
         self.curr_node
     }
 
+    pub fn add_node_to_index(&mut self, node_to_change: NodeIndex, bb: BasicBlock) -> NodeIndex<u32> {
+        let added_node = self.bb_graph.add_node(bb);
+        let added_node_mut_block = self.get_bb_mut(added_node);
+        added_node_mut_block.id = added_node; 
+        self.add_edge(node_to_change, added_node);
+
+        added_node
+    }
+
+    pub fn add_node_to_index_change_curr(&mut self, node_to_change: NodeIndex, bb: BasicBlock) -> NodeIndex {
+        self.curr_node = self.add_node_to_index(node_to_change, bb);
+        node_to_change
+    }
+
+    /// returns the conditional block and adds a loop between the conditional the code block that are below it
+    pub fn add_loop(&mut self, bb: BasicBlock) -> NodeIndex{
+
+        if self.get_curr_bb().get_block_type() != BasicBlockType::Conditional {
+            panic!("Attempting to add a loop to a non conditional block")
+        }
+
+        let conditional_block = self.add_node_to_curr_bb(bb); 
+        let curr_code_block = self.curr_node; 
+
+        self.add_edge(curr_code_block, conditional_block);
+
+        conditional_block
+  
+    }
+
+    pub fn add_loop_from_curr(&mut self, cond_block: NodeIndex) {
+        self.add_edge(self.curr_node, cond_block);
+    }
+
+    
+    
     /// adds a child node to the current node and returns the current node index
     /// always used if you want to go straight down
+    pub fn add_node_to_curr_bb(&mut self, bb: BasicBlock) -> NodeIndex<u32> {
+
+        let parent_node = self.curr_node;
+
+        if !self.can_add_child(parent_node.clone()) {
+            panic!("Can no longer add any new children");
+        }
+
+        let new_child_node = self.bb_graph.add_node(bb);
+        self.curr_node = new_child_node;
+
+        self.add_edge(parent_node, new_child_node);
+
+        parent_node
+    }
+
+    pub fn add_node_to_prev_bb(&mut self, bb:BasicBlock) -> NodeIndex {
+
+        let parent_node = self.get_prev();
+        if !self.validate_addition(parent_node) {
+            panic!("Cannot make addition");
+        }
+
+        if !self.can_add_child(parent_node.unwrap().clone()) {
+            panic!("Can no longer add any new children");
+        }
+
+        let added_node = self.bb_graph.add_node(bb);
+
+        self.add_edge(parent_node.unwrap(), added_node);
+
+        self.curr_node = added_node;
+
+        parent_node.unwrap() 
+    }
+    
     pub fn add_node_to_curr(&mut self, bb_type: BasicBlockType) -> NodeIndex<u32> {
         let bb = BasicBlock::new(bb_type);
 
@@ -43,6 +157,10 @@ impl BasicBlockList {
         }
 
         let new_child_node = self.bb_graph.add_node(bb);
+
+        let new_child_node_ref = &mut self.bb_graph[new_child_node];
+        new_child_node_ref.id = new_child_node;
+
         self.curr_node = new_child_node;
 
         self.add_edge(parent_node, new_child_node);
@@ -65,6 +183,8 @@ impl BasicBlockList {
         }
 
         let added_node = self.bb_graph.add_node(bb);
+        let added_node_ref = &mut self.bb_graph[added_node];
+        added_node_ref.id = added_node;
 
         self.add_edge(parent_node.unwrap(), added_node);
 
@@ -113,10 +233,8 @@ impl BasicBlockList {
         (left_parent.unwrap(), right_parent.unwrap())
     }
 
-   
-
     /// add a join block to the current set of siblings at the bottom
-    pub fn add_join_block(&mut self, bb_type: BasicBlockType) -> (NodeIndex<u32>, NodeIndex<u32>) {
+    pub fn add_join_block(&mut self, bb_type: BasicBlockType) -> ( NodeIndex<u32>, NodeIndex<u32>) {
         // return (self.curr_node, self.curr_node);
         let bb = BasicBlock::new(bb_type);
         let left_parent = self.get_sibling_of_curr();
@@ -137,6 +255,8 @@ impl BasicBlockList {
         self.curr_node = added_node;
         (left_parent.unwrap(), right_parent)
     }
+
+
 
     /// returns the node index of its sibling (only used in a child of a conditional)
     /// returns None or panics if the current node does not have a sibling
@@ -194,6 +314,8 @@ impl BasicBlockList {
         }
         return self.can_add_child(possible_parent_option.unwrap());
     }
+
+
 }
 
 // used for testing purposes
@@ -216,8 +338,62 @@ fn in_iter(neighbor_iter: &petgraph::graph::Neighbors<(), u32>, needle: &NodeInd
     false
 }
 
+
 #[cfg(test)]
 mod basic_block_tests {
+
+    use super::*;
+
+    use petgraph::dot::{Dot, Config};
+
+    #[test]
+    fn basic_test () {
+        let mut g = BasicBlockList::new(); 
+        g.add_fall_thru_block(BasicBlockType::FallThrough); 
+        g.add_node_to_curr(BasicBlockType::Conditional); 
+        let conditional_block = g.add_node_to_curr(BasicBlockType::FallThrough);
+
+        g.add_branch_block(BasicBlockType::Branch);
+        g.add_join_block(BasicBlockType::Join);
+
+        g.add_fall_thru_block(BasicBlockType::FallThrough);
+        g.add_node_to_curr(BasicBlockType::Conditional);
+        let top_conditional = g.curr_node;
+
+        g.add_fall_thru_block(BasicBlockType::FallThrough);
+        g.add_node_to_curr(BasicBlockType::Conditional);
+        g.add_fall_thru_block(BasicBlockType::FallThrough);
+        g.add_branch_block(BasicBlockType::FallThrough); 
+        let inner_join = g.add_join_block(BasicBlockType::Join);
+
+        g.add_loop_from_curr(top_conditional);
+        let bb = BasicBlock::new(BasicBlockType::Branch);
+
+        g.add_node_to_index_change_curr(top_conditional, bb);
+
+
+        // g.add_join_block(BasicBlockType::Join);
+
+
+
+
+
+
+        // let bb = BasicBlock::new(BasicBlockType::Branch);
+
+        // let br_ni = g.bb_graph.add_node(bb);
+
+        // g.add_edge(conditional_block, br_ni); 
+
+        println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel]));
+
+
+        assert_eq!(g.bb_graph.node_count(), 2);
+
+
+
+    }
+
     /*
     use petgraph::Direction::{Incoming, Outgoing};
 
