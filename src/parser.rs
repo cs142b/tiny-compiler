@@ -3,22 +3,21 @@ use std::collections::HashMap;
 // use std::intrinsics::simd::simd_reduce_all;
 use crate::declared_types::var_map;
 use crate::dominator_tree::DominatorTree; 
-use crate::basic_block::{BasicBlock, BasicBlockType};
+use crate::basic_block::{BasicBlock, BasicBlockType, VariableType};
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{
     instruction::{Instruction, Operation}, 
     program::Program,
 };
 
-pub struct Parser <'a> {
+pub struct Parser {
     tokenizer: Tokenizer,
     internal_program: Program,
-    internal_dtree: DominatorTree<'a>, 
-
-    
+    internal_dtree: DominatorTree, 
+    line_number: isize,
 }
 
-impl <'a> Parser <'a>{
+impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
         program.add_function("main".to_string(), Vec::new());
@@ -27,9 +26,7 @@ impl <'a> Parser <'a>{
             tokenizer: Tokenizer::new(input),
             internal_program: Program::new(),
             internal_dtree: DominatorTree::new(), 
-            
-
-
+            line_number: 0,
         }
     }
 
@@ -174,7 +171,10 @@ impl <'a> Parser <'a>{
                 self.internal_program.get_constant(value)
             },
             Token::Identifier(name) => {
-                self.internal_program.get_variable(&name)
+                match self.internal_program.get_variable(&name) {
+                    VariableType::NotPhi(value) => value,
+                    VariableType::Phi(value1, value2) => todo!(),
+                }
             },
             Token::OpenParen => {
                 let result = self.parse_expression();
