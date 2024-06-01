@@ -30,36 +30,7 @@ impl Parser {
         }
     }
 
-    fn parse_opening_input(&mut self) -> BasicBlock {
-
-        // let option_var_decl: Option<HashMap<String, isize> = 
-
-        let mut option_var_declr : Option<var_map> = None;
-         
-        // if self.tokenizer.peek_token() == Token::Variable {
-        //     self.parse_var_decl(); 
-        // }
-
-
-        match self.tokenizer.peek_token() {
-            Token::Variable => option_var_declr = Some(self.parse_var_decl()), 
-            _ => println!("Does not have any variables to declare")
-        }
-
-        let mut main_bb = self.parse_main(); 
-
-        if option_var_declr != None {
-            main_bb.variable_table = option_var_declr.unwrap(); 
-        }
-
-        main_bb
-
-
-        
-    }
-
-    fn parse_var_decl(&mut self) -> var_map {
-        let var_map: var_map = var_map::new(); 
+    fn parse_var_decl(&mut self) {
         self.match_token(Token::Variable);
         loop {
             self.parse_var();
@@ -69,15 +40,6 @@ impl Parser {
                 _ => panic!("error in parse_var_decl"),
             }
         }
-    }
-
-
-
-    fn parse_main(&mut self) -> BasicBlock{
-        self.match_token(Token::Main); 
-
-        return BasicBlock { instructions: Vec::new(), variable_table: HashMap::new(), block_type: BasicBlockType::Entry};
-
     }
 
     // parse_computation, var_decl, and var are used for later in the future
@@ -93,7 +55,6 @@ impl Parser {
 
 
         // varDecl
-        // stupid comment
         if self.tokenizer.peek_token() == Token::Variable {
             self.parse_var_decl();
         }
