@@ -1,7 +1,7 @@
 use std::fmt;
 
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Operation {
     Const(isize),
     Add(isize, isize),
@@ -67,7 +67,7 @@ impl fmt::Debug for Operation {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Instruction {
     line_number: isize,
     operation: Operation,
