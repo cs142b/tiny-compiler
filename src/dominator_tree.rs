@@ -225,7 +225,7 @@ fn is_dominator(bbl: &BasicBlockList, possible_dominator: &BasicBlock, possibly_
         _ =>  return Err("Attempting to access a basic block that is not in the graph")
     }; 
 
-    let mut bbl = *bbl.clone(); 
+    let mut bbl = bbl.clone(); 
 
     bbl.bb_graph.remove_node(possible_dominator.id);
 
@@ -247,7 +247,7 @@ fn traverse_cfg(bbl: &BasicBlockList, start_point: &BasicBlock) -> Vec<BasicBloc
     let mut ret_vec:Vec<BasicBlock> = Vec::new();
 
     for node in node_index_set {
-        ret_vec.push(*bbl.get_bb(node).unwrap())
+        ret_vec.push(bbl.get_bb(node).unwrap().clone())
     }
 
     ret_vec

@@ -76,6 +76,13 @@ pub struct BasicBlock {
     pub block_type: BasicBlockType,
 }
 
+
+impl PartialEq for BasicBlock {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
 impl BasicBlock {
     pub fn new(block_type: BasicBlockType) -> Self {
         Self {
@@ -230,7 +237,7 @@ pub mod bb_tests {
     fn test_add_instruction () {
         let mut bb = BasicBlock::new(BasicBlockType::Join);
         let instruction = Instruction::new(10, crate::instruction::Operation::Add(12, 12));
-        bb.add_instruction(instruction);
+        bb.add_instruction(instruction.clone());
 
         let first_instruction = bb.get_first_instruction_line_number(); 
 

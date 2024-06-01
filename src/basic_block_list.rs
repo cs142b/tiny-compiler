@@ -6,7 +6,7 @@ use petgraph::{
     visit::GraphBase
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BasicBlockList {
     pub bb_graph: DiGraph<BasicBlock, ()>,
     pub curr_node: NodeIndex<u32>,
