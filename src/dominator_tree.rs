@@ -174,7 +174,7 @@ impl DominatorTree  {
 
         while bbl.bb_graph[curr_node].block_type != BasicBlockType::Entry {
             let mut curr_bb = &bbl.bb_graph[curr_node]; 
-            dtree.bb_vec.push(curr_bb);
+            dtree.bb_vec.push(curr_bb.clone());
 
             // let mut tmp_node = curr_node; 
 
