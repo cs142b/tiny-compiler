@@ -16,7 +16,9 @@ pub enum BasicBlockType {
     #[default]
     Entry,
     Conditional,
-    Code,
+    FallThrough, 
+    Branch, 
+    Join,
     Exit,
 }
 
@@ -101,6 +103,10 @@ impl BasicBlock {
         self.variable_table.insert(variable.to_string(), None);
     }
 
+    pub fn get_block_type(&self) -> BasicBlockType {
+        self.block_type
+    }
+
     pub fn get_variable(&self, variable: &String) -> VariableType {
 
         let var = self.variable_table.get(variable); 
@@ -141,9 +147,9 @@ impl BasicBlock {
 
     pub fn get_max_parents(&self) -> usize {
         match self.block_type {
-            BasicBlockType::Entry => return 0,
-            BasicBlockType::Code => return 256,
-            BasicBlockType::Conditional => return 2,
+            BasicBlockType::Entry  => return 0,
+            BasicBlockType::Branch | BasicBlockType::FallThrough => return 1,
+            BasicBlockType::Conditional | BasicBlockType::Join => return 2,
             BasicBlockType::Exit => return 1,
         }
     }
@@ -151,7 +157,7 @@ impl BasicBlock {
     pub fn get_max_children(&self) -> usize {
         match self.block_type {
             BasicBlockType::Entry => return 1,
-            BasicBlockType::Code => return 1,
+            BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Join => return 1,
             BasicBlockType::Conditional => return 2,
             BasicBlockType::Exit => return 0,
         }
@@ -180,13 +186,13 @@ pub mod bb_tests {
         assert_eq!((bb.instructions).len(), 0);
         assert_eq!(bb.variable_table.len(), 0);
 
-        let bb = BasicBlock::new(BasicBlockType::Code); 
-        assert_eq!(bb.block_type, BasicBlockType::Code);
+        let bb = BasicBlock::new(BasicBlockType::Join); 
+        assert_eq!(bb.block_type, BasicBlockType::Join);
         assert_eq!((bb.instructions).len(), 0);
         assert_eq!(bb.variable_table.len(), 0);
         
-        let bb = BasicBlock::new(BasicBlockType::Code); 
-        assert_eq!(bb.block_type, BasicBlockType::Code);
+        let bb = BasicBlock::new(BasicBlockType::Branch); 
+        assert_eq!(bb.block_type, BasicBlockType::Branch);
         assert_eq!((bb.instructions).len(), 0);
         assert_eq!(bb.variable_table.len(), 0);
     }
@@ -222,7 +228,7 @@ pub mod bb_tests {
     }
     #[test]
     fn test_add_instruction () {
-        let mut bb = BasicBlock::new(BasicBlockType::Code);
+        let mut bb = BasicBlock::new(BasicBlockType::Join);
         let instruction = Instruction::new(10, crate::instruction::Operation::Add(12, 12));
         bb.add_instruction(instruction);
 
