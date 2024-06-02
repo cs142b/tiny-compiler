@@ -3,6 +3,21 @@
 version = 3
 
 [[package]]
+name = "bit-matrix"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c40485731d65d0ccb813797d4e4d734cb18fdcf2b2e520dd23eb7f52f1b9c00"
+dependencies = [
+ "bit-vec",
+]
+
+[[package]]
+name = "bit-vec"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -44,5 +59,6 @@ dependencies = [
 name = "tiny-compiler"
 version = "0.1.0"
 dependencies = [
+ "bit-matrix",
  "petgraph",
 ]

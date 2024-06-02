@@ -1,28 +1,110 @@
 
-use std::collections::{self, HashSet, VecDeque, HashMap};
+use std::{collections::{self, HashMap, HashSet, VecDeque}, iter::Enumerate};
 
-
+use bit_matrix::{BitMatrix}; 
 // use rustc_index::{Idx, IndexVec};
 
-use petgraph::{csr::NodeIdentifiers, graph::{DiGraph, NodeIndex}, Direction::{Incoming, Outgoing}, Graph};
+use std::iter::Map; 
 
+
+use petgraph::{csr::NodeIdentifiers, graph::{DiGraph, NodeIndex}, Direction::{Incoming, Outgoing}, Graph};
+type Position = usize; 
 use crate::{basic_block::{BasicBlock, BasicBlockType}, basic_block_list::BasicBlockList};
 #[derive(Debug)]
 pub struct DominatorTree  {
-    bb_vec: Vec<BasicBlock>,
+    bit_matrix: BitMatrix, 
+    bb_index_map: HashMap<NodeIndex, Position>
 }
+
+// let mut c = 0;
+
+// for pair in ['a', 'b', 'c'].into_iter()
+//                                .map(|letter| { c += 1; (letter, c) }) {
+//     println!("{pair:?}");
 
 
 impl DominatorTree  {
-    pub fn new() -> Self {
+    pub fn new(bbl: &BasicBlockList) -> Self {
+        // let bbl = bbl.clone();
+        let num_nodes = bbl.bb_graph.node_count(); 
+        let node_indices_iter = bbl.bb_graph.node_indices(); 
+
+        let mut hmap: HashMap<NodeIndex, Position> = HashMap::new(); 
+        for (idx, NodeIndex) in node_indices_iter.enumerate() {
+
+            if hmap.get(&NodeIndex) != None {
+                panic!("Attempting to add duplicate to map")
+            }
+            hmap.insert(NodeIndex, idx);
+        }
+
+        let mut bm: BitMatrix = BitMatrix::new(num_nodes, num_nodes);
+
+        bm.set_all(bit_matrix::FALSE); 
+
+        for (dommy_mommy, idx) in hmap.into_iter() {
+            let dom_tree_of_curr = get_dominator_set(bbl, &dommy_mommy);
+
+            dom_tree_of_curr.insert(dommy_mommy);
+
+            for dommied_baby in dom_tree_of_curr { 
+
+                let dommy_mommy_idx = hmap.get(&dommy_mommy); 
+                let dommied_baby_idx = hmap.get(&dommied_baby);
+
+                if dommied_baby_idx == None|| dommy_mommy_idx == None {
+                    panic!("Impressively bad")
+                }
+
+                let dommy_mommy_idx = dommy_mommy_idx.unwrap(); 
+                let dommied_baby_idx = dommied_baby_idx.unwrap();
+
+                
+
+                bm.set(*dommy_mommy_idx, *dommied_baby_idx, bit_matrix::TRUE)
+            }
+        }
+
+
+
+        // for node in node_indices_iter
+
         Self {
-            bb_vec: Vec::new()
+            // creates an nxn bit matrix where n is the number of nodes
+            bit_matrix: bm, 
+            bb_index_map: hmap
         }
     }
 
+
+    
+
+
+    
+
 }
 
-fn get_dominator_set(bbl: &BasicBlockList, possible_dominator: &BasicBlock) -> HashSet<NodeIndex> {
+fn build_dtree(bbl: &BasicBlockList) {}
+
+fn get_dominator_set(bbl: &BasicBlockList, possible_dominator: &NodeIndex) -> HashSet<NodeIndex> {
+    let mut bbl_g = bbl.bb_graph.clone(); 
+
+    let bbl_g_nodes = bbl_g.node_indices();
+
+    let bbl_g_node_set:HashSet<NodeIndex> = bbl_g_nodes.clone().collect();
+
+    bbl_g.remove_node(*possible_dominator);
+
+    let non_dominated = traverse_graph(&bbl_g, bbl.get_entry_node()); 
+
+    //nodes that were once reachable to nodes that are no longer reachable 
+
+    //dominated set = diff (bbl_g_node_set, non_dominated)
+
+    find_difference(&bbl_g_node_set, &non_dominated)
+    
+}
+fn get_dominator_set_from_bb(bbl: &BasicBlockList, possible_dominator: &BasicBlock) -> HashSet<NodeIndex> {
     let mut bbl_g = bbl.bb_graph.clone(); 
 
     let bbl_g_nodes = bbl_g.node_indices();
