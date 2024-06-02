@@ -9,11 +9,12 @@ use std::iter::Map;
 
 use petgraph::{csr::NodeIdentifiers, graph::{DiGraph, NodeIndex}, Direction::{Incoming, Outgoing}, Graph};
 type Position = usize; 
-use crate::{basic_block::{BasicBlock, BasicBlockType}, basic_block_list::BasicBlockList};
+use crate::{basic_block::{BasicBlock, BasicBlockType}, basic_block_list::BasicBlockList, instruction::Instruction};
 #[derive(Debug)]
 pub struct DominatorTree  {
     bit_matrix: BitMatrix, 
-    bb_index_map: HashMap<NodeIndex, Position>
+    node_to_position: HashMap<NodeIndex, Position>,
+    position_to_node: HashMap<Position, NodeIndex>
 }
 
 // let mut c = 0;
@@ -30,12 +31,15 @@ impl DominatorTree  {
         let node_indices_iter = bbl.bb_graph.node_indices(); 
 
         let mut hmap: HashMap<NodeIndex, Position> = HashMap::new(); 
+
+        let mut position_to_node: HashMap<Position, NodeIndex> = HashMap::new();
         for (idx, NodeIndex) in node_indices_iter.enumerate() {
 
-            if hmap.get(&NodeIndex) != None {
+            if hmap.get(&NodeIndex) != None || position_to_node.get(&idx) == None {
                 panic!("Attempting to add duplicate to map")
             }
             hmap.insert(NodeIndex, idx);
+            position_to_node.insert(idx, NodeIndex);
         }
 
         let mut bm: BitMatrix = BitMatrix::new(num_nodes, num_nodes);
@@ -72,8 +76,39 @@ impl DominatorTree  {
         Self {
             // creates an nxn bit matrix where n is the number of nodes
             bit_matrix: bm, 
-            bb_index_map: hmap
+            node_to_position: hmap, 
+            position_to_node: position_to_node
         }
+    }
+
+    pub fn get_dominating_instructions(&self, bbl: &BasicBlockList, bb: &BasicBlock) -> Result<Vec<Instruction>, &str> {
+        let mut ret_vec: Vec<Instruction> = Vec::new();
+
+        let dominator = bb.id; 
+
+        let index_in_table = self.node_to_position.get(&dominator); 
+        if index_in_table == None {
+            return Err("Attempting to find dominator that did not exist in BBL");
+        }
+
+        let index_in_matrix = *index_in_table.unwrap();
+
+        for other_position in 0..self.bit_matrix.size().0 {
+            if self.bit_matrix[index_in_matrix][other_position] == bit_matrix::TRUE {
+                let dominated = self.position_to_node.get(&other_position); 
+                let dominated = bbl.get_bb(*dominated.unwrap()); 
+
+                if dominated != None {
+                    let mut dominated_vector = dominated.unwrap().instructions; 
+                    ret_vec.append(&mut dominated_vector);
+                } else {
+                    return Err("Attempting to access bad stuff"); 
+                }
+            }
+        }
+
+
+        Ok(ret_vec)
     }
 
 
