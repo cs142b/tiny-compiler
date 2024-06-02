@@ -52,6 +52,14 @@ impl fmt::Debug for VariableType {
     }
 }
 
+// impl PartialEq for VariableType {
+//     fn eq(&self, other: &Self) -> bool {
+//         match (self, other) {
+//             (VariableType::NotPhi(self_value), VariableType::NotPhi(other_value)) => self_value == other_value,
+//             _ => unreachable!("why would it hit here? it should not be comparing phi vs phi :)")
+//         }
+//     }
+// }
 impl VariableType {
 
     pub fn is_phi(&self) -> bool {
@@ -82,7 +90,8 @@ impl VariableType {
 pub struct BasicBlock {
     pub id: NodeIndex,
     pub instructions: Vec<Instruction>,
-    pub variable_table: HashMap<String, Option<VariableType>>,
+    // pub variable_table: HashMap<String, Option<VariableType>>,
+    pub variable_table: HashMap<String, Vec<u32>>,
     pub block_type: BasicBlockType,
 }
 
@@ -123,20 +132,18 @@ impl BasicBlock {
     }
 
     pub fn initalize_variable(&mut self, variable: &String) {
-        self.variable_table.insert(variable.to_string(), None);
+        self.variable_table.insert(variable.to_string(), Vec::new());
     }
 
     pub fn get_block_type(&self) -> BasicBlockType {
         self.block_type
     }
 
-    pub fn get_variable(&self, variable: &String) -> VariableType {
+    pub fn get_variable(&self, variable: &String) -> u32 {
 
-        let var = self.variable_table.get(variable); 
-        let var = var.unwrap(); 
-        // let var = *var; 
+        let var = self.variable_table.get(variable).unwrap();
         match var {
-            Some(var_type) => *var_type,
+            Some(instruction_number) => *instruction_number,
             None => panic!("Attempting to access inaccessible variable")
         }
         // match self.variable_table.get(variable) {
@@ -147,8 +154,8 @@ impl BasicBlock {
         // }
     }
 
-    pub fn assign_variable(&mut self, variable: &String, var: VariableType) {
-        self.variable_table.insert(variable.to_string(), Some(var));
+    pub fn assign_variable(&mut self, variable: &String, instruction_number: u32) {
+        self.variable_table.insert(variable.to_string(), Some(instruction_number));
         // self.variable_table.insert(variable.to_string(), Some(instruction_number)); // will override the add
     }
 

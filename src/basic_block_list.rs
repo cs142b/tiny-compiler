@@ -1,4 +1,7 @@
-use crate::basic_block::{BasicBlock, BasicBlockType};
+use crate::basic_block::{BasicBlock, BasicBlockType, VariableType};
+use crate::basic_block_list::VariableType::Phi;
+use crate::instruction::Operation::Phi;
+use std::collections::HashMap;
 use petgraph::{
     graph::{DiGraph, NodeIndex},
     Direction::{Incoming, Outgoing},
@@ -107,7 +110,9 @@ impl BasicBlockList {
 
     pub fn add_node_to_index(&mut self, node_index: NodeIndex, bb_type: BasicBlockType) -> NodeIndex<u32> {
         let bb = BasicBlock::new(bb_type);
+
         let parent_node_index = node_index;
+        let parent_block = self.get_bb(&parent_node_index).unwrap().clone();
 
         if !self.can_add_child(parent_node_index.clone()) {
             panic!("Can no longer add any new children");
@@ -115,11 +120,11 @@ impl BasicBlockList {
 
         let child_node_index = self.bb_graph.add_node(bb);
 
-        let child_node_bb_mut_ref = &mut self.bb_graph[child_node_index];
+        let child_node_bb_mut_ref = self.get_bb_mut(&child_node_index).unwrap();
         child_node_bb_mut_ref.id = child_node_index;
 
         // variable propagation, clones the variable table
-        child_node_bb_mut_ref.variable_table = self.get_curr_bb().variable_table.clone();
+        child_node_bb_mut_ref.variable_table = parent_block.variable_table.clone();
 
         self.curr_node = child_node_index;
         self.add_edge(parent_node_index, child_node_index);
@@ -159,20 +164,41 @@ impl BasicBlockList {
     // }
 
     /// add a join block to the current set of siblings at the bottom
-    pub fn add_join_block(&mut self, left_parent: NodeIndex, right_parent: NodeIndex) -> NodeIndex {
-        let join_block = BasicBlock::new(BasicBlockType::Join);
+    pub fn add_join_block(&mut self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> NodeIndex {
+        let mut join_block = BasicBlock::new(BasicBlockType::Join);
 
-        if !self.can_add_child(left_parent.clone()) {
+        if !self.can_add_child(left_parent_index.clone()) {
             panic!("Can no longer add any new children");
         }
-        if !self.can_add_child(right_parent.clone()) {
+        if !self.can_add_child(right_parent_index.clone()) {
             panic!("Can no longer add any new children");
         }
 
+
+        // propogate variables in join block
+        let left_parent_block = self.get_bb(&left_parent_index);
+        let right_parent_block = self.get_bb(&right_parent_index);
+
+
+
+        let mut join_variable_table = HashMap::<String, Option<VariableType>>::new();
+
+        for (variable, left_value) in &left_parent_block.unwrap().variable_table {
+            if let Some(right_value) = &right_parent_block.unwrap().variable_table.get(variable) {
+                if left_value != *right_value {
+                    join_variable_table.insert(variable.clone(), Some(VariableType::Phi(left_value.unwrap().get_not_phi_value(), right_value.unwrap().get_not_phi_value())));
+                } else {
+                    join_variable_table.insert(variable.clone(), Some(VariableType::NotPhi(left_value.unwrap().get_not_phi_value())));
+                }
+            }
+        }
+
+        join_block.variable_table = join_variable_table;
+        
         let join_node = self.bb_graph.add_node(join_block);
 
-        self.add_edge(left_parent, join_node);
-        self.add_edge(right_parent, join_node);
+        self.add_edge(left_parent_index, join_node);
+        self.add_edge(right_parent_index, join_node);
 
         self.curr_node = join_node;
 
@@ -273,7 +299,8 @@ mod basic_block_tests {
 
     #[test]
     fn conditional_test() {
-        let mut g = BasicBlockList::new(); 
+        let parameters = vec![String::from("test")];
+        let mut g = BasicBlockList::new(String::from("test"), parameters); 
 
         let conditional = g.add_node_to_curr(BasicBlockType::Conditional);
         let left_parent = g.add_node_to_curr(BasicBlockType::FallThrough);
@@ -286,14 +313,39 @@ mod basic_block_tests {
 
     #[test]
     fn while_test() {
-        let mut g = BasicBlockList::new(); 
+        let parameters = vec![String::from("test")];
+        let mut g = BasicBlockList::new(String::from("test"), parameters); 
 
         let conditional = g.add_node_to_curr(BasicBlockType::Conditional);
         g.add_node_to_curr(BasicBlockType::FallThrough);
         g.connect_to_conditional(conditional);
         g.add_node_to_curr(BasicBlockType::Branch);
-        
         println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel]));
+    }
+    
+    #[test]
+    fn join_variable_table() {
+
+        let mut left_variable_table = HashMap::<String, Option<u32>>::new();
+        left_variable_table.insert(String::from("test"), Some(1));
+
+        let mut right_variable_table = HashMap::<String, Option<u32>>::new();
+        right_variable_table.insert(String::from("test"), Some(2));
+
+        let mut join_variable_table = HashMap::<String, Option<u32>>::new();
+
+        for (variable, left_value) in &left_variable_table {
+            if let Some(right_value) = &right_variable_table.get(variable) {
+                if left_value != *right_value {
+                } else {
+                }
+            }
+        }
+
+        println!("{:?}", join_variable_table);
+        assert_eq!(join_variable_table.get("test").unwrap(), Phi(1, 1));
+        println!("bruh");
+
 
     }
 
