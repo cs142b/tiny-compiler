@@ -78,7 +78,7 @@ impl VariableType {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct BasicBlock {
     pub id: NodeIndex,
     pub instructions: Vec<Instruction>,
@@ -89,13 +89,13 @@ pub struct BasicBlock {
 
 
 // u dont need this anymore bruh
-impl fmt::Debug for BasicBlock {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let id_unwrap = self.id.index();
-        let instructions = cat_instructions(self);
-        write!(f, "{:?} BB{} | {}", self.block_type, id_unwrap, instructions)
-    }
-}
+// impl fmt::Debug for BasicBlock {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         let id_unwrap = self.id.index();
+//         let instructions = cat_instructions(self);
+//         write!(f, "{:?} BB{} | {}", self.block_type, id_unwrap, instructions)
+//     }
+// }
 
 impl PartialEq for BasicBlock {
     fn eq(&self, other: &Self) -> bool {

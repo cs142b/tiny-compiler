@@ -51,15 +51,7 @@ impl Parser {
 
     // parse_computation, var_decl, and var are used for later in the future
     fn parse_computation(&mut self){
-        /*
         self.match_token(Token::Main);
-        This should not be here
-        There should be another function called parse_main that should return this basic block
-
-
-        */
-
-
 
         // varDecl
         if self.tokenizer.peek_token() == Token::Variable {
@@ -74,7 +66,6 @@ impl Parser {
         self.match_token(Token::EOF);
     }
 
-    
 
     fn parse_var(&mut self) {
         match self.tokenizer.next_token() {
@@ -276,7 +267,7 @@ impl Parser {
                 Token::Return => self.parse_return_statement(),
                 _ => break,
             }
-
+            
             match self.tokenizer.peek_token() {
                 Token::Semicolon => {
                     self.tokenizer.next_token();
@@ -331,6 +322,21 @@ mod parser_tests{
         
         let less_equal = parser.get_branch_type(Token::LessEqual, 1, 2);
         assert_eq!(format!("{:?}", less_equal), "bgt (1) (BB2)");
+    }
+    
+    #[test]
+    fn test_parse_computation() {
+        let input = "main var a; {let a <- 1; if a < 0 then let a <- a + 1; else let a <- a - 2 fi; let a <- a + 3;}.".to_string();
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz(&graph));
+
     }
 
     #[test]
