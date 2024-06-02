@@ -282,8 +282,9 @@ mod basic_block_tests {
         g.add_node_to_curr(BasicBlockType::FallThrough);
         g.connect_to_conditional(conditional);
         g.add_node_to_curr(BasicBlockType::Branch);
+        
+        println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel]));
 
-        println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel])); 
     }
 
 }
