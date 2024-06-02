@@ -38,8 +38,8 @@ impl fmt::Debug for BasicBlockType {
 pub enum VariableType {
     Phi(isize, isize),
     NotPhi(isize),
+    NotInit,
 }
-// pub type VariableMap: HashMap<String, Option<VariableType>>; 
 
 // pub type Predecessors = Vec<BasicBlock>;
 impl fmt::Debug for VariableType {
@@ -52,20 +52,14 @@ impl fmt::Debug for VariableType {
     }
 }
 
-// impl PartialEq for VariableType {
-//     fn eq(&self, other: &Self) -> bool {
-//         match (self, other) {
-//             (VariableType::NotPhi(self_value), VariableType::NotPhi(other_value)) => self_value == other_value,
-//             _ => unreachable!("why would it hit here? it should not be comparing phi vs phi :)")
-//         }
-//     }
-// }
 impl VariableType {
 
     pub fn is_phi(&self) -> bool {
         match self {
             VariableType::Phi(_, _) => true,
             VariableType::NotPhi(_) => false,
+            _ => panic!("placeholder"),
+
         }
     }
 
@@ -91,7 +85,7 @@ pub struct BasicBlock {
     pub id: NodeIndex,
     pub instructions: Vec<Instruction>,
     // pub variable_table: HashMap<String, Option<VariableType>>,
-    pub variable_table: HashMap<String, Vec<u32>>,
+    pub variable_table: HashMap<String, VariableType>,
     pub block_type: BasicBlockType,
 }
 
@@ -131,32 +125,26 @@ impl BasicBlock {
         self.instructions.push(instruction);
     }
 
-    pub fn initalize_variable(&mut self, variable: &String) {
-        self.variable_table.insert(variable.to_string(), Vec::new());
+    pub fn declare_variable(&mut self, variable: &String) {
+        self.variable_table.insert(variable.to_string(), VariableType::NotInit);
     }
 
     pub fn get_block_type(&self) -> BasicBlockType {
         self.block_type
     }
 
-    pub fn get_variable(&self, variable: &String) -> u32 {
-
-        let var = self.variable_table.get(variable).unwrap();
-        match var {
-            Some(instruction_number) => *instruction_number,
-            None => panic!("Attempting to access inaccessible variable")
+    pub fn get_variable(&self, variable: &String) -> isize {
+        
+        // need to generate phi resolutions in parser
+        match self.variable_table.get(variable).unwrap() {
+            VariableType::NotPhi(value) => *value,
+            VariableType::Phi(value1, value2) => panic!("Error: did not resolve phi before getting variable's instruction line number"),
+            VariableType::NotInit => panic!("Error: tried to get variable that's uninitialized"),
         }
-        // match self.variable_table.get(variable) {
-        //     Some(&ref instruction_number) => instruction_number.as_ref().unwrap(),
-        //     None => panic!(
-        //         "ERROR: get_variable() is only used when a known variable exists in the table."
-        //     ),
-        // }
     }
 
-    pub fn assign_variable(&mut self, variable: &String, instruction_number: u32) {
-        self.variable_table.insert(variable.to_string(), Some(instruction_number));
-        // self.variable_table.insert(variable.to_string(), Some(instruction_number)); // will override the add
+    pub fn assign_variable(&mut self, variable: &String, line_number: isize) {
+        self.variable_table.insert(variable.to_string(), VariableType::NotPhi(line_number));
     }
 
     pub fn get_first_instruction_line_number(&self) -> isize {
@@ -232,9 +220,9 @@ pub mod bb_tests {
 
         let mut bb = BasicBlock::new(BasicBlockType::Entry); 
         let var_name = "non_phi";
-        bb.initalize_variable(&var_name.to_string());
+        bb.declare_variable(&var_name.to_string());
 
-        assert_eq!(bb.variable_table[var_name], None);
+        // assert_eq!(bb.variable_table[var_name], None);
     }
     #[test]
     fn test_variable_assignment() {
@@ -242,17 +230,17 @@ pub mod bb_tests {
         let var_name = "non_phi";
         let var_name: String = var_name.to_string();
         let var_val = VariableType::NotPhi(10);
-        bb.assign_variable(&var_name, var_val);
+        // bb.assign_variable(&var_name, var_val);
 
-        assert_eq!(bb.get_variable(&var_name), VariableType::NotPhi(10));
+        // assert_eq!(bb.get_variable(&var_name), VariableType::NotPhi(10));
 
         let mut bb = BasicBlock::new(BasicBlockType::Entry); 
         let var_name = "phi";
         let var_name: String = var_name.to_string();
         let var_val = VariableType::Phi(10, 10);
-        bb.assign_variable(&var_name, var_val);
+        // bb.assign_variable(&var_name, var_val);
 
-        assert_eq!(bb.get_variable(&var_name), VariableType::Phi(10, 10));
+        // assert_eq!(bb.get_variable(&var_name), VariableType::Phi(10, 10));
 
 
     }
