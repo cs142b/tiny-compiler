@@ -6,6 +6,9 @@ use petgraph::{
 
 #[derive(Debug, Clone)]
 pub struct BasicBlockList {
+    pub name: String,
+    pub parameters: Vec<String>,
+
     pub bb_graph: DiGraph<BasicBlock, ()>,
     pub curr_node: NodeIndex<u32>,
     entry_node: NodeIndex<u32>
@@ -14,12 +17,15 @@ pub struct BasicBlockList {
 impl BasicBlockList {
     // creates a graph and automatically adds in an entry block
     // returns itself
-    pub fn new() -> Self {
+    pub fn new(name: String, parameters: Vec<String>) -> Self {
         let mut bb_g = DiGraph::<BasicBlock, ()>::new();
         let bb = BasicBlock::new(BasicBlockType::Entry);
         let entry_node = bb_g.add_node(bb);
 
         Self {
+            name,
+            parameters, 
+
             bb_graph: bb_g,
             curr_node: entry_node,
             entry_node
@@ -43,9 +49,9 @@ impl BasicBlockList {
 
     // accepts a node index and returns an option of an immutable reference to the basic block 
     // living at the index
-    pub fn get_bb(&self, node_index: NodeIndex) -> Option<&BasicBlock>{
+    pub fn get_bb(&self, node_index: &NodeIndex) -> Option<&BasicBlock>{
         if node_index.index() < self.bb_graph.node_count() { 
-            Some(&self.bb_graph[node_index])
+            Some(&self.bb_graph[*node_index])
         } else {
             None
         }
@@ -53,9 +59,9 @@ impl BasicBlockList {
 
     // accepts a node index and returns an option of an mutable reference to the basic block 
     // living at the index
-    pub fn get_bb_mut(&mut self, node_index: NodeIndex) -> Option<&mut BasicBlock> {
+    pub fn get_bb_mut(&mut self, node_index: &NodeIndex) -> Option<&mut BasicBlock> {
         if node_index.index() < self.bb_graph.node_count() { 
-            Some(&mut self.bb_graph[node_index])
+            Some(&mut self.bb_graph[*node_index])
         } else {
             None
         }
@@ -111,6 +117,9 @@ impl BasicBlockList {
 
         let child_node_bb_mut_ref = &mut self.bb_graph[child_node_index];
         child_node_bb_mut_ref.id = child_node_index;
+
+        // variable propagation, clones the variable table
+        child_node_bb_mut_ref.variable_table = self.get_curr_bb().variable_table.clone();
 
         self.curr_node = child_node_index;
         self.add_edge(parent_node_index, child_node_index);
@@ -169,6 +178,7 @@ impl BasicBlockList {
 
         self.curr_node
     }
+
 
 
 
