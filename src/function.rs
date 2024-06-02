@@ -5,6 +5,8 @@ use petgraph::{
     Direction::{Incoming, Outgoing},
 };
 
+use crate::dot_viz::generate_dot_viz;
+
 #[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
@@ -126,12 +128,12 @@ impl Function {
     pub fn add_join_block(&mut self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> NodeIndex {
         let mut join_block = BasicBlock::new(BasicBlockType::Join);
 
-        if !self.can_add_child(left_parent_index.clone()) {
-            panic!("Can no longer add any new children");
-        }
-        if !self.can_add_child(right_parent_index.clone()) {
-            panic!("Can no longer add any new children");
-        }
+        // if !self.can_add_child(left_parent_index.clone()) {
+        //     panic!("Can no longer add any new children");
+        // }
+        // if !self.can_add_child(right_parent_index.clone()) {
+        //     panic!("Can no longer add any new children");
+        // }
 
 
         // propogate variables in join block
@@ -234,7 +236,9 @@ mod basic_block_tests {
 
         g.add_join_block(left_parent, right_parent);
 
-        println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel]));
+        println!("{:?}", generate_dot_viz(&g.bb_graph));
+
+
     }
 
     #[test]

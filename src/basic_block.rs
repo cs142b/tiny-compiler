@@ -4,8 +4,6 @@ use std::collections::HashMap;
 use std::fmt;
 
 
-
-
 /// in our implementation, all basic blocks have a type 
 /// conditional blocks should only store two pieces of information for bookkeeping which are the cmp and then the jmp instruction
 /// blocks that loop back to the conditional block will loop back to the block and not the instruction number in the IR
@@ -89,10 +87,13 @@ pub struct BasicBlock {
     pub block_type: BasicBlockType,
 }
 
+
+// u dont need this anymore bruh
 impl fmt::Debug for BasicBlock {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let id_unwrap = self.id.index();
-        write!(f, "<b>BB{} | {:?}", id_unwrap, self.block_type)
+        let instructions = cat_instructions(self);
+        write!(f, "{:?} BB{} | {}", self.block_type, id_unwrap, instructions)
     }
 }
 
@@ -133,14 +134,9 @@ impl BasicBlock {
         self.block_type
     }
 
-    pub fn get_variable(&self, variable: &String) -> isize {
-        
+    pub fn get_variable(&self, variable: &String) -> VariableType {
         // need to generate phi resolutions in parser
-        match self.variable_table.get(variable).unwrap() {
-            VariableType::NotPhi(value) => *value,
-            VariableType::Phi(value1, value2) => panic!("Error: did not resolve phi before getting variable's instruction line number"),
-            VariableType::NotInit => panic!("Error: tried to get variable that's uninitialized"),
-        }
+        *self.variable_table.get(variable).unwrap()
     }
 
     pub fn assign_variable(&mut self, variable: &String, line_number: isize) {

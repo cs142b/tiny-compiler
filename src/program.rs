@@ -39,6 +39,10 @@ impl Program {
         self.current_function // assume its main, cuz of part 3
     }
 
+    pub fn get_curr_block_index(&self) -> usize {
+        self.get_curr_fn().get_current_index().index()
+    }
+
     pub fn get_curr_fn(&self) -> &Function {
         &self.functions[self.current_function]
     }
@@ -59,12 +63,16 @@ impl Program {
         self.get_curr_fn_mut().add_node_to_curr(BasicBlockType::FallThrough)
     }
 
-    pub fn add_branch_block(&mut self) -> NodeIndex {
-        self.get_curr_fn_mut().add_node_to_curr(BasicBlockType::Branch) 
+    pub fn add_branch_block(&mut self, node_index: NodeIndex) -> NodeIndex {
+        self.get_curr_fn_mut().add_node_to_index(node_index, BasicBlockType::Branch) 
     }
 
-    pub fn add_join_block(&mut self, left_parent: NodeIndex, right_parent: NodeIndex) -> NodeIndex{
+    pub fn add_join_block_from_two(&mut self, left_parent: NodeIndex, right_parent: NodeIndex) -> NodeIndex{
         self.get_curr_fn_mut().add_join_block(left_parent, right_parent)
+    }
+    
+    pub fn add_join_block_from_one(&mut self) -> NodeIndex {
+        self.get_curr_fn_mut().add_node_to_curr(BasicBlockType::Join)
     }
 
     pub fn add_cond_block(&mut self) -> NodeIndex {
@@ -86,9 +94,10 @@ impl Program {
         self.get_curr_block_mut().declare_variable(&var_name);
     }
 
-    pub fn get_variable(&mut self, variable: &String) -> isize {
+    pub fn get_variable(&mut self, variable: &String) -> VariableType {
         self.get_curr_block().get_variable(variable)
     }
+
 
     pub fn add_constant(&mut self, constant: isize) {
         self.constant_block.add_constant(constant);
