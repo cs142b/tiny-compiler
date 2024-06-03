@@ -124,12 +124,36 @@ impl Function {
     }
 
 
-    /// Add a join block to the current set of siblings at the bottom
+    /// add a join block to the current set of siblings at the bottom
     pub fn add_join_block(&mut self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> NodeIndex {
         let mut join_block = BasicBlock::new(BasicBlockType::Join);
 
-        // Propagate variables in join block
-        join_block.variable_table = self.join_variable_tables(left_parent_index, right_parent_index);
+        // if !self.can_add_child(left_parent_index.clone()) {
+        //     panic!("Can no longer add any new children");
+        // }
+        // if !self.can_add_child(right_parent_index.clone()) {
+        //     panic!("Can no longer add any new children");
+        // }
+
+
+        // propogate variables in join block
+        let left_parent_block = self.get_bb(&left_parent_index).unwrap();
+        let right_parent_block = self.get_bb(&right_parent_index).unwrap();
+
+
+
+        let mut join_variable_table = HashMap::<String, VariableType>::new();
+        for (variable, left_value) in &left_parent_block.variable_table {
+            if let Some(right_value) = &right_parent_block.variable_table.get(variable) {
+                if left_value.get_not_phi_value() != (*right_value).get_not_phi_value() {
+                   join_variable_table.insert(variable.to_string(), VariableType::Phi(left_value.get_not_phi_value(), right_value.get_not_phi_value()));
+                } else {
+                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(left_value.get_not_phi_value()));
+                }
+            }
+        }
+
+        join_block.variable_table = join_variable_table;
 
         let join_node = self.bb_graph.add_node(join_block);
 
