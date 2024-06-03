@@ -200,6 +200,9 @@ impl Parser {
         let fallthru_index = self.internal_program.add_fallthru_block();
         self.parse_stat_sequence();
     
+        // Get the last created block in the fallthrough sequence
+        let last_fallthru_index = self.internal_program.get_curr_block_index();
+    
         // Emit the branch instruction with a placeholder target
         let (fallthru_block_index, fallthru_branch_line) = self.emit_instruction_with_index(Operation::Bra(0));
     
@@ -210,8 +213,11 @@ impl Parser {
             self.parse_stat_sequence();
         }
     
+        // Get the last created block in the branch sequence
+        let last_branch_index = self.internal_program.get_curr_block_index();
+    
         // Add the join block and connect the blocks
-        let join_index = self.internal_program.add_join_block_from_two(fallthru_index, branch_index);
+        let join_index = self.internal_program.add_join_block_from_two(NodeIndex::new(last_fallthru_index), NodeIndex::new(last_branch_index));
     
         // Prepare the branch operations with the correct targets
         let branch_operation = self.get_branch_type(comparison_operator, condition, branch_index.index() as isize);
@@ -229,7 +235,7 @@ impl Parser {
         }
     
         self.match_token(Token::Fi);
-    }        
+    }            
 
     // Parse a while statement
     fn parse_while_statement(&mut self) {
