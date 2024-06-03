@@ -70,7 +70,7 @@ impl fmt::Debug for Operation {
 #[derive(Clone, PartialEq)]
 pub struct Instruction {
     line_number: isize,
-    operation: Operation,
+    pub operation: Operation,
 }
 
 

@@ -134,7 +134,6 @@ impl Parser {
                     VariableType::NotPhi(value) => value,
                     VariableType::Phi(value1, value2) => {
                         self.emit_instruction(Operation::Phi(value1, value2))
-                        // need to resolve phi here
                     },
                     VariableType::NotInit => panic!("parse_factor() is retrieving an uninitialized variable"),
                 }
@@ -187,58 +186,56 @@ impl Parser {
     // Parse an if statement
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
-        // START OF CONDITIONAL BLOCK
+    
+        // Start of conditional block
         let conditional_index: NodeIndex = self.internal_program.add_cond_block();
         let (condition, comparison_operator) = self.parse_relation();
-        let branch_index: NodeIndex = NodeIndex::new(self.internal_program.get_curr_block_index() + 2);
-        let join_index: NodeIndex = NodeIndex::new(self.internal_program.get_curr_block_index() + 3);
-        self.emit_instruction(self.get_branch_type(comparison_operator, condition, branch_index.index() as isize));
-        // END OF CONDITIONAL BLOCK
-
+    
+        // Emit the branch instruction with a placeholder target
+        let (conditional_block_index, branch_instruction_line) = self.emit_instruction_with_index(self.get_branch_type(comparison_operator.clone(), condition, 0));
+    
         self.match_token(Token::Then);
-        // START OF FALLTHROUGH BLOCK
+    
+        // Start of fallthrough block
         let fallthru_index = self.internal_program.add_fallthru_block();
         self.parse_stat_sequence();
-        self.emit_instruction(Operation::Bra(join_index.index() as isize));
-        // END OF FALLTHROUGH BLOCK
-
+    
+        // Emit the branch instruction with a placeholder target
+        let (fallthru_block_index, fallthru_branch_line) = self.emit_instruction_with_index(Operation::Bra(0));
+    
+        // Always create the branch block
+        let branch_index = self.internal_program.add_branch_block(conditional_index);
         if self.tokenizer.peek_token() == Token::Else {
-            println!("does this shit ever run");
             self.tokenizer.next_token();
-            self.internal_program.add_branch_block(conditional_index);
             self.parse_stat_sequence();
-            self.emit_instruction(Operation::Bra(join_index.index() as isize));
-            self.internal_program.add_join_block_from_two(fallthru_index, branch_index);
-        } else {
-            self.internal_program.add_join_block_from_one();
         }
-
+    
+        // Add the join block and connect the blocks
+        let join_index = self.internal_program.add_join_block_from_two(fallthru_index, branch_index);
+    
+        // Prepare the branch operations with the correct targets
+        let branch_operation = self.get_branch_type(comparison_operator, condition, branch_index.index() as isize);
+        let bra_join_operation = Operation::Bra(join_index.index() as isize);
+    
+        // Modify the instructions in the correct blocks
+        {
+            // Modify the branch instruction in the conditional block
+            let conditional_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&conditional_block_index).unwrap();
+            conditional_block.modify_instruction(branch_instruction_line, branch_operation);
+    
+            // Modify the branch instruction in the fallthrough block
+            let fallthru_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&fallthru_block_index).unwrap();
+            fallthru_block.modify_instruction(fallthru_branch_line, bra_join_operation);
+        }
+    
         self.match_token(Token::Fi);
-    }
+    }        
 
     // Parse a while statement
-    /*
     fn parse_while_statement(&mut self) {
-        self.match_token(Token::While);
-        let condition_block = self.current_block;
-        let body_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
-        let end_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
 
-        let (condition, comparison_operator) = self.parse_relation();
-        self.emit_instruction(self.get_branch_type(comparison_operator, condition, body_block.index() as isize));
-        self.program.functions[0].bb_list.add_edge(self.current_block, body_block);
-        self.program.functions[0].bb_list.add_edge(self.current_block, end_block);
-
-
-        self.current_block = body_block;
-        self.match_token(Token::Do);
-        self.parse_stat_sequence();
-        self.emit_instruction(Operation::Bra(condition_block.index() as isize));
-        self.program.functions[0].bb_list.add_edge(self.current_block, condition_block);
-
-        self.current_block = end_block;
-        self.match_token(Token::Od);
-    }*/
+    }
+    
     
     // matches the comparison operator and returns its respective SSA branch instruction
     fn get_branch_type(&self, operator: Token, left_block: isize, right_block: isize) -> Operation {
@@ -263,7 +260,7 @@ impl Parser {
             match self.tokenizer.peek_token() {
                 Token::Let => self.parse_assignment(),
                 Token::If => self.parse_if_statement(),
-                //Token::While => self.parse_while_statement(),
+                Token::While => self.parse_while_statement(),
                 Token::Return => self.parse_return_statement(),
                 _ => break,
             }
@@ -304,6 +301,14 @@ impl Parser {
         self.internal_program.add_instruction_to_curr_block(instruction);
         self.line_number
     }
+
+    fn emit_instruction_with_index(&mut self, operation: Operation) -> (NodeIndex, isize) {
+        self.line_number += 1;
+        let instruction = Instruction::create_instruction(self.line_number, operation);
+        let current_block_index = self.internal_program.get_curr_block_index();
+        self.internal_program.add_instruction_to_curr_block(instruction);
+        (NodeIndex::from(current_block_index as u32), self.line_number)
+    }    
 }
 
 //Tests

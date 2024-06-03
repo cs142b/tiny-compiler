@@ -1,5 +1,5 @@
 use petgraph::graph::NodeIndex;
-use crate::instruction::Instruction;
+use crate::instruction::{Instruction, Operation};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -175,6 +175,17 @@ impl BasicBlock {
             BasicBlockType::Conditional => return 2,
             BasicBlockType::Exit => return 0,
         }
+    }
+
+    // Function to modify an existing instruction by its line number
+    pub fn modify_instruction(&mut self, line_number: isize, new_operation: Operation) {
+        for instruction in &mut self.instructions {
+            if instruction.get_line_number() == line_number {
+                instruction.operation = new_operation;
+                return;
+            }
+        }
+        panic!("Instruction with line number {} not found", line_number);
     }
 }
 
