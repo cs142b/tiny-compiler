@@ -17,6 +17,9 @@ pub struct DominatorTree  {
     position_to_node: HashMap<Position, NodeIndex>
 }
 
+
+type Instructions = Vec<Instruction>; 
+
 // let mut c = 0;
 
 // for pair in ['a', 'b', 'c'].into_iter()
@@ -46,8 +49,8 @@ impl DominatorTree  {
 
         bm.set_all(bit_matrix::FALSE); 
 
-        for (dommy_mommy, idx) in hmap.into_iter() {
-            let dom_tree_of_curr = get_dominator_set(bbl, &dommy_mommy);
+        for (dommy_mommy, idx) in hmap.clone().into_iter() {
+            let mut dom_tree_of_curr = get_dominator_set(bbl, &dommy_mommy);
 
             dom_tree_of_curr.insert(dommy_mommy);
 
@@ -76,16 +79,16 @@ impl DominatorTree  {
         Self {
             // creates an nxn bit matrix where n is the number of nodes
             bit_matrix: bm, 
-            node_to_position: hmap, 
+            node_to_position: hmap.clone(), 
             position_to_node: position_to_node
         }
     }
 
-    pub fn get_dominating_instructions(&self, bbl: &BasicBlockList, bb: &BasicBlock) -> Result<Vec<Instruction>, &str> {
-        let mut ret_vec: Vec<Instruction> = Vec::new();
+    pub fn get_dominating_instructions(&self, bbl: &mut BasicBlockList, bb: &BasicBlock) -> Result<Instructions, &str> {
 
         let dominator = bb.id; 
 
+        let mut ret_vec: Vec<Instruction> = Vec::new();
         let index_in_table = self.node_to_position.get(&dominator); 
         if index_in_table == None {
             return Err("Attempting to find dominator that did not exist in BBL");
@@ -96,10 +99,10 @@ impl DominatorTree  {
         for other_position in 0..self.bit_matrix.size().0 {
             if self.bit_matrix[index_in_matrix][other_position] == bit_matrix::TRUE {
                 let dominated = self.position_to_node.get(&other_position); 
-                let dominated = bbl.get_bb(*dominated.unwrap()); 
+                let dominated = bbl.get_bb_mut(*dominated.unwrap()); 
 
                 if dominated != None {
-                    let mut dominated_vector = dominated.unwrap().instructions; 
+                    let mut dominated_vector = &mut dominated.unwrap().instructions; 
                     ret_vec.append(&mut dominated_vector);
                 } else {
                     return Err("Attempting to access bad stuff"); 
@@ -111,7 +114,34 @@ impl DominatorTree  {
         Ok(ret_vec)
     }
 
+    pub fn get_dom_instructions(&self, bbl: &mut BasicBlockList, id: &NodeIndex) -> Result<Instructions, &str> {
+        let dominator = id; 
 
+        let mut ret_vec: Vec<Instruction> = Vec::new();
+        let index_in_table = self.node_to_position.get(&dominator); 
+        if index_in_table == None {
+            return Err("Attempting to find dominator that did not exist in BBL");
+        }
+
+        let index_in_matrix = *index_in_table.unwrap();
+
+        for other_position in 0..self.bit_matrix.size().0 {
+            if self.bit_matrix[index_in_matrix][other_position] == bit_matrix::TRUE {
+                let dominated = self.position_to_node.get(&other_position); 
+                let dominated = bbl.get_bb_mut(*dominated.unwrap()); 
+
+                if dominated != None {
+                    let mut dominated_vector = &mut dominated.unwrap().instructions; 
+                    ret_vec.append(&mut dominated_vector);
+                } else {
+                    return Err("Attempting to access bad stuff"); 
+                }
+            }
+        }
+
+
+        Ok(ret_vec)
+    }
     
 
 
@@ -119,7 +149,6 @@ impl DominatorTree  {
 
 }
 
-fn build_dtree(bbl: &BasicBlockList) {}
 
 fn get_dominator_set(bbl: &BasicBlockList, possible_dominator: &NodeIndex) -> HashSet<NodeIndex> {
     let mut bbl_g = bbl.bb_graph.clone(); 
