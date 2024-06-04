@@ -165,12 +165,23 @@ impl Function {
 
         let mut join_variable_table = HashMap::<String, VariableType>::new();
         for (variable, left_value) in &left_parent_block.variable_table {
+
             if let Some(right_value) = &right_parent_block.variable_table.get(variable) {
-                if left_value.get_not_phi_value() != (*right_value).get_not_phi_value() {
+
+                // check if a join is recieving both NOT INIT values
+                if left_value.is_not_init() && right_value.is_not_init() {
+                    join_variable_table.insert(variable.to_string(), VariableType::NotInit);
+                } else if left_value.is_not_init() {
+                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(right_value.get_not_phi_value()));
+                } else if right_value.is_not_init() {
+                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(left_value.get_not_phi_value()));
+                } else if left_value.get_not_phi_value() != (*right_value).get_not_phi_value() {
                     join_variable_table.insert(variable.to_string(), VariableType::Phi(left_value.get_not_phi_value(), right_value.get_not_phi_value()));
                 } else {
                     join_variable_table.insert(variable.to_string(), VariableType::NotPhi(left_value.get_not_phi_value()));
                 }
+
+                todo!("do the case when you get phi and not init");
             }
         }
 

@@ -35,7 +35,7 @@ impl fmt::Debug for BasicBlockType {
 }
 
 
-#[derive(Clone, PartialEq,  Copy)]
+#[derive(Clone, PartialEq, Eq, Copy)]
 pub enum VariableType {
     Phi(isize, isize),
     NotPhi(isize),
@@ -61,6 +61,13 @@ impl VariableType {
             VariableType::NotPhi(_) => false,
             _ => panic!("placeholder"),
 
+        }
+    }
+
+    pub fn is_not_init(&self) -> bool {
+        match self {
+            VariableType::NotInit => true,
+            _ => false,
         }
     }
 
