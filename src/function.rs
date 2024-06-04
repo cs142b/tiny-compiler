@@ -12,7 +12,7 @@ pub struct Function {
     pub name: String,
     pub parameters: Vec<String>,
 
-    pub bb_graph: DiGraph<BasicBlock, ()>,
+    pub bb_graph: DiGraph<BasicBlock, BasicBlockType>,
     pub curr_node: NodeIndex<u32>,
     entry_node: NodeIndex<u32>
 }
@@ -21,7 +21,7 @@ impl Function {
     // creates a graph and automatically adds in an entry block
     // returns itself
     pub fn new(name: String, parameters: Vec<String>) -> Self {
-        let mut bb_g = DiGraph::<BasicBlock, ()>::new();
+        let mut bb_g = DiGraph::<BasicBlock, BasicBlockType>::new();
         let bb = BasicBlock::new(BasicBlockType::Entry);
         let entry_node = bb_g.add_node(bb);
 
@@ -71,8 +71,8 @@ impl Function {
     }
 
     // adds an edge FROM a node index TO a node index
-    pub fn add_edge(&mut self, from_index: NodeIndex, to_index: NodeIndex) {
-        self.bb_graph.add_edge(from_index, to_index, ());
+    pub fn add_edge(&mut self, from_index: NodeIndex, to_index: NodeIndex, edge_type: BasicBlockType) {
+        self.bb_graph.add_edge(from_index, to_index, edge_type);
     }
 
     // returns the current index of the graph
@@ -83,7 +83,7 @@ impl Function {
 
 
     pub fn connect_to_conditional(&mut self, conditional_index: NodeIndex) {
-        self.add_edge(self.curr_node, conditional_index);
+        self.add_edge(self.curr_node, conditional_index, BasicBlockType::Conditional);
         self.curr_node = conditional_index;
     }
 
@@ -106,7 +106,7 @@ impl Function {
         child_node_bb_mut_ref.variable_table = parent_block.variable_table.clone();
 
         self.curr_node = child_node_index;
-        self.add_edge(parent_node_index, child_node_index);
+        self.add_edge(parent_node_index, child_node_index, bb_type);
 
         self.curr_node
     }
@@ -157,8 +157,8 @@ impl Function {
 
         let join_node = self.bb_graph.add_node(join_block);
 
-        self.add_edge(left_parent_index, join_node);
-        self.add_edge(right_parent_index, join_node);
+        self.add_edge(left_parent_index, join_node, BasicBlockType::Branch);
+        self.add_edge(right_parent_index, join_node, BasicBlockType::FallThrough);
 
         self.curr_node = join_node;
 
@@ -241,7 +241,7 @@ impl Function {
 }
 
 // used for testing purposes
-fn iter_len(x: &petgraph::graph::Neighbors<(), u32>) -> usize {
+fn iter_len(x: &petgraph::graph::Neighbors<BasicBlockType, u32>) -> usize {
     let mut i: usize = 0;
     for _el in x.clone() {
         i += 1;
@@ -250,7 +250,7 @@ fn iter_len(x: &petgraph::graph::Neighbors<(), u32>) -> usize {
 }
 
 // used for testing purposes
-fn in_iter(neighbor_iter: &petgraph::graph::Neighbors<(), u32>, needle: &NodeIndex<u32>) -> bool {
+fn in_iter(neighbor_iter: &petgraph::graph::Neighbors<BasicBlockType, u32>, needle: &NodeIndex<u32>) -> bool {
     let l = needle.clone();
     for neighbor in neighbor_iter.clone() {
         if neighbor == l {
