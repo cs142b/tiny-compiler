@@ -1,15 +1,12 @@
 
-use std::{collections::{self, HashMap, HashSet, VecDeque}, iter::Enumerate};
+use std::collections::{HashMap, HashSet, VecDeque};
+use bit_matrix::BitMatrix; 
+use petgraph::{graph::{DiGraph, NodeIndex}, Direction::Outgoing};
+use crate::{basic_block::BasicBlock, function::Function, instruction::{Instruction, Operation}};
 
-use bit_matrix::{BitMatrix}; 
-// use rustc_index::{Idx, IndexVec};
-
-use std::iter::Map; 
-
-
-use petgraph::{csr::NodeIdentifiers, graph::{DiGraph, NodeIndex}, Direction::{Incoming, Outgoing}, Graph};
+type Instructions = Vec<Instruction>; 
 type Position = usize; 
-use crate::{basic_block::{BasicBlock, BasicBlockType}, basic_block_list::BasicBlockList, instruction::Instruction};
+
 #[derive(Debug)]
 pub struct DominatorTree  {
     bit_matrix: BitMatrix, 
@@ -17,18 +14,8 @@ pub struct DominatorTree  {
     position_to_node: HashMap<Position, NodeIndex>
 }
 
-
-type Instructions = Vec<Instruction>; 
-
-// let mut c = 0;
-
-// for pair in ['a', 'b', 'c'].into_iter()
-//                                .map(|letter| { c += 1; (letter, c) }) {
-//     println!("{pair:?}");
-
-
 impl DominatorTree  {
-    pub fn new(bbl: &BasicBlockList) -> Self {
+    pub fn new(bbl: &Function) -> Self {
         // let bbl = bbl.clone();
         let num_nodes = bbl.bb_graph.node_count(); 
         let node_indices_iter = bbl.bb_graph.node_indices(); 
@@ -72,10 +59,7 @@ impl DominatorTree  {
             }
         }
 
-
-
         // for node in node_indices_iter
-
         Self {
             // creates an nxn bit matrix where n is the number of nodes
             bit_matrix: bm, 
@@ -83,8 +67,21 @@ impl DominatorTree  {
             position_to_node: position_to_node
         }
     }
+    
+    // returns a line number if its dommied mommied
+    // returns 69 if no dominating instruction womp womp
+    pub fn get_dominating_instruction(&self, bbl: &mut Function, bb: &BasicBlock, operation: &Operation) -> isize {
+        let dommy_mommy_block = self.get_dominating_instructions(bbl, bb).unwrap();
+        for dommy_mommy_instruction in dommy_mommy_block {
+            if dommy_mommy_instruction.get_operation_ref() == operation {
+                return dommy_mommy_instruction.get_line_number();
+            }
+        }
 
-    pub fn get_dominating_instructions(&self, bbl: &mut BasicBlockList, bb: &BasicBlock) -> Result<Instructions, &str> {
+        return -69;
+    }
+
+    pub fn get_dominating_instructions(&self, bbl: &mut Function, bb: &BasicBlock) -> Result<Instructions, &str> {
 
         let dominator = bb.id; 
 
@@ -99,7 +96,7 @@ impl DominatorTree  {
         for other_position in 0..self.bit_matrix.size().0 {
             if self.bit_matrix[index_in_matrix][other_position] == bit_matrix::TRUE {
                 let dominated = self.position_to_node.get(&other_position); 
-                let dominated = bbl.get_bb_mut(*dominated.unwrap()); 
+                let dominated = bbl.get_bb_mut(dominated.unwrap()); 
 
                 if dominated != None {
                     let mut dominated_vector = &mut dominated.unwrap().instructions; 
@@ -114,7 +111,7 @@ impl DominatorTree  {
         Ok(ret_vec)
     }
 
-    pub fn get_dom_instructions(&self, bbl: &mut BasicBlockList, id: &NodeIndex) -> Result<Instructions, &str> {
+    pub fn get_dom_instructions(&self, bbl: &mut Function, id: &NodeIndex) -> Result<Instructions, &str> {
         let dominator = id; 
 
         let mut ret_vec: Vec<Instruction> = Vec::new();
@@ -128,7 +125,7 @@ impl DominatorTree  {
         for other_position in 0..self.bit_matrix.size().0 {
             if self.bit_matrix[index_in_matrix][other_position] == bit_matrix::TRUE {
                 let dominated = self.position_to_node.get(&other_position); 
-                let dominated = bbl.get_bb_mut(*dominated.unwrap()); 
+                let dominated = bbl.get_bb_mut(dominated.unwrap()); 
 
                 if dominated != None {
                     let mut dominated_vector = &mut dominated.unwrap().instructions; 
@@ -150,7 +147,7 @@ impl DominatorTree  {
 }
 
 
-fn get_dominator_set(bbl: &BasicBlockList, possible_dominator: &NodeIndex) -> HashSet<NodeIndex> {
+fn get_dominator_set(bbl: &Function, possible_dominator: &NodeIndex) -> HashSet<NodeIndex> {
     let mut bbl_g = bbl.bb_graph.clone(); 
 
     let bbl_g_nodes = bbl_g.node_indices();
@@ -168,7 +165,7 @@ fn get_dominator_set(bbl: &BasicBlockList, possible_dominator: &NodeIndex) -> Ha
     find_difference(&bbl_g_node_set, &non_dominated)
     
 }
-fn get_dominator_set_from_bb(bbl: &BasicBlockList, possible_dominator: &BasicBlock) -> HashSet<NodeIndex> {
+fn get_dominator_set_from_bb(bbl: &Function, possible_dominator: &BasicBlock) -> HashSet<NodeIndex> {
     let mut bbl_g = bbl.bb_graph.clone(); 
 
     let bbl_g_nodes = bbl_g.node_indices();
@@ -187,12 +184,12 @@ fn get_dominator_set_from_bb(bbl: &BasicBlockList, possible_dominator: &BasicBlo
     
 }
 
-fn is_dominator(bbl: &BasicBlockList, possible_dominator: &BasicBlock, possibly_dominated: &BasicBlock, start_point: &BasicBlock) -> Result<bool, &'static str> {
+fn is_dominator(bbl: &Function, possible_dominator: &BasicBlock, possibly_dominated: &BasicBlock, start_point: &BasicBlock) -> Result<bool, &'static str> {
     
     if possible_dominator == start_point || possibly_dominated == possible_dominator || start_point == possibly_dominated {
         return Err("Attempting to start at variable to removed or variable to be checked for (logical error)");
     }
-    match (bbl.get_bb(possible_dominator.id), bbl.get_bb(possibly_dominated.id)) {
+    match (bbl.get_bb(&possible_dominator.id), bbl.get_bb(&possibly_dominated.id)) {
         (Some(_), Some(_)) => 'check_ok:  {
             break 'check_ok
         }, 
@@ -210,7 +207,7 @@ fn is_dominator(bbl: &BasicBlockList, possible_dominator: &BasicBlock, possibly_
     return Ok(!non_dom_set.contains(possibly_dominated));
 }
 
-fn traverse_cfg(bbl: &BasicBlockList, start_point: &BasicBlock) -> Vec<BasicBlock> {
+fn traverse_cfg(bbl: &Function, start_point: &BasicBlock) -> Vec<BasicBlock> {
 
     let start_index = start_point.id; 
 
@@ -219,7 +216,7 @@ fn traverse_cfg(bbl: &BasicBlockList, start_point: &BasicBlock) -> Vec<BasicBloc
     let mut ret_vec:Vec<BasicBlock> = Vec::new();
 
     for node in node_index_set {
-        ret_vec.push(bbl.get_bb(node).unwrap().clone())
+        ret_vec.push(bbl.get_bb(&node).unwrap().clone())
     }
 
     ret_vec
@@ -254,4 +251,26 @@ fn find_difference<T: Eq + std::hash::Hash + Clone>(set1: &HashSet<T>, set2: &Ha
     let mut difference = set1.clone();
     difference.retain(|x| !set2.contains(x));
     difference
+}
+
+#[cfg(test)]
+mod dom_test {
+
+    use crate::parser::Parser;
+    use crate::dot_viz::generate_dot_viz;
+
+    #[test]
+    fn test1() {
+        let input = "main var a; {let a <- 1 + 53; if a < 0 then let a <- a + 1; else let a <- a - 2 fi; let a <- a + 3;}.".to_string();
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz(&graph));
+
+    }
 }
