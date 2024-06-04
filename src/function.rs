@@ -131,32 +131,7 @@ impl Function {
     pub fn add_join_block(&mut self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> NodeIndex {
         let mut join_block = BasicBlock::new(BasicBlockType::Join);
 
-        // if !self.can_add_child(left_parent_index.clone()) {
-        //     panic!("Can no longer add any new children");
-        // }
-        // if !self.can_add_child(right_parent_index.clone()) {
-        //     panic!("Can no longer add any new children");
-        // }
-
-
-        // propogate variables in join block
-        let left_parent_block = self.get_bb(&left_parent_index).unwrap();
-        let right_parent_block = self.get_bb(&right_parent_index).unwrap();
-
-
-
-        let mut join_variable_table = HashMap::<String, VariableType>::new();
-        for (variable, left_value) in &left_parent_block.variable_table {
-            if let Some(right_value) = &right_parent_block.variable_table.get(variable) {
-                if left_value.get_not_phi_value() != (*right_value).get_not_phi_value() {
-                   join_variable_table.insert(variable.to_string(), VariableType::Phi(left_value.get_not_phi_value(), right_value.get_not_phi_value()));
-                } else {
-                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(left_value.get_not_phi_value()));
-                }
-            }
-        }
-
-        join_block.variable_table = join_variable_table;
+        join_block.variable_table = self.join_variable_tables(left_parent_index, right_parent_index);
 
         let join_node = self.bb_graph.add_node(join_block);
 
@@ -170,18 +145,8 @@ impl Function {
 
     /// Join two blocks with one block as the target, propagating the variable table
     pub fn join_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) {
-        let source_block = self.get_bb(&source_index).unwrap().clone();
-        let target_block = self.get_bb_mut(&target_index).unwrap();
-
-        for (variable, source_value) in &source_block.variable_table {
-            if let Some(target_value) = target_block.variable_table.get(variable) {
-                if source_value.get_not_phi_value() != target_value.get_not_phi_value() {
-                    target_block.variable_table.insert(variable.clone(), VariableType::Phi(source_value.get_not_phi_value(), target_value.get_not_phi_value()));
-                }
-            } else {
-                target_block.variable_table.insert(variable.clone(), source_value.clone());
-            }
-        }
+        let new_table = self.join_variable_tables(source_index, target_index);
+        self.get_bb_mut(&target_index).unwrap().variable_table = new_table;
     }
 
     // Helper function to join variable tables
