@@ -13,7 +13,7 @@ use petgraph::dot::{Dot, Config};
 
 pub struct Parser {
     tokenizer: Tokenizer,
-    internal_program: Program,
+    pub internal_program: Program,
     // internal_dtree: DominatorTree, 
     line_number: isize,
 }
@@ -384,7 +384,7 @@ mod parser_tests{
     }
     
     #[test]
-    fn test_parse_computation() {
+    pub fn test_parse_computation() {
         let input = "main var a; {let a <- 1 + 53; if a < 0 then let a <- a + 1; else let a <- a - 2 fi; let a <- a + 3;}.".to_string();
         let mut parser = Parser::new(input);
 
