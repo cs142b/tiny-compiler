@@ -86,6 +86,10 @@ impl Instruction {
         self.line_number
     }
 
+    pub fn get_operation_ref(&self) -> &Operation {
+        &self.operation
+    }
+
     // associated functions 
     /// creates and returns a new instruction
     pub fn new(line_number: isize, operation: Operation) -> Self {
