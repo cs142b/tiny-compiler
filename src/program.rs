@@ -79,6 +79,10 @@ impl Program {
         self.get_curr_fn_mut().add_node_to_curr(BasicBlockType::Conditional)
     }
 
+    pub fn add_follow_block(&mut self, node_index: NodeIndex) -> NodeIndex {
+        self.get_curr_fn_mut().add_node_to_index(node_index, BasicBlockType::Follow)
+    }
+
     // Wrapper for join_with_target function in Function
     pub fn join_blocks_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) {
         self.get_curr_fn_mut().join_with_target(source_index, target_index);

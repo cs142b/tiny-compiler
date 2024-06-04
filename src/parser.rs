@@ -252,7 +252,7 @@ impl Parser {
         self.match_token(Token::While);
 
         // Start of conditional block
-        let conditional_index = self.internal_program.add_cond_block();
+        let conditional_index: NodeIndex = self.internal_program.add_cond_block();
         let (condition, comparison_operator) = self.parse_relation();
 
         // Emit the branch instruction with a placeholder target
@@ -260,21 +260,31 @@ impl Parser {
 
         self.match_token(Token::Do);
 
-        // Start of loop body block
-        let loop_body_index = self.internal_program.add_fallthru_block();
+        // Start of fallthrough block
+        let fallthru_index = self.internal_program.add_fallthru_block();
         self.parse_stat_sequence();
 
-        // Emit the branch instruction to loop back to the conditional block
-        self.emit_instruction_in_block(loop_body_index, Operation::Bra(conditional_index.index() as isize));
+        // Get the last created block in the fallthrough sequence
+        let last_fallthru_index = self.internal_program.get_curr_block_index();
 
-        // Join the loop body block with the conditional block and propagate the variable table
-        self.internal_program.join_blocks_with_target(loop_body_index, conditional_index);
+        // Add a follow block and join it with the conditional block
+        let follow_index = self.internal_program.add_follow_block(conditional_index);
 
-        // Modify the branch instruction in the conditional block
-        let branch_operation = self.get_branch_type(comparison_operator, condition, self.internal_program.get_curr_block_index() as isize);
-        let conditional_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&conditional_block_index).unwrap();
-        conditional_block.modify_instruction(branch_instruction_line, branch_operation);
+        // Ensure loop continues by branching back to the conditional block
+        let last_fallthru_nodeindex = NodeIndex::new(last_fallthru_index);
+        self.internal_program.join_blocks_with_target(last_fallthru_nodeindex, conditional_index);
+        self.emit_instruction_in_block(last_fallthru_nodeindex, Operation::Bra(conditional_block_index.index() as isize));
+        self.internal_program.get_curr_fn_mut().add_edge(last_fallthru_nodeindex, conditional_index, BasicBlockType::Follow);
 
+        // Ensure correct branching by modifying the placeholder branch instruction
+        let branch_operation = self.get_branch_type(comparison_operator, condition, follow_index.index() as isize);
+        {
+            // Modify the branch instruction in the conditional block
+            let conditional_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&conditional_block_index).unwrap();
+            conditional_block.modify_instruction(branch_instruction_line, branch_operation);
+        }
+
+        // Finalize the loop with an "od" token
         self.match_token(Token::Od);
     }
     

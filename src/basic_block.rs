@@ -14,6 +14,7 @@ pub enum BasicBlockType {
     Conditional,
     FallThrough, 
     Branch, 
+    Follow,
     Join,
     Exit,
 }
@@ -25,6 +26,7 @@ impl fmt::Debug for BasicBlockType {
             BasicBlockType::Conditional=> write!(f, "conditional"),
             BasicBlockType::FallThrough=> write!(f, "fall-through"),
             BasicBlockType::Branch=> write!(f, "branch"),
+            BasicBlockType::Follow=> write!(f, "follow"),
             BasicBlockType::Join=> write!(f, "join"),
             BasicBlockType::Exit=> write!(f, "exit"),
         }
@@ -162,7 +164,7 @@ impl BasicBlock {
     pub fn get_max_parents(&self) -> usize {
         match self.block_type {
             BasicBlockType::Entry  => return 0,
-            BasicBlockType::Branch | BasicBlockType::FallThrough => return 1,
+            BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Follow => return 1,
             BasicBlockType::Conditional | BasicBlockType::Join => return 2,
             BasicBlockType::Exit => return 1,
         }
@@ -171,7 +173,7 @@ impl BasicBlock {
     pub fn get_max_children(&self) -> usize {
         match self.block_type {
             BasicBlockType::Entry => return 1,
-            BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Join => return 1,
+            BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Join | BasicBlockType::Follow=> return 1,
             BasicBlockType::Conditional => return 2,
             BasicBlockType::Exit => return 0,
         }
