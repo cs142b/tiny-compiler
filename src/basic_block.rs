@@ -21,12 +21,12 @@ pub enum BasicBlockType {
 impl fmt::Debug for BasicBlockType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            BasicBlockType::Entry => write!(f, "Entry"),
-            BasicBlockType::Conditional=> write!(f, "Conditional"),
-            BasicBlockType::FallThrough=> write!(f, "FallThrough"),
-            BasicBlockType::Branch=> write!(f, "Branch"),
-            BasicBlockType::Join=> write!(f, "Join"),
-            BasicBlockType::Exit=> write!(f, "Exit"),
+            BasicBlockType::Entry => write!(f, "entry"),
+            BasicBlockType::Conditional=> write!(f, "conditional"),
+            BasicBlockType::FallThrough=> write!(f, "fall-through"),
+            BasicBlockType::Branch=> write!(f, "branch"),
+            BasicBlockType::Join=> write!(f, "join"),
+            BasicBlockType::Exit=> write!(f, "exit"),
         }
     }
 }

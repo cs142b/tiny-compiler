@@ -1,7 +1,7 @@
 use petgraph::graph::{DiGraph, NodeIndex};
-use crate::basic_block::BasicBlock;
+use crate::basic_block::{BasicBlock, BasicBlockType};
 
-pub fn generate_dot_viz(input_graph: &DiGraph<BasicBlock, ()>) -> String {
+pub fn generate_dot_viz(input_graph: &DiGraph<BasicBlock, BasicBlockType>) -> String {
     let mut output_graph = String::new();
     output_graph.push_str("digraph {\n");
     generate_blocks(&mut output_graph, input_graph);
@@ -12,12 +12,12 @@ pub fn generate_dot_viz(input_graph: &DiGraph<BasicBlock, ()>) -> String {
 }
 
 
-fn generate_blocks(output_graph: &mut String, graph: &DiGraph<BasicBlock, ()>) {
+fn generate_blocks(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicBlockType>) {
     let block_indices = get_block_indices(graph);
 
     for block_index in block_indices {
         let instructions = cat_instructions(graph.node_weight(block_index).unwrap());
-        output_graph.push_str(format!("bb{} [shape=record, label=\"<b>BB{}\\n{:?} | {}\"];\n", block_index.index(), block_index.index(), graph.node_weight(block_index).unwrap().block_type, instructions).as_str());
+        output_graph.push_str(format!("bb{} [shape=record, label=\"<b>BB{} | {}\"];\n", block_index.index(), block_index.index(), instructions).as_str());
 
     }
 }
@@ -39,13 +39,13 @@ fn cat_instructions(block: &BasicBlock) -> String {
     instructions
 }
 
-fn generate_edges(output_graph: &mut String, graph: &DiGraph<BasicBlock, ()>) {
+fn generate_edges(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicBlockType>) {
     for edge in graph.raw_edges() {
-        output_graph.push_str(format!("bb{} -> bb{}:n;\n", edge.source().index(), edge.target().index()).as_str());
+        output_graph.push_str(format!("bb{}:s -> bb{}:n [label=\"   {:?}\"];\n", edge.source().index(), edge.target().index(), edge.weight).as_str());
     }
 }
 
-fn get_block_indices(graph: &DiGraph<BasicBlock, ()>) -> Vec<NodeIndex> {
+fn get_block_indices(graph: &DiGraph<BasicBlock, BasicBlockType>) -> Vec<NodeIndex> {
     graph.node_indices().collect()
 }
 
