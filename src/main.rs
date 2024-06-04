@@ -9,6 +9,7 @@ mod parser;
 mod dominator_tree;
 mod declared_types;
 mod dot_viz;
+mod dominator_table;
 
 
 // use crate::parser::Parser;

@@ -1,7 +1,7 @@
 use std::fmt;
 
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash, Copy)]
 pub enum Operation {
     Const(isize),
     Add(isize, isize),

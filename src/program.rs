@@ -2,7 +2,7 @@ use crate::{
     basic_block::{BasicBlock, BasicBlockType, VariableType},
     constant_block::ConstantBlock,
     function::Function,
-    instruction::Instruction,
+    instruction::{Operation, Instruction},
 };
 
 use petgraph::graph::NodeIndex;
@@ -94,6 +94,32 @@ impl Program {
         curr_block.add_instruction(instruction_to_add);
     }
 
+    // if instruction is not dominated, insert it into the dominator table
+    pub fn insert_operation_to_dom_table(&mut self, operation: &Operation, line_number: isize) {
+        self.get_curr_block_mut().dominator_table.insert_instruction(operation, line_number);
+    }
+
+    pub fn is_operation_in_dom_table(&mut self, operation: &Operation) -> bool {
+        self.get_curr_block().dominator_table.is_in_table(operation)
+    }
+
+    pub fn get_dom_line_number(&mut self, operation: &Operation) -> isize {
+        self.get_curr_block_mut().dominator_table.get_dominated_line_number(operation)
+    }
+
+    pub fn handle_dommy_mommy_logic(&mut self, operation: &Operation, line_number: isize) -> Option<isize> {
+        // check if its in dominator table
+        if self.is_operation_in_dom_table(operation) {
+            // returns instruction line number if the same operation already exists
+            return Some(self.get_dom_line_number(&operation));
+        }
+
+        // else, if the operation does not exist in the table
+        // then add operation to dominator table
+        self.insert_operation_to_dom_table(&operation, line_number);
+
+        None
+    }
 
     pub fn assign_variable_to_curr_block(&mut self, var_name: &String, line_number: isize) {
         self.get_curr_block_mut().assign_variable(&var_name, line_number);

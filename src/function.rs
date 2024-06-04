@@ -104,6 +104,9 @@ impl Function {
 
         // variable propagation, clones the variable table
         child_node_bb_mut_ref.variable_table = parent_block.variable_table.clone();
+        
+        // dominator propagation, clones the dominator table
+        child_node_bb_mut_ref.dominator_table = parent_block.dominator_table.clone();
 
         self.curr_node = child_node_index;
         self.add_edge(parent_node_index, child_node_index, bb_type);

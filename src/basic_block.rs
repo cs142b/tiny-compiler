@@ -1,5 +1,6 @@
 use petgraph::graph::NodeIndex;
 use crate::instruction::{Instruction, Operation};
+use crate::dominator_table::DominatorTable;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -87,6 +88,7 @@ pub struct BasicBlock {
     // pub variable_table: HashMap<String, Option<VariableType>>,
     pub variable_table: HashMap<String, VariableType>,
     pub block_type: BasicBlockType,
+    pub dominator_table: DominatorTable,
 }
 
 
@@ -111,7 +113,8 @@ impl BasicBlock {
             id: NodeIndex::new(0),
             instructions: Vec::new(),
             variable_table: HashMap::new(),
-            block_type: block_type
+            block_type: block_type,
+            dominator_table: DominatorTable::new(),
         }
     }
 
@@ -120,7 +123,8 @@ impl BasicBlock {
             id: NodeIndex::new(block_id), 
             instructions: Vec::new(),
             variable_table: HashMap::new(),
-            block_type: block_type
+            block_type: block_type,
+            dominator_table: DominatorTable::new(),
         }
     }
 

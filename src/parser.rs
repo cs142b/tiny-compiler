@@ -349,15 +349,29 @@ impl Parser {
     // Function to emit an instruction and get the line number
     fn emit_instruction(&mut self, operation: Operation) -> isize {
         self.line_number += 1;
+        
+        // handle dommy mommy logic
+        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
+            return dommy_mommy_line_number;
+        }
+
         let instruction = Instruction::create_instruction(self.line_number, operation);
         self.internal_program.add_instruction_to_curr_block(instruction);
         self.line_number
     }
 
+
     fn emit_instruction_with_index(&mut self, operation: Operation) -> (NodeIndex, isize) {
         self.line_number += 1;
+
         let instruction = Instruction::create_instruction(self.line_number, operation);
         let current_block_index = self.internal_program.get_curr_block_index();
+        
+        // handle dommy mommy logic
+        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
+            return (NodeIndex::from(current_block_index as u32), dommy_mommy_line_number);
+        }
+
         self.internal_program.add_instruction_to_curr_block(instruction);
         (NodeIndex::from(current_block_index as u32), self.line_number)
     }
@@ -396,6 +410,21 @@ mod parser_tests{
     #[test]
     pub fn test_parse_computation() {
         let input = "main var a; {let a <- 1 + 53; if a < 0 then let a <- a + 1; else let a <- a - 2 fi; let a <- a + 3;}.".to_string();
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz(&graph));
+
+    }
+    
+    #[test]
+    pub fn test_dom() {
+        let input = "main var a, b; {let a <- 1 + 53; let b <- 1 + 53;}.".to_string();
         let mut parser = Parser::new(input);
 
         let line_number = parser.parse_computation();
