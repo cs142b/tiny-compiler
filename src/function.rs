@@ -165,6 +165,22 @@ impl Function {
         self.curr_node
     }
 
+    /// Join two blocks with one block as the target, propagating the variable table
+    pub fn join_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) {
+        let source_block = self.get_bb(&source_index).unwrap().clone();
+        let target_block = self.get_bb_mut(&target_index).unwrap();
+
+        for (variable, source_value) in &source_block.variable_table {
+            if let Some(target_value) = target_block.variable_table.get(variable) {
+                if source_value.get_not_phi_value() != target_value.get_not_phi_value() {
+                    target_block.variable_table.insert(variable.clone(), VariableType::Phi(source_value.get_not_phi_value(), target_value.get_not_phi_value()));
+                }
+            } else {
+                target_block.variable_table.insert(variable.clone(), source_value.clone());
+            }
+        }
+    }
+
     // Helper function to join variable tables
     fn join_variable_tables(&self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> HashMap<String, VariableType> {
         let left_parent_block = self.get_bb(&left_parent_index).unwrap();

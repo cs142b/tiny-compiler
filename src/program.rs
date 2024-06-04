@@ -79,6 +79,11 @@ impl Program {
         self.get_curr_fn_mut().add_node_to_curr(BasicBlockType::Conditional)
     }
 
+    // Wrapper for join_with_target function in Function
+    pub fn join_blocks_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) {
+        self.get_curr_fn_mut().join_with_target(source_index, target_index);
+    }
+
     ///returns the basic block that you are altering in mutable form
     pub fn add_instruction_to_curr_block(&mut self, instruction_to_add: Instruction) {
         let curr_block = self.get_curr_fn_mut().get_curr_bb_mut();

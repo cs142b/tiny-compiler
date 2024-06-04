@@ -249,7 +249,33 @@ impl Parser {
 
     // Parse a while statement
     fn parse_while_statement(&mut self) {
+        self.match_token(Token::While);
 
+        // Start of conditional block
+        let conditional_index = self.internal_program.add_cond_block();
+        let (condition, comparison_operator) = self.parse_relation();
+
+        // Emit the branch instruction with a placeholder target
+        let (conditional_block_index, branch_instruction_line) = self.emit_instruction_with_index(self.get_branch_type(comparison_operator.clone(), condition, 0));
+
+        self.match_token(Token::Do);
+
+        // Start of loop body block
+        let loop_body_index = self.internal_program.add_fallthru_block();
+        self.parse_stat_sequence();
+
+        // Emit the branch instruction to loop back to the conditional block
+        self.emit_instruction_in_block(loop_body_index, Operation::Bra(conditional_index.index() as isize));
+
+        // Join the loop body block with the conditional block and propagate the variable table
+        self.internal_program.join_blocks_with_target(loop_body_index, conditional_index);
+
+        // Modify the branch instruction in the conditional block
+        let branch_operation = self.get_branch_type(comparison_operator, condition, self.internal_program.get_curr_block_index() as isize);
+        let conditional_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&conditional_block_index).unwrap();
+        conditional_block.modify_instruction(branch_instruction_line, branch_operation);
+
+        self.match_token(Token::Od);
     }
     
     
@@ -477,18 +503,17 @@ mod parser_tests{
 
     }
 
-    /*
     #[test]
     fn test_parse_while_statement() {
-        let input = "while 10 >= 6 do let x <- 2; od".to_string();
+        let input = "while 10 >= 6 do while 1 < 2 do let x <- 2; od od".to_string();
         let mut parser = Parser::new(input);
 
         parser.parse_while_statement();
 
-        let b = &parser.program.functions[0].bb_list.bb_graph;
-        for node_index in b.node_indices() {
-            let node_value = b.node_weight(node_index).unwrap();
-            println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
-        }
-    }*/
+        // Verify that the if statement creates the correct basic blocks and instructions
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+
+        // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        println!("{}", generate_dot_viz(&graph));
+    }
 }
