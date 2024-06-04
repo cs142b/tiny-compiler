@@ -126,12 +126,20 @@ impl Function {
         parents_iter.nth(0)
     }
 
+    pub fn get_prev_index_of_node(&self, node: NodeIndex) -> Option<NodeIndex> {
+        let mut parents_iter = self.bb_graph.neighbors_directed(node, Incoming);
+        parents_iter.nth(0)
+    }
 
     /// add a join block to the current set of siblings at the bottom
     pub fn add_join_block(&mut self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> NodeIndex {
         let mut join_block = BasicBlock::new(BasicBlockType::Join);
 
+        // variable propagation, clones the variable table
         join_block.variable_table = self.join_variable_tables(left_parent_index, right_parent_index);
+
+        // dominator propagation, clones the dominator table
+        join_block.dominator_table = self.get_bb(&self.get_prev_index_of_node(left_parent_index).unwrap()).unwrap().dominator_table.clone();
 
         let join_node = self.bb_graph.add_node(join_block);
 
@@ -139,6 +147,7 @@ impl Function {
         self.add_edge(right_parent_index, join_node, BasicBlockType::FallThrough);
 
         self.curr_node = join_node;
+
 
         self.curr_node
     }
