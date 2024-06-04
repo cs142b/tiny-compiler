@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::basic_block::{BasicBlock, BasicBlockType, VariableType};
 use crate::instruction::{Instruction, Operation};
+use petgraph::graph::NodeIndex;
 
 #[derive(Clone, Debug, Default)]
 pub struct DominatorTable {
@@ -8,6 +9,7 @@ pub struct DominatorTable {
     sub_list: HashMap::<Operation, isize>,
     mul_list: HashMap::<Operation, isize>,
     div_list: HashMap::<Operation, isize>,
+    pub dominated_by: NodeIndex,
 }
 
 impl DominatorTable {
@@ -17,6 +19,7 @@ impl DominatorTable {
             sub_list: HashMap::<Operation, isize>::new(),
             mul_list: HashMap::<Operation, isize>::new(),
             div_list: HashMap::<Operation, isize>::new(),
+            dominated_by: NodeIndex::new(0),
         }
     }
 

@@ -107,6 +107,7 @@ impl Function {
         
         // dominator propagation, clones the dominator table
         child_node_bb_mut_ref.dominator_table = parent_block.dominator_table.clone();
+        child_node_bb_mut_ref.dominator_table.dominated_by = parent_node_index;
 
         self.curr_node = child_node_index;
         self.add_edge(parent_node_index, child_node_index, bb_type);
@@ -140,6 +141,7 @@ impl Function {
 
         // dominator propagation, clones the dominator table
         join_block.dominator_table = self.get_bb(&self.get_prev_index_of_node(left_parent_index).unwrap()).unwrap().dominator_table.clone();
+        join_block.dominator_table.dominated_by = self.get_prev_index_of_node(left_parent_index).unwrap();
 
         let join_node = self.bb_graph.add_node(join_block);
 

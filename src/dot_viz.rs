@@ -6,6 +6,7 @@ pub fn generate_dot_viz(input_graph: &DiGraph<BasicBlock, BasicBlockType>) -> St
     output_graph.push_str("digraph {\n");
     generate_blocks(&mut output_graph, input_graph);
     generate_edges(&mut output_graph, input_graph);
+    generate_doms(&mut output_graph, input_graph);
     output_graph.push_str("}");
 
     output_graph
@@ -18,7 +19,6 @@ fn generate_blocks(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicB
     for block_index in block_indices {
         let instructions = cat_instructions(graph.node_weight(block_index).unwrap());
         output_graph.push_str(format!("bb{} [shape=record, label=\"<b>BB{} | {}\"];\n", block_index.index(), block_index.index(), instructions).as_str());
-
     }
 }
 
@@ -43,6 +43,17 @@ fn generate_edges(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicBl
     for edge in graph.raw_edges() {
         output_graph.push_str(format!("bb{}:s -> bb{}:n [label=\"   {:?}\"];\n", edge.source().index(), edge.target().index(), edge.weight).as_str());
     }
+}
+
+fn generate_doms(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicBlockType>) {
+    let mut block_indices = get_block_indices(graph);
+    block_indices.remove(0);
+
+    for block_index in block_indices {
+        let dominated_by_index = graph.node_weight(block_index).unwrap().dominator_table.dominated_by;
+        output_graph.push_str(format!("bb{}:b -> bb{}:b [color=blue, style=dotted];\n", dominated_by_index.index(), block_index.index()).as_str());
+    }
+
 }
 
 fn get_block_indices(graph: &DiGraph<BasicBlock, BasicBlockType>) -> Vec<NodeIndex> {
