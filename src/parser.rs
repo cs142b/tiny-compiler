@@ -234,7 +234,7 @@ impl Parser {
             let incoming_edges = self.internal_program.get_curr_fn().get_incoming_edges(join_index);
             for incoming_edge in incoming_edges {
                 let incoming_block = self.internal_program.get_curr_fn().get_bb(&incoming_edge).unwrap();
-                if incoming_block.block_type == BasicBlockType::Join {
+                if incoming_block.block_type == BasicBlockType::Join && incoming_edge != NodeIndex::new(last_branch_index) {
                     self.emit_instruction_in_block(incoming_edge, Operation::Bra(join_index.index() as isize));
                 }
             }
@@ -439,7 +439,17 @@ mod parser_tests{
                                     let x <- 100 + 200;
                                 fi
                             else 
-                                let x <- 1; 
+                                let x <- 1;
+                                if 2 < 4 then
+                                    let z <- 333 + 222;
+                                    if 3 < 4 then
+                                        if 4 < 4 then
+                                        fi
+                                    fi
+                                else
+                                    if 2 < 0 then
+                                    fi
+                                fi
                             fi
                             
                             
