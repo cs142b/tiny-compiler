@@ -433,30 +433,29 @@ mod parser_tests{
 
     #[test]
     fn test_parse_nested_if_statement() {
-        let input = "if 1 < 2 then 
-                                let y <- 69 + 420;
-                                if 1 < 100 then 
-                                    let x <- 100 + 200;
-                                fi
-                            else 
-                                let x <- 1;
-                                if 2 < 4 then
-                                    let z <- 333 + 222;
-                                    if 3 < 4 then
-                                        if 4 < 4 then
-                                        fi
-                                    fi
-                                else
-                                    if 2 < 0 then
-                                    fi
-                                fi
-                            fi
-                            
-                            
-                            
-                            "
-                            
-                            .to_string();
+        let input = 
+        "
+        if 1 < 2 then 
+            let y <- 69 + 420;
+            if 1 < 100 then 
+                let x <- 100 + 200;
+            fi
+        else 
+            let x <- 1;
+            if 2 < 4 then
+                let z <- 333 + 222;
+                if 3 < 4 then
+                    if 4 < 4 then
+                    fi
+                fi
+            else
+                if 2 < 0 then
+                fi
+            fi
+        fi
+
+        "
+        .to_string();
         let mut parser = Parser::new(input);
 
         parser.parse_if_statement();
