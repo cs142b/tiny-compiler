@@ -227,8 +227,12 @@ impl Parser {
             conditional_block.modify_instruction(branch_instruction_line, branch_operation);
     
             // Modify the branch instruction in the fallthrough block
-            let branch_destination = self.internal_program.get_curr_fn_mut().get_outgoing_edge(fallthru_index).unwrap();
-            self.emit_instruction_in_block(fallthru_index, Operation::Bra(branch_destination.index() as isize));
+            if let Some(branch_destination) = self.internal_program.get_curr_fn_mut().get_outgoing_edge(fallthru_index) {
+                let destination_block = self.internal_program.get_curr_fn().get_bb(&branch_destination).unwrap();
+                if destination_block.block_type == BasicBlockType::Join {
+                    self.emit_instruction_in_block(fallthru_index, Operation::Bra(branch_destination.index() as isize));
+                }
+            }
 
             // Modify the branch instruction in the join block
             let incoming_edges = self.internal_program.get_curr_fn().get_incoming_edges(join_index);
