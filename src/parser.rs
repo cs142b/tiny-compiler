@@ -3,6 +3,7 @@ use crate::dot_viz::generate_dot_viz;
 use crate::basic_block::VariableType;
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{
+    basic_block::BasicBlockType,
     instruction::{Instruction, Operation}, 
     program::Program,
 };
@@ -199,12 +200,9 @@ impl Parser {
         // Start of fallthrough block
         let fallthru_index = self.internal_program.add_fallthru_block();
         self.parse_stat_sequence();
-    
+
         // Get the last created block in the fallthrough sequence
         let last_fallthru_index = self.internal_program.get_curr_block_index();
-    
-        // Emit the branch instruction with a placeholder target
-        let (fallthru_block_index, fallthru_branch_line) = self.emit_instruction_with_index(Operation::Bra(0));
     
         // Always create the branch block
         let branch_index = self.internal_program.add_branch_block(conditional_index);
@@ -221,7 +219,6 @@ impl Parser {
     
         // Prepare the branch operations with the correct targets
         let branch_operation = self.get_branch_type(comparison_operator, condition, branch_index.index() as isize);
-        let bra_join_operation = Operation::Bra(join_index.index() as isize);
     
         // Modify the instructions in the correct blocks
         {
@@ -230,12 +227,21 @@ impl Parser {
             conditional_block.modify_instruction(branch_instruction_line, branch_operation);
     
             // Modify the branch instruction in the fallthrough block
-            let fallthru_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&fallthru_block_index).unwrap();
-            fallthru_block.modify_instruction(fallthru_branch_line, bra_join_operation);
+            let branch_destination = self.internal_program.get_curr_fn_mut().get_outgoing_edge(fallthru_index).unwrap();
+            self.emit_instruction_in_block(fallthru_index, Operation::Bra(branch_destination.index() as isize));
+
+            // Modify the branch instruction in the join block
+            let incoming_edges = self.internal_program.get_curr_fn().get_incoming_edges(join_index);
+            for incoming_edge in incoming_edges {
+                let incoming_block = self.internal_program.get_curr_fn().get_bb(&incoming_edge).unwrap();
+                if incoming_block.block_type == BasicBlockType::Join {
+                    self.emit_instruction_in_block(incoming_edge, Operation::Bra(join_index.index() as isize));
+                }
+            }
         }
     
         self.match_token(Token::Fi);
-    }            
+    }
 
     // Parse a while statement
     fn parse_while_statement(&mut self) {
@@ -314,7 +320,19 @@ impl Parser {
         let current_block_index = self.internal_program.get_curr_block_index();
         self.internal_program.add_instruction_to_curr_block(instruction);
         (NodeIndex::from(current_block_index as u32), self.line_number)
-    }    
+    }
+
+    // Emits an instruction in a specified basic block and returns the line number.
+    fn emit_instruction_in_block(&mut self, block_index: NodeIndex, operation: Operation) -> isize {
+        self.line_number += 1;
+        let instruction = Instruction::create_instruction(self.line_number, operation);
+
+        // Get the specified block and add the instruction
+        let block = self.internal_program.get_curr_fn_mut().get_bb_mut(&block_index).expect("Block not found");
+        block.add_instruction(instruction);
+
+        self.line_number
+    }
 }
 
 //Tests
@@ -416,12 +434,19 @@ mod parser_tests{
     #[test]
     fn test_parse_nested_if_statement() {
         let input = "if 1 < 2 then 
-                        if 1 < 100 then 
-                            let x <- 100;
-                        fi
-                    else 
-                        let x <- 1; 
-                    fi".to_string();
+                                let y <- 69 + 420;
+                                if 1 < 100 then 
+                                    let x <- 100 + 200;
+                                fi
+                            else 
+                                let x <- 1; 
+                            fi
+                            
+                            
+                            
+                            "
+                            
+                            .to_string();
         let mut parser = Parser::new(input);
 
         parser.parse_if_statement();

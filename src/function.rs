@@ -184,6 +184,30 @@ impl Function {
         join_variable_table
     }
 
+    /// Get the single outgoing edge from a given block
+    pub fn get_outgoing_edge(&self, block_index: NodeIndex) -> Option<NodeIndex> {
+        let graph = &self.bb_graph;
+        let mut neighbors = graph.neighbors_directed(block_index, petgraph::Direction::Outgoing);
+
+        // Check if there is exactly one outgoing edge
+        if let Some(target_index) = neighbors.next() {
+            if neighbors.next().is_none() {
+                return Some(target_index);
+            } else {
+                panic!("Block has more than one outgoing edge");
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Get the single incoming edge from a given block
+    pub fn get_incoming_edges(&self, block_index: NodeIndex) -> Vec<NodeIndex> {
+        let graph = &self.bb_graph;
+        graph
+            .neighbors_directed(block_index, petgraph::Direction::Incoming)
+            .collect()
+    }
 
 
 
