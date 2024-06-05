@@ -37,8 +37,7 @@ impl fmt::Debug for BasicBlockType {
 
 #[derive(Clone, PartialEq, Eq, Copy)]
 pub enum VariableType {
-    Phi(isize, isize),
-    NotPhi(isize),
+    Value(isize),
     NotInit,
 }
 
@@ -46,45 +45,20 @@ pub enum VariableType {
 impl fmt::Debug for VariableType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            VariableType::Phi(value1, value2) => write!(f, "{} != {}", value1, value2),
-            VariableType::NotPhi(value) => write!(f, "{}", value),
-            _ => unreachable!("should never hit here in debug formatting for variable type"),
+            VariableType::Value(value) => write!(f, "{}", value),
+            VariableType::NotInit => write!(f, "NotInit"),
         }
     }
 }
 
 impl VariableType {
 
-    pub fn is_phi(&self) -> bool {
-        match self {
-            VariableType::Phi(_, _) => true,
-            VariableType::NotPhi(_) => false,
-            _ => panic!("placeholder"),
-
-        }
-    }
-
-    pub fn is_not_init(&self) -> bool {
-        match self {
-            VariableType::NotInit => true,
-            _ => false,
-        }
-    }
-
-    pub fn get_phi_values(&self) -> (isize, isize) {
-        if let VariableType::Phi(value1, value2) = self {
-            return (*value1, *value2);
-        }
-
-        panic!("this function should only be used if variabletype is known to be a phi");
-    }
-
-    pub fn get_not_phi_value(&self) -> isize {
-        if let VariableType::NotPhi(value) = self {
+    pub fn get_value(&self) -> isize {
+        if let VariableType::Value(value) = self {
             return *value;
         }
 
-        panic!("this function should only be used if variabletype is known to be a not phi");
+        panic!("ERROR: get_value is used on an NOT INIT");
     }
 }
 
@@ -92,21 +66,10 @@ impl VariableType {
 pub struct BasicBlock {
     pub id: NodeIndex,
     pub instructions: Vec<Instruction>,
-    // pub variable_table: HashMap<String, Option<VariableType>>,
     pub variable_table: HashMap<String, VariableType>,
     pub block_type: BasicBlockType,
     pub dominator_table: DominatorTable,
 }
-
-
-// u dont need this anymore bruh
-// impl fmt::Debug for BasicBlock {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         let id_unwrap = self.id.index();
-//         let instructions = cat_instructions(self);
-//         write!(f, "{:?} BB{} | {}", self.block_type, id_unwrap, instructions)
-//     }
-// }
 
 impl PartialEq for BasicBlock {
     fn eq(&self, other: &Self) -> bool {
@@ -120,7 +83,7 @@ impl BasicBlock {
             id: NodeIndex::new(0),
             instructions: Vec::new(),
             variable_table: HashMap::new(),
-            block_type: block_type,
+            block_type,
             dominator_table: DominatorTable::new(),
         }
     }
@@ -130,7 +93,7 @@ impl BasicBlock {
             id: NodeIndex::new(block_id), 
             instructions: Vec::new(),
             variable_table: HashMap::new(),
-            block_type: block_type,
+            block_type,
             dominator_table: DominatorTable::new(),
         }
     }
@@ -153,7 +116,7 @@ impl BasicBlock {
     }
 
     pub fn assign_variable(&mut self, variable: &String, line_number: isize) {
-        self.variable_table.insert(variable.to_string(), VariableType::NotPhi(line_number));
+        self.variable_table.insert(variable.to_string(), VariableType::Value(line_number));
     }
 
     pub fn get_first_instruction_line_number(&self) -> isize {
@@ -164,13 +127,6 @@ impl BasicBlock {
         }
     }
 
-    // pub fn propagate_variables(&self, next_block: &mut BasicBlock) {
-    //     for (var, &line_num) in &self.variable_table {
-    //         if let Some(line) = line_num {
-    //             next_block.assign_variable(var, line);
-    //         }
-    //     }
-    // }
 
     pub fn get_max_parents(&self) -> usize {
         match self.block_type {
