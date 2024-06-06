@@ -57,8 +57,8 @@ impl VariableType {
         if let VariableType::Value(value) = self {
             return *value;
         }
-
-        panic!("ERROR: get_value is used on an NOT INIT");
+        eprintln!("Use of an uninitialized value");
+        0
     }
 }
 
@@ -100,6 +100,10 @@ impl BasicBlock {
 
     pub fn add_instruction(&mut self, instruction: Instruction) {
         self.instructions.push(instruction);
+    }
+
+    pub fn add_instruction_on_top(&mut self, instruction: Instruction) {
+        self.instructions.insert(0, instruction);
     }
 
     pub fn declare_variable(&mut self, variable: &String) {
@@ -200,26 +204,7 @@ pub mod bb_tests {
 
         // assert_eq!(bb.variable_table[var_name], None);
     }
-    #[test]
-    fn test_variable_assignment() {
-        let mut bb = BasicBlock::new(BasicBlockType::Entry); 
-        let var_name = "non_phi";
-        let var_name: String = var_name.to_string();
-        let var_val = VariableType::NotPhi(10);
-        // bb.assign_variable(&var_name, var_val);
 
-        // assert_eq!(bb.get_variable(&var_name), VariableType::NotPhi(10));
-
-        let mut bb = BasicBlock::new(BasicBlockType::Entry); 
-        let var_name = "phi";
-        let var_name: String = var_name.to_string();
-        let var_val = VariableType::Phi(10, 10);
-        // bb.assign_variable(&var_name, var_val);
-
-        // assert_eq!(bb.get_variable(&var_name), VariableType::Phi(10, 10));
-
-
-    }
     #[test]
     fn test_add_instruction () {
         let mut bb = BasicBlock::new(BasicBlockType::Join);

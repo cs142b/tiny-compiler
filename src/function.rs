@@ -1,5 +1,5 @@
-use crate::basic_block::{BasicBlock, BasicBlockType, VariableType};
-use std::collections::HashMap;
+use crate::{basic_block::{BasicBlock, BasicBlockType, VariableType}, instruction::Operation};
+use std::{collections::HashMap, env::var};
 use petgraph::{
     graph::{DiGraph, NodeIndex},
     Direction::{Incoming, Outgoing},
@@ -133,11 +133,12 @@ impl Function {
     }
 
     /// add a join block to the current set of siblings at the bottom
-    pub fn add_join_block(&mut self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> NodeIndex {
+    pub fn add_join_block(&mut self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> (NodeIndex, Vec<(Operation, String)>) {
         let mut join_block = BasicBlock::new(BasicBlockType::Join);
 
         // variable propagation, clones the variable table
-        join_block.variable_table = self.join_variable_tables(left_parent_index, right_parent_index);
+        let (new_table, phi_instructions) = self.join_variable_tables(left_parent_index, right_parent_index);
+        join_block.variable_table = new_table;
 
         // dominator propagation, clones the dominator table
         join_block.dominator_table = self.get_bb(&self.get_prev_index_of_node(left_parent_index).unwrap()).unwrap().dominator_table.clone();
@@ -151,43 +152,34 @@ impl Function {
         self.curr_node = join_node;
 
 
-        self.curr_node
+        (self.curr_node, phi_instructions)
     }
 
     /// Join two blocks with one block as the target, propagating the variable table
-    pub fn join_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) {
-        let new_table = self.join_variable_tables(source_index, target_index);
+    pub fn join_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) -> Vec<(Operation, String)> {
+        let (new_table, phi_instructions) = self.join_variable_tables(source_index, target_index);
         self.get_bb_mut(&target_index).unwrap().variable_table = new_table;
+        phi_instructions
     }
 
     // Helper function to join variable tables
-    fn join_variable_tables(&self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> HashMap<String, VariableType> {
+    fn join_variable_tables(&self, left_parent_index: NodeIndex, right_parent_index: NodeIndex) -> (HashMap<String, VariableType>, Vec<(Operation, String)>) {
         let left_parent_block = self.get_bb(&left_parent_index).unwrap();
         let right_parent_block = self.get_bb(&right_parent_index).unwrap();
 
         let mut join_variable_table = HashMap::<String, VariableType>::new();
+        let mut phi_instructions = Vec::<(Operation, String)>::new();
+
         for (variable, left_value) in &left_parent_block.variable_table {
-
-            if let Some(right_value) = &right_parent_block.variable_table.get(variable) {
-
-                // check if a join is recieving both NOT INIT values
-                if left_value.is_not_init() && right_value.is_not_init() {
-                    join_variable_table.insert(variable.to_string(), VariableType::NotInit);
-                } else if left_value.is_not_init() {
-                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(right_value.get_not_phi_value()));
-                } else if right_value.is_not_init() {
-                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(left_value.get_not_phi_value()));
-                } else if left_value.get_not_phi_value() != (*right_value).get_not_phi_value() {
-                    join_variable_table.insert(variable.to_string(), VariableType::Phi(left_value.get_not_phi_value(), right_value.get_not_phi_value()));
-                } else {
-                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(left_value.get_not_phi_value()));
-                }
-
-                todo!("do the case when you get phi and not init");
+            let right_value = right_parent_block.variable_table.get(variable).unwrap();
+            if left_value == right_value {
+                join_variable_table.insert(variable.clone(), left_value.clone());
+            } else {
+                phi_instructions.push((Operation::Phi(left_value.get_value(), right_value.get_value()), variable.clone()));
             }
         }
 
-        join_variable_table
+        (join_variable_table, phi_instructions)
     }
 
     /// Get the single outgoing edge from a given block
@@ -300,35 +292,6 @@ mod basic_block_tests {
         g.connect_to_conditional(conditional);
         g.add_node_to_curr(BasicBlockType::Branch);
         println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel]));
-    }
-    
-    #[test]
-    fn join_variable_table() {
-
-        let mut left_variable_table = HashMap::<String, VariableType>::new();
-        left_variable_table.insert(String::from("test1"), VariableType::NotPhi(1));
-        left_variable_table.insert(String::from("test2"), VariableType::NotPhi(2));
-
-        let mut right_variable_table = HashMap::<String, VariableType>::new();
-        right_variable_table.insert(String::from("test1"), VariableType::NotPhi(1));
-        right_variable_table.insert(String::from("test2"), VariableType::NotPhi(3));
-
-        let mut join_variable_table = HashMap::<String, VariableType>::new();
-
-        for (variable, left_value) in &left_variable_table {
-            if let Some(right_value) = &right_variable_table.get(variable) {
-                if left_value.get_not_phi_value() != (*right_value).get_not_phi_value() {
-                   join_variable_table.insert(variable.to_string(), VariableType::Phi(left_value.get_not_phi_value(), right_value.get_not_phi_value()));
-                } else {
-                    join_variable_table.insert(variable.to_string(), VariableType::NotPhi(left_value.get_not_phi_value()));
-                }
-            }
-        }
-        
-
-        assert_eq!(format!("{:?}", join_variable_table), "{\"test1\": 1, \"test2\": 2 != 3}"); 
-
-
     }
 
 }

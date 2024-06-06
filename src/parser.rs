@@ -8,6 +8,7 @@ use crate::{
     program::Program,
 };
 
+use bit_matrix::block;
 use petgraph::graph::NodeIndex;
 use petgraph::dot::{Dot, Config};
 
@@ -132,10 +133,7 @@ impl Parser {
             },
             Token::Identifier(name) => {
                 match self.internal_program.get_variable(&name) {
-                    VariableType::NotPhi(value) => value,
-                    VariableType::Phi(value1, value2) => {
-                        self.emit_instruction(Operation::Phi(value1, value2))
-                    },
+                    VariableType::Value(value) => value,
                     VariableType::NotInit => panic!("parse_factor() is retrieving an uninitialized variable"),
                 }
             },
@@ -215,8 +213,9 @@ impl Parser {
         let last_branch_index = self.internal_program.get_curr_block_index();
     
         // Add the join block and connect the blocks
-        let join_index = self.internal_program.add_join_block_from_two(NodeIndex::new(last_fallthru_index), NodeIndex::new(last_branch_index));
-    
+        let (join_index, phi_instructions) = self.internal_program.add_join_block_from_two(NodeIndex::new(last_fallthru_index), NodeIndex::new(last_branch_index));
+        self.emit_phi_instructions(phi_instructions, join_index);
+
         // Prepare the branch operations with the correct targets
         let branch_operation = self.get_branch_type(comparison_operator, condition, branch_index.index() as isize);
     
@@ -272,7 +271,8 @@ impl Parser {
 
         // Ensure loop continues by branching back to the conditional block
         let last_fallthru_nodeindex = NodeIndex::new(last_fallthru_index);
-        self.internal_program.join_blocks_with_target(last_fallthru_nodeindex, conditional_index);
+        let phi_instructions = self.internal_program.join_blocks_with_target(last_fallthru_nodeindex, conditional_index);
+        self.emit_phi_instructions(phi_instructions, conditional_index);
         self.emit_instruction_in_block(last_fallthru_nodeindex, Operation::Bra(conditional_block_index.index() as isize));
         self.internal_program.get_curr_fn_mut().add_edge(last_fallthru_nodeindex, conditional_index, BasicBlockType::Follow);
 
@@ -360,6 +360,19 @@ impl Parser {
         self.line_number
     }
 
+    fn emit_instruction_on_top(&mut self, block_index: NodeIndex, operation: Operation) -> isize {
+        
+        // handle dommy mommy logic
+        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
+            return dommy_mommy_line_number;
+        }
+
+        self.line_number += 1;
+        let instruction = Instruction::create_instruction(self.line_number, operation);
+        self.internal_program.add_instruction_to_any_block_on_top(block_index, instruction);
+        self.line_number
+    }
+
 
     fn emit_instruction_with_index(&mut self, operation: Operation) -> (NodeIndex, isize) {
         let current_block_index = self.internal_program.get_curr_block_index();
@@ -378,7 +391,13 @@ impl Parser {
 
     // Emits an instruction in a specified basic block and returns the line number.
     fn emit_instruction_in_block(&mut self, block_index: NodeIndex, operation: Operation) -> isize {
+        // handle dommy mommy logic
+        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
+            return dommy_mommy_line_number;
+        }
+        
         self.line_number += 1;
+        
         let instruction = Instruction::create_instruction(self.line_number, operation);
 
         // Get the specified block and add the instruction
@@ -386,6 +405,13 @@ impl Parser {
         block.add_instruction(instruction);
 
         self.line_number
+    }
+
+    fn emit_phi_instructions(&mut self, phi_instructions: Vec<(Operation, String)>, block_index: NodeIndex) {
+        for (operation, variable) in phi_instructions {
+            let line_num = self.emit_instruction_on_top(block_index, operation);
+            self.internal_program.assign_variable_to_any_block(block_index, &variable, line_num);
+        }
     }
 }
 
@@ -409,7 +435,7 @@ mod parser_tests{
     
     #[test]
     pub fn test_parse_computation() {
-        let input = "main var a, b, c; {let a <- 1 + 53; let b <- 1 + 53; if 1 < 2 then let c <- 1 + 53; fi;}.".to_string();
+        let input = "main var a, b, c; {let a <- 1 + 53; let b <- 1 + 53; let c <- 1; if 1 < 2 then let c <- 1 + 53; fi;}.".to_string();
         let mut parser = Parser::new(input);
 
         let line_number = parser.parse_computation();
@@ -477,7 +503,7 @@ mod parser_tests{
         // let block = &parser.program.functions[0].bb_list.bb_graph[parser.current_block];
         let block = &parser.internal_program.get_curr_block();
         let x_line_number = block.get_variable(&"x".to_string());
-        assert_eq!(x_line_number, VariableType::NotPhi(-5)); // The line number for the constant 5
+        assert_eq!(x_line_number, VariableType::Value(-5)); // The line number for the constant 5
     }
 
     #[test]

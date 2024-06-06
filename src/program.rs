@@ -67,7 +67,7 @@ impl Program {
         self.get_curr_fn_mut().add_node_to_index(node_index, BasicBlockType::Branch) 
     }
 
-    pub fn add_join_block_from_two(&mut self, left_parent: NodeIndex, right_parent: NodeIndex) -> NodeIndex{
+    pub fn add_join_block_from_two(&mut self, left_parent: NodeIndex, right_parent: NodeIndex) -> (NodeIndex, Vec<(Operation, String)>){
         self.get_curr_fn_mut().add_join_block(left_parent, right_parent)
     }
     
@@ -84,14 +84,19 @@ impl Program {
     }
 
     // Wrapper for join_with_target function in Function
-    pub fn join_blocks_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) {
-        self.get_curr_fn_mut().join_with_target(source_index, target_index);
+    pub fn join_blocks_with_target(&mut self, source_index: NodeIndex, target_index: NodeIndex) -> Vec<(Operation, String)> {
+        self.get_curr_fn_mut().join_with_target(source_index, target_index)
     }
 
     ///returns the basic block that you are altering in mutable form
     pub fn add_instruction_to_curr_block(&mut self, instruction_to_add: Instruction) {
         let curr_block = self.get_curr_fn_mut().get_curr_bb_mut();
         curr_block.add_instruction(instruction_to_add);
+    }
+
+    pub fn add_instruction_to_any_block_on_top(&mut self, block_index: NodeIndex, instruction_to_add: Instruction) {
+        let curr_block = self.get_curr_fn_mut().get_bb_mut(&block_index).unwrap();
+        curr_block.add_instruction_on_top(instruction_to_add);
     }
 
     // if instruction is not dominated, insert it into the dominator table
@@ -123,6 +128,10 @@ impl Program {
 
     pub fn assign_variable_to_curr_block(&mut self, var_name: &String, line_number: isize) {
         self.get_curr_block_mut().assign_variable(&var_name, line_number);
+    }
+
+    pub fn assign_variable_to_any_block(&mut self, block_index: NodeIndex, var_name: &String, line_number: isize) {
+        self.get_curr_fn_mut().get_bb_mut(&block_index).unwrap().assign_variable(&var_name, line_number);
     }
 
     pub fn declare_variable_to_curr_block(&mut self, var_name: &String) {
