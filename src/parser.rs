@@ -361,12 +361,6 @@ impl Parser {
     }
 
     fn emit_instruction_on_top(&mut self, block_index: NodeIndex, operation: Operation) -> isize {
-        
-        // handle dommy mommy logic
-        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
-            return dommy_mommy_line_number;
-        }
-
         self.line_number += 1;
         let instruction = Instruction::create_instruction(self.line_number, operation);
         self.internal_program.add_instruction_to_any_block_on_top(block_index, instruction);
@@ -435,7 +429,7 @@ mod parser_tests{
     
     #[test]
     pub fn test_parse_computation() {
-        let input = "main var a, b, c; {let a <- 1 + 53; let b <- 1 + 53; let c <- 1; if 1 < 2 then let c <- 1 + 53; fi;}.".to_string();
+        let input = "main var a, b, c; {let a <- 1 + 50; let a <- 1 + 51; let a <- 1 + 52; let a <- 1 + 54; let b <- 1 + 53; let c <- 1; if 1 < 2 then let c <- 1 + 53; fi;}.".to_string();
         let mut parser = Parser::new(input);
 
         let line_number = parser.parse_computation();

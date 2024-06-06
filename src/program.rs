@@ -121,7 +121,7 @@ impl Program {
 
         // else, if the operation does not exist in the table
         // then add operation to dominator table
-        self.insert_operation_to_dom_table(&operation, line_number);
+        self.insert_operation_to_dom_table(&operation, line_number + 1);
 
         None
     }
