@@ -24,10 +24,14 @@ impl Program {
         }
     }
 
-    pub fn add_function(&mut self, name: String, parameters: Vec<String>, is_void: bool) -> usize {
-        let new_fn = Function::new(name, parameters, is_void);
+    pub fn add_function(&mut self, name: String, is_void: bool) -> usize {
+        let new_fn = Function::new(name, is_void);
         self.functions.push(new_fn);
         self.functions.len() - 1
+    }
+    
+    pub fn insert_new_parameter_to_curr_function(&mut self, parameter_name: String) {
+        self.get_curr_fn().insert_new_parameter(parameter_name);
     }
 
 

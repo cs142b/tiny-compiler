@@ -1,4 +1,4 @@
-// use crate::dot_viz::generate_dot_viz;
+use crate::dot_viz::generate_dot_viz;
 use crate::basic_block::VariableType;
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{
@@ -19,7 +19,7 @@ pub struct Parser {
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
-        program.add_function("main".to_string(), Vec::new());
+        program.add_function("main".to_string(), true);
 
         Self {
             tokenizer: Tokenizer::new(input),
@@ -342,27 +342,26 @@ impl Parser {
             Token::Identifier(identifier) => identifier,
             _ => panic!("Expected an identifier for a function declaration"),
         };
+        
+        self.internal_program.add_function(function_name, is_void_condition);
 
-        let mut parameter_vector = self.parse_formal_param();
+        self.parse_formal_param();
         self.match_token(Token::Semicolon);
         self.parse_func_body();
         self.match_token(Token::Semicolon);
-        
-        // self.internal_program.add_function(function_name, parameter_vector, is_void_condition);
-        // this logic is flawed, program should change to a new function and let the parser update
-        // on its own rather than creating it here
-        // fix later cuz im lazy
+
+        // function needs to go back to "main" for testing, since the current function is 
+        // now this new function rather than main
     }
 
-    fn parse_formal_param(&mut self) -> Vec<String> {
+    fn parse_formal_param(&mut self) {
         self.match_token(Token::OpenParen);
-        let mut parameter_vector = Vec::<String>::new();
         loop {
             match self.tokenizer.peek_token() {
                 Token::Identifier(parameter_name) => {
                     self.tokenizer.next_token();
                     // add to vec of strings
-                    parameter_vector.push(parameter_name.clone());
+                    self.internal_program.insert_new_parameter_to_curr_function(parameter_name.clone()); 
                 },
                 Token::Comma => { 
                     self.tokenizer.next_token();
@@ -372,7 +371,6 @@ impl Parser {
             }
         }
 
-        parameter_vector
     }
 
     fn parse_func_body(&mut self) {
