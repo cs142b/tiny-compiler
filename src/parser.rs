@@ -334,7 +334,13 @@ impl Parser {
     }
 
     fn parse_func_decl(&mut self) {
-        let is_void_condition = self.tokenizer.peek_token() == Token::Void;
+        let is_void_condition = match self.tokenizer.peek_token() {
+            Token::Void => { 
+                self.tokenizer.next_token(); 
+                true
+            }, 
+            _ => false,
+        };
 
         self.match_token(Token::Function);
         let function_name = match self.tokenizer.next_token() {
