@@ -12,7 +12,6 @@ use petgraph::graph::NodeIndex;
 pub struct Parser {
     tokenizer: Tokenizer,
     pub internal_program: Program,
-    // internal_dtree: DominatorTree, 
     line_number: isize,
 }
 
@@ -58,7 +57,7 @@ impl Parser {
         }
 
         // funcDecl can be done later, ^^ varDecl and funcDecl can be turned into a match later
-
+        // main needs to be added
         self.match_token(Token::OpenBrace);
         self.parse_stat_sequence();
         self.match_token(Token::CloseBrace);
