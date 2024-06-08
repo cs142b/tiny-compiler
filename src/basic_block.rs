@@ -4,10 +4,9 @@ use crate::dominator_table::DominatorTable;
 use std::collections::HashMap;
 use std::fmt;
 
-
-/// in our implementation, all basic blocks have a type 
-/// conditional blocks should only store two pieces of information for bookkeeping which are the cmp and then the jmp instruction
-/// blocks that loop back to the conditional block will loop back to the block and not the instruction number in the IR
+// in our implementation, all basic blocks have a type 
+// conditional blocks should only store two pieces of information for bookkeeping which are the cmp and then the jmp instruction
+// blocks that loop back to the conditional block will loop back to the block and not the instruction number in the IR
 #[derive(Clone, Copy, Default, PartialEq)]
 pub enum BasicBlockType {
     #[default]

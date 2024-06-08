@@ -1,8 +1,8 @@
 use crate::{basic_block::{BasicBlock, BasicBlockType, VariableType}, instruction::Operation};
-use std::{collections::HashMap, env::var};
+use std::collections::HashMap;
 use petgraph::{
     graph::{DiGraph, NodeIndex},
-    Direction::{Incoming, Outgoing},
+    Direction::Incoming,
 };
 
 use crate::dot_viz::generate_dot_viz;
@@ -11,6 +11,7 @@ use crate::dot_viz::generate_dot_viz;
 pub struct Function {
     pub name: String,
     pub parameters: Vec<String>,
+    pub is_void: bool,
 
     pub bb_graph: DiGraph<BasicBlock, BasicBlockType>,
     pub curr_node: NodeIndex<u32>,
@@ -28,6 +29,7 @@ impl Function {
         Self {
             name,
             parameters, 
+            is_void: false,
 
             bb_graph: bb_g,
             curr_node: entry_node,

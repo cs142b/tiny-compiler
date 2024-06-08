@@ -7,14 +7,14 @@ pub struct ConstantBlock {
 }
 
 impl ConstantBlock {
-    /// Creates and returns a new constant block
+    // Creates and returns a new constant block
     pub fn new() -> Self {
         Self {
             constant_table: HashMap::<isize, Instruction>::new(),
         }
     }
 
-    /// Adds a constant into the table
+    // Adds a constant into the table
     pub fn add_constant(&mut self, constant: isize) {
         let operation = Operation::Const(constant);
         let line_number = constant * -1; // (self.constant_table.len() as isize) * -1 - 1; // len() returns usize
@@ -23,7 +23,7 @@ impl ConstantBlock {
         self.constant_table.insert(constant, instruction);
     }
 
-    /// Gets a constant from the table and returns the line number
+    // Gets a constant from the table and returns the line number
     pub fn get_constant(&mut self, constant: isize) -> isize {
         match self.constant_table.get(&constant) {
             Some(instruction) => instruction.get_line_number(),

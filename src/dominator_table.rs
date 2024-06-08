@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use crate::basic_block::{BasicBlock, BasicBlockType, VariableType};
-use crate::instruction::{Instruction, Operation};
+use crate::instruction::Operation;
 use petgraph::graph::NodeIndex;
 
 #[derive(Clone, Debug, Default)]

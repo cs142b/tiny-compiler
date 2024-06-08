@@ -1,5 +1,4 @@
-// use crate::dominator_tree::DominatorTree; 
-use crate::dot_viz::generate_dot_viz;
+// use crate::dot_viz::generate_dot_viz;
 use crate::basic_block::VariableType;
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{
@@ -8,9 +7,7 @@ use crate::{
     program::Program,
 };
 
-use bit_matrix::block;
 use petgraph::graph::NodeIndex;
-use petgraph::dot::{Dot, Config};
 
 pub struct Parser {
     tokenizer: Tokenizer,
