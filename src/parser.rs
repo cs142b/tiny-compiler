@@ -335,9 +335,7 @@ impl Parser {
     }
 
     fn parse_func_decl(&mut self) {
-        if self.tokenizer.peek_token() == Token::Void {
-            // define function as void, else not
-        }
+        let is_void_condition = self.tokenizer.peek_token() == Token::Void;
 
         self.match_token(Token::Function);
         let function_name = match self.tokenizer.next_token() {
@@ -345,19 +343,26 @@ impl Parser {
             _ => panic!("Expected an identifier for a function declaration"),
         };
 
-        self.parse_formal_param();
+        let mut parameter_vector = self.parse_formal_param();
         self.match_token(Token::Semicolon);
         self.parse_func_body();
         self.match_token(Token::Semicolon);
+        
+        // self.internal_program.add_function(function_name, parameter_vector, is_void_condition);
+        // this logic is flawed, program should change to a new function and let the parser update
+        // on its own rather than creating it here
+        // fix later cuz im lazy
     }
 
-    fn parse_formal_param(&mut self) {
+    fn parse_formal_param(&mut self) -> Vec<String> {
         self.match_token(Token::OpenParen);
+        let mut parameter_vector = Vec::<String>::new();
         loop {
             match self.tokenizer.peek_token() {
                 Token::Identifier(parameter_name) => {
                     self.tokenizer.next_token();
-                    // create parameter variable
+                    // add to vec of strings
+                    parameter_vector.push(parameter_name.clone());
                 },
                 Token::Comma => { 
                     self.tokenizer.next_token();
@@ -367,6 +372,7 @@ impl Parser {
             }
         }
 
+        parameter_vector
     }
 
     fn parse_func_body(&mut self) {

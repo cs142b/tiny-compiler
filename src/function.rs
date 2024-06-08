@@ -21,7 +21,7 @@ pub struct Function {
 impl Function {
     // creates a graph and automatically adds in an entry block
     // returns itself
-    pub fn new(name: String, parameters: Vec<String>) -> Self {
+    pub fn new(name: String, parameters: Vec<String>, is_void: bool) -> Self {
         let mut bb_g = DiGraph::<BasicBlock, BasicBlockType>::new();
         let bb = BasicBlock::new(BasicBlockType::Entry);
         let entry_node = bb_g.add_node(bb);
@@ -29,7 +29,7 @@ impl Function {
         Self {
             name,
             parameters, 
-            is_void: false,
+            is_void,
 
             bb_graph: bb_g,
             curr_node: entry_node,
