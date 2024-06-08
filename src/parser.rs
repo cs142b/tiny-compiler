@@ -337,6 +337,51 @@ impl Parser {
         }
     }
 
+    fn parse_func_decl(&mut self) {
+        if self.tokenizer.peek_token() == Token::Void {
+            // define function as void, else not
+        }
+
+        self.match_token(Token::Function);
+        let function_name = match self.tokenizer.next_token() {
+            Token::Identifier(identifier) => identifier,
+            _ => panic!("Expected an identifier for a function declaration"),
+        };
+
+        self.parse_formal_param();
+        self.match_token(Token::Semicolon);
+        self.parse_func_body();
+        self.match_token(Token::Semicolon);
+    }
+
+    fn parse_formal_param(&mut self) {
+        self.match_token(Token::OpenParen);
+        loop {
+            match self.tokenizer.peek_token() {
+                Token::Identifier(parameter_name) => {
+                    self.tokenizer.next_token();
+                    // create parameter variable
+                },
+                Token::Comma => { 
+                    self.tokenizer.next_token();
+                    continue; 
+                },
+                _ => { break; },
+            }
+        }
+
+    }
+
+    fn parse_func_body(&mut self) {
+        if self.tokenizer.peek_token() == Token::Variable {
+            self.parse_var_decl();
+        }
+
+        self.match_token(Token::OpenBrace);
+        self.parse_stat_sequence();
+        self.match_token(Token::CloseParen);
+    }
+
     fn match_token(&mut self, token_to_match: Token) {
         // advances regardless of token, should always match, else syntax error
         let token = self.tokenizer.next_token();
