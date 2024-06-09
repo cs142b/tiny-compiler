@@ -63,6 +63,8 @@ fn cat_instructions(block: &BasicBlock) -> String {
 }
 
 fn generate_edges(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicBlockType>) {
+    output_graph.push_str(format!("\tCT:s -> bb0:n;\n").as_str());
+
     for edge in graph.raw_edges() {
         output_graph.push_str(format!("\tbb{}:s -> bb{}:n [label=\"   {:?}\"];\n", edge.source().index(), edge.target().index(), edge.weight).as_str());
     }
