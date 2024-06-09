@@ -5,29 +5,36 @@ use crate::{
     instruction::{Operation, Instruction},
 };
 
+use std::collections::HashMap;
 use petgraph::graph::NodeIndex;
 
 #[derive(Debug)]
 pub struct Program {
-    pub functions: Vec<Function>,
-    pub current_function: usize,
+    // pub functions: Vec<Function>,
+    pub functions: HashMap<String, Function>,
+    // pub current_function: usize,
+    pub current_function: String,
     pub constant_block: ConstantBlock,
 }
 
 impl Program {
     pub fn new() -> Self {
+        let main_function = Function::new("main".to_string(), true);
+        let mut functions = HashMap::new();
+        functions.insert("main".to_string(), main_function);
         Self {
-            // as for now, program will assume there will only be 1 MAIN function before we do part 3
-            functions: Vec::new(),
-            current_function: 0,
+            functions,
+            // current_function: 0,
+            current_function: "main".to_string(),
             constant_block: ConstantBlock::new(),
         }
     }
 
-    pub fn add_function(&mut self, name: String, is_void: bool) -> usize {
-        let new_fn = Function::new(name, is_void);
-        self.functions.push(new_fn);
-        self.functions.len() - 1
+    pub fn add_function(&mut self, name: &str, is_void: bool) {
+        let new_fn = Function::new(name.to_string(), is_void);
+        self.functions.insert(name.to_string(), new_fn);
+        self.current_function = name.to_string();
+        // self.functions.len() - 1
     }
     
     pub fn insert_new_parameter_to_curr_function(&mut self, parameter_name: String) {
@@ -39,8 +46,12 @@ impl Program {
         self.functions.len()
     }
 
-    pub fn get_curr_fn_index(&self) -> usize {
-        self.current_function // assume its main, cuz of part 3
+    pub fn get_curr_fn_name(&self) -> String {
+        self.current_function.clone()
+    }
+    
+    pub fn change_curr_fn_to(&mut self, new_fn: &str) {
+        self.current_function = new_fn.to_string();
     }
 
     pub fn get_curr_block_index(&self) -> usize {
@@ -48,11 +59,19 @@ impl Program {
     }
 
     pub fn get_curr_fn(&self) -> &Function {
-        &self.functions[self.current_function]
+        &self.functions.get(&self.current_function).unwrap()
     }
 
     pub fn get_curr_fn_mut(&mut self) -> &mut Function {
-        &mut self.functions[self.current_function]
+        self.functions.get_mut(&self.current_function).unwrap()
+    }
+    
+    pub fn get_fn(&self, fn_name: &str) -> &Function {
+        &self.functions.get(fn_name).unwrap()
+    }
+    
+    pub fn get_fn_mut(&mut self, fn_name: &str) -> &mut Function {
+        self.functions.get_mut(fn_name).unwrap()
     }
     
     pub fn get_curr_block(&mut self) -> &BasicBlock {
@@ -69,6 +88,10 @@ impl Program {
 
     pub fn add_branch_block(&mut self, node_index: NodeIndex) -> NodeIndex {
         self.get_curr_fn_mut().add_node_to_index(node_index, BasicBlockType::Branch) 
+    }    
+    
+    pub fn add_exit_block(&mut self) -> NodeIndex {
+        self.get_curr_fn_mut().add_node_to_curr(BasicBlockType::Exit)
     }
 
     pub fn add_join_block_from_two(&mut self, left_parent: NodeIndex, right_parent: NodeIndex) -> (NodeIndex, Vec<(Operation, String)>){
@@ -153,5 +176,9 @@ impl Program {
 
     pub fn get_constant(&mut self, constant: isize) -> isize {
         self.constant_block.get_constant(constant)
+    }
+
+    pub fn get_constant_table(&self) -> &HashMap<isize, Instruction> {
+        self.constant_block.get_constant_table()
     }
 }

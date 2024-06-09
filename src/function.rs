@@ -37,6 +37,10 @@ impl Function {
         }
     }
 
+    pub fn get_graph(&self) -> &DiGraph<BasicBlock, BasicBlockType> {
+        &self.bb_graph
+    }
+
     pub fn insert_new_parameter(&mut self, parameter_name: String) {
         self.parameters.push(parameter_name);
     }

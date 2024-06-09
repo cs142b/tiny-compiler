@@ -1,4 +1,3 @@
-use crate::dot_viz::generate_dot_viz;
 use crate::basic_block::VariableType;
 use crate::tokenizer::{Token, Tokenizer};
 use crate::{
@@ -18,19 +17,11 @@ pub struct Parser {
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
-        program.add_function("main".to_string(), true);
+        // program.add_function("main".to_string(), true);
 
         Self {
             tokenizer: Tokenizer::new(input),
             internal_program: program,
-            // WHICH FUCKER WROTE internal_program: Program::new() HERE
-            // INSTEAD OF program
-            //
-            // IT TOOK ME 20 MINUTES TO FIGURE OUT WHY TF PARSER WAS BREAKING WHEN I KNEW MY SHIT
-            // WAS GOOD
-            //
-            //
-            // internal_dtree: DominatorTree::new(), 
             line_number: 0,
         }
     }
@@ -56,12 +47,20 @@ impl Parser {
             self.parse_var_decl();
         }
 
-        // funcDecl can be done later, ^^ varDecl and funcDecl can be turned into a match later
-        // main needs to be added
+        // funcDecl
+        loop {
+            match self.tokenizer.peek_token() {
+                Token::Void | Token::Function => self.parse_func_decl(),
+                _ => break,
+            }
+        }
+
         self.match_token(Token::OpenBrace);
         self.parse_stat_sequence();
         self.match_token(Token::CloseBrace);
         self.match_token(Token::EOF);
+        self.internal_program.add_exit_block();
+        self.emit_instruction(Operation::End);
     }
 
 
@@ -138,7 +137,7 @@ impl Parser {
                 self.match_token(Token::CloseParen);
                 result
             },
-            _ => panic!("Syntax error in factor"),
+            _ => panic!("Syntax error in factor: {:?}", token),
         }
     }
 
@@ -348,15 +347,15 @@ impl Parser {
             _ => panic!("Expected an identifier for a function declaration"),
         };
         
-        self.internal_program.add_function(function_name, is_void_condition);
+        self.internal_program.add_function(&function_name, is_void_condition);
 
         self.parse_formal_param();
         self.match_token(Token::Semicolon);
         self.parse_func_body();
         self.match_token(Token::Semicolon);
-
-        // function needs to go back to "main" for testing, since the current function is 
-        // now this new function rather than main
+        
+        // go back to main for parsing
+        self.internal_program.change_curr_fn_to("main");
     }
 
     fn parse_formal_param(&mut self) {
@@ -464,6 +463,29 @@ impl Parser {
 #[cfg(test)]
 mod parser_tests{
     use super::*;
+    use crate::dot_viz::generate_dot_viz;
+
+    #[test]
+    fn test_functions() {
+        let input = 
+        "main var a, b; {
+            let a <- 1 + 53;
+            if a < 2 then
+                let a <- 1;
+            fi;
+        }.
+        ".to_string();
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+    }
+
 
     #[test]
     fn test_parse_operator() {
@@ -489,7 +511,7 @@ mod parser_tests{
         let instructions = &parser.internal_program.get_curr_block().instructions;
 
         let graph = &parser.internal_program.get_curr_fn().bb_graph;
-        println!("{}", generate_dot_viz(&graph));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
 
     }
     
@@ -504,7 +526,7 @@ mod parser_tests{
         let instructions = &parser.internal_program.get_curr_block().instructions;
 
         let graph = &parser.internal_program.get_curr_fn().bb_graph;
-        println!("{}", generate_dot_viz(&graph));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
 
     }
 
@@ -549,6 +571,7 @@ mod parser_tests{
         let block = &parser.internal_program.get_curr_block();
         let x_line_number = block.get_variable(&"x".to_string());
         assert_eq!(x_line_number, VariableType::Value(-5)); // The line number for the constant 5
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
 
     #[test]
@@ -563,9 +586,9 @@ mod parser_tests{
         let number_of_blocks = graph.node_count();
 
         // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
-        println!("{}", generate_dot_viz(&graph));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
 
-        assert_eq!(number_of_blocks, 5); // should be 5 bc entry + conditional + fallthru + branch
+        assert_eq!(number_of_blocks, 6); // should be 5 bc entry + conditional + fallthru + branch
         // + join 
 
     }
@@ -606,7 +629,7 @@ mod parser_tests{
         let number_of_blocks = graph.node_count();
 
         // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
-        println!("{}", generate_dot_viz(&graph));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
 
         // this does not work
 
@@ -616,7 +639,7 @@ mod parser_tests{
 
     #[test]
     fn test_parse_while_statement() {
-        let input = "main while 10 >= 6 do while 1 < 2 do let x <- 2; od; od".to_string();
+        let input = "main var x; { while 10 >= 6 do while 1 < 2 do let x <- 2; od; od }.".to_string();
         let mut parser = Parser::new(input);
 
         parser.parse_computation();
@@ -625,6 +648,6 @@ mod parser_tests{
         let graph = &parser.internal_program.get_curr_fn().bb_graph;
 
         // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
-        println!("{}", generate_dot_viz(&graph));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
 }
