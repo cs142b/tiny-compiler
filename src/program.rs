@@ -31,7 +31,7 @@ impl Program {
     }
     
     pub fn insert_new_parameter_to_curr_function(&mut self, parameter_name: String) {
-        self.get_curr_fn().insert_new_parameter(parameter_name);
+        self.get_curr_fn_mut().insert_new_parameter(parameter_name);
     }
 
 

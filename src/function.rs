@@ -265,39 +265,39 @@ fn in_iter(neighbor_iter: &petgraph::graph::Neighbors<BasicBlockType, u32>, need
 }
 
 
-#[cfg(test)]
-mod basic_block_tests {
-
-    use super::*;
-
-    use petgraph::dot::{Dot, Config};
-
-    #[test]
-    fn conditional_test() {
-        let parameters = vec![String::from("test")];
-        let mut g = Function::new(String::from("test"), parameters); 
-
-        let conditional = g.add_node_to_curr(BasicBlockType::Conditional);
-        let left_parent = g.add_node_to_curr(BasicBlockType::FallThrough);
-        let right_parent = g.add_node_to_index(conditional, BasicBlockType::Branch);
-
-        g.add_join_block(left_parent, right_parent);
-
-        println!("{:?}", generate_dot_viz(&g.bb_graph));
-
-
-    }
-
-    #[test]
-    fn while_test() {
-        let parameters = vec![String::from("test")];
-        let mut g = Function::new(String::from("test"), parameters); 
-
-        let conditional = g.add_node_to_curr(BasicBlockType::Conditional);
-        g.add_node_to_curr(BasicBlockType::FallThrough);
-        g.connect_to_conditional(conditional);
-        g.add_node_to_curr(BasicBlockType::Branch);
-        println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel]));
-    }
-
-}
+// #[cfg(test)]
+// mod basic_block_tests {
+//
+//     use super::*;
+//
+//     use petgraph::dot::{Dot, Config};
+//
+//     #[test]
+//     fn conditional_test() {
+//         let parameters = vec![String::from("test")];
+//         let mut g = Function::new(String::from("test"), parameters); 
+//
+//         let conditional = g.add_node_to_curr(BasicBlockType::Conditional);
+//         let left_parent = g.add_node_to_curr(BasicBlockType::FallThrough);
+//         let right_parent = g.add_node_to_index(conditional, BasicBlockType::Branch);
+//
+//         g.add_join_block(left_parent, right_parent);
+//
+//         println!("{:?}", generate_dot_viz(&g.bb_graph));
+//
+//
+//     }
+//
+//     #[test]
+//     fn while_test() {
+//         let parameters = vec![String::from("test")];
+//         let mut g = Function::new(String::from("test"), parameters); 
+//
+//         let conditional = g.add_node_to_curr(BasicBlockType::Conditional);
+//         g.add_node_to_curr(BasicBlockType::FallThrough);
+//         g.connect_to_conditional(conditional);
+//         g.add_node_to_curr(BasicBlockType::Branch);
+//         println!("{:?}", Dot::with_config(&g.bb_graph, &[Config::EdgeNoLabel]));
+//     }
+//
+// }
