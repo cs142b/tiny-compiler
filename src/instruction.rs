@@ -19,9 +19,9 @@ pub enum Operation {
     Bgt(isize, isize),
     Jsr(isize),
     Ret(isize),
-    GetPar1,
-    GetPar2,
-    GetPar3,
+    GetPar1(isize),
+    GetPar2(isize),
+    GetPar3(isize),
     SetPar1(isize),
     SetPar2(isize),
     SetPar3(isize),
@@ -29,6 +29,7 @@ pub enum Operation {
     Write(isize),
     WriteNL,
     Empty,
+    End,
 }
 
 impl fmt::Debug for Operation {
@@ -48,12 +49,10 @@ impl fmt::Debug for Operation {
             Operation::Blt(value1, value2) => write!(f, "blt ({:?}) (BB{})", value1, value2),
             Operation::Bge(value1, value2) => write!(f, "bge ({:?}) (BB{})", value1, value2),
             Operation::Bgt(value1, value2) => write!(f, "bgt ({:?}) (BB{})", value1, value2),
-            
-            // will fix debug formatting here later 
             Operation::Jsr(value1) => write!(f, "jsr ({})", value1),
-            Operation::GetPar1 => write!(f, "getPar1"),
-            Operation::GetPar2 => write!(f, "gePar2"),
-            Operation::GetPar3 => write!(f, "getPar3"),
+            Operation::GetPar1(value1) => write!(f, "getPar1 ({})", value1),
+            Operation::GetPar2(value1) => write!(f, "getPar2 ({})", value1),
+            Operation::GetPar3(value1) => write!(f, "getPar3 ({})", value1),
             Operation::SetPar1(value1) => write!(f, "setPar1 ({})", value1),
             Operation::SetPar2(value1) => write!(f, "setPar2 ({})", value1),
             Operation::SetPar3(value1) => write!(f, "setPar3 ({})", value1),
@@ -61,6 +60,7 @@ impl fmt::Debug for Operation {
             Operation::Write(value1) => write!(f, "write ({})", value1),
             Operation::WriteNL => write!(f, "writeNL"),
             Operation::Empty => write!(f, "<empty>"),
+            Operation::End => write!(f, "End"),
             _ => unreachable!("No other operations exists."),
         }
     }
