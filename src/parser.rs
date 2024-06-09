@@ -553,10 +553,10 @@ mod parser_tests{
 
     #[test]
     fn test_parse_if_statement() {
-        let input = "if 1 < 2 then let x <- 2; else let x <- 1; fi".to_string();
+        let input = "main var x; { if 1 < 2 then let x <- 2; else let x <- 1; fi; }.".to_string();
         let mut parser = Parser::new(input);
 
-        parser.parse_if_statement();
+        parser.parse_computation();
 
         // Verify that the if statement creates the correct basic blocks and instructions
         let graph = &parser.internal_program.get_curr_fn().bb_graph;
@@ -575,6 +575,7 @@ mod parser_tests{
     fn test_parse_nested_if_statement() {
         let input = 
         "
+        main var x, y, z;  {
         if 1 < 2 then 
             let y <- 69 + 420;
             if 1 < 100 then 
@@ -593,12 +594,12 @@ mod parser_tests{
                 fi
             fi
         fi
-
+        }.
         "
         .to_string();
         let mut parser = Parser::new(input);
 
-        parser.parse_if_statement();
+        parser.parse_computation();
 
         // Verify that the if statement creates the correct basic blocks and instructions
         let graph = &parser.internal_program.get_curr_fn().bb_graph;
@@ -615,10 +616,10 @@ mod parser_tests{
 
     #[test]
     fn test_parse_while_statement() {
-        let input = "while 10 >= 6 do while 1 < 2 do let x <- 2; od od".to_string();
+        let input = "main while 10 >= 6 do while 1 < 2 do let x <- 2; od; od".to_string();
         let mut parser = Parser::new(input);
 
-        parser.parse_while_statement();
+        parser.parse_computation();
 
         // Verify that the if statement creates the correct basic blocks and instructions
         let graph = &parser.internal_program.get_curr_fn().bb_graph;
