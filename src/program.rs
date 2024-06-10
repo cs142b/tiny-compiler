@@ -7,6 +7,7 @@ use crate::{
 
 use std::collections::HashMap;
 use petgraph::graph::NodeIndex;
+use std::io;
 
 #[derive(Debug)]
 pub struct Program {
@@ -42,6 +43,12 @@ impl Program {
     }
 
     pub fn verify_function(&self, name: &str) {
+        // ignore predefined functions
+        match name {
+            "InputNum" | "OutputNum" | "OutputNewLine" => return (),
+            _ => (),
+        }
+
         if !self.functions.contains_key(&name.to_string()) {
             panic!("{} is not declared as a function", name);
         }
@@ -194,5 +201,29 @@ impl Program {
 
     pub fn get_constant_table(&self) -> &HashMap<isize, Instruction> {
         self.constant_block.get_constant_table()
+    }
+
+    pub fn input_num(&self) -> isize {
+        let mut input = String::new();
+        println!("Enter an expression: ");
+        
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read the line.");
+
+        let input = input.trim();
+
+        match input.parse::<isize>() {
+            Ok(number) => number,
+            Err(_) => panic!("You printed an invalid positive integer"),
+        }
+    }
+
+    pub fn output_num(&self, num: isize) {
+        println!("OutputNum: {}", num);
+    }
+    
+    pub fn output_new_line(&self) {
+        println!("\n");
     }
 }
