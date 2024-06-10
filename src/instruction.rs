@@ -1,7 +1,7 @@
 use std::fmt;
 
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash, Copy)]
 pub enum Operation {
     Const(isize),
     Add(isize, isize),
@@ -19,9 +19,9 @@ pub enum Operation {
     Bgt(isize, isize),
     Jsr(isize),
     Ret(isize),
-    GetPar1,
-    GetPar2,
-    GetPar3,
+    GetPar1(isize),
+    GetPar2(isize),
+    GetPar3(isize),
     SetPar1(isize),
     SetPar2(isize),
     SetPar3(isize),
@@ -29,29 +29,30 @@ pub enum Operation {
     Write(isize),
     WriteNL,
     Empty,
+    End,
 }
 
 impl fmt::Debug for Operation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Operation::Const(value1) => write!(f, "const #{}", value1),
-            Operation::Add(value1, value2) => write!(f, "add ({}) ({})", value1, value2),
-            Operation::Sub(value1, value2) => write!(f, "sub ({}) ({})", value1, value2),
-            Operation::Mul(value1, value2) => write!(f, "mul ({}) ({})", value1, value2),
-            Operation::Div(value1, value2) => write!(f, "div ({}) ({})", value1, value2),
-            Operation::Cmp(value1, value2) => write!(f, "cmp ({}) ({})", value1, value2),
-            Operation::Phi(value1, value2) => write!(f, "phi ({}) ({})", value1, value2),
+            Operation::Add(value1, value2) => write!(f, "add ({:?}) ({:?})", value1, value2),
+            Operation::Sub(value1, value2) => write!(f, "sub ({:?}) ({:?})", value1, value2),
+            Operation::Mul(value1, value2) => write!(f, "mul ({:?}) ({:?})", value1, value2),
+            Operation::Div(value1, value2) => write!(f, "div ({:?}) ({:?})", value1, value2),
+            Operation::Cmp(value1, value2) => write!(f, "cmp ({:?}) ({:?})", value1, value2),
+            Operation::Phi(value1, value2) => write!(f, "phi ({:?}) ({:?})", value1, value2),
             Operation::Bra(value1) => write!(f, "bra (BB{})", value1),
-            Operation::Bne(value1, value2) => write!(f, "bne ({}) (BB{})", value1, value2),
-            Operation::Beq(value1, value2) => write!(f, "beq ({}) (BB{})", value1, value2),
-            Operation::Ble(value1, value2) => write!(f, "ble ({}) (BB{})", value1, value2),
-            Operation::Blt(value1, value2) => write!(f, "blt ({}) (BB{})", value1, value2),
-            Operation::Bge(value1, value2) => write!(f, "bge ({}) (BB{})", value1, value2),
-            Operation::Bgt(value1, value2) => write!(f, "bgt ({}) (BB{})", value1, value2),
+            Operation::Bne(value1, value2) => write!(f, "bne ({:?}) (BB{})", value1, value2),
+            Operation::Beq(value1, value2) => write!(f, "beq ({:?}) (BB{})", value1, value2),
+            Operation::Ble(value1, value2) => write!(f, "ble ({:?}) (BB{})", value1, value2),
+            Operation::Blt(value1, value2) => write!(f, "blt ({:?}) (BB{})", value1, value2),
+            Operation::Bge(value1, value2) => write!(f, "bge ({:?}) (BB{})", value1, value2),
+            Operation::Bgt(value1, value2) => write!(f, "bgt ({:?}) (BB{})", value1, value2),
             Operation::Jsr(value1) => write!(f, "jsr ({})", value1),
-            Operation::GetPar1 => write!(f, "getPar1"),
-            Operation::GetPar2 => write!(f, "gePar2"),
-            Operation::GetPar3 => write!(f, "getPar3"),
+            Operation::GetPar1(value1) => write!(f, "getPar1 ({})", value1),
+            Operation::GetPar2(value1) => write!(f, "getPar2 ({})", value1),
+            Operation::GetPar3(value1) => write!(f, "getPar3 ({})", value1),
             Operation::SetPar1(value1) => write!(f, "setPar1 ({})", value1),
             Operation::SetPar2(value1) => write!(f, "setPar2 ({})", value1),
             Operation::SetPar3(value1) => write!(f, "setPar3 ({})", value1),
@@ -59,16 +60,17 @@ impl fmt::Debug for Operation {
             Operation::Write(value1) => write!(f, "write ({})", value1),
             Operation::WriteNL => write!(f, "writeNL"),
             Operation::Empty => write!(f, "<empty>"),
+            Operation::End => write!(f, "End"),
             _ => unreachable!("No other operations exists."),
         }
     }
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Instruction {
     line_number: isize,
-    operation: Operation,
+    pub operation: Operation,
 }
 
 
@@ -82,6 +84,10 @@ impl Instruction {
     // methods
     pub fn get_line_number(&self) -> isize {
         self.line_number
+    }
+
+    pub fn get_operation_ref(&self) -> &Operation {
+        &self.operation
     }
 
     // associated functions 
