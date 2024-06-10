@@ -159,6 +159,10 @@ impl BasicBlock {
         }
         panic!("Instruction with line number {} not found", line_number);
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.instructions.is_empty()
+    }
 }
 
 #[cfg(test)]

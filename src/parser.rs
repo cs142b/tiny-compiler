@@ -192,6 +192,10 @@ impl Parser {
 
     // Parse an if statement
     fn parse_if_statement(&mut self) {
+        if self.internal_program.get_curr_block().is_empty() {
+            self.emit_instruction(Operation::Empty);
+        }
+
         self.match_token(Token::If);
     
         // Start of conditional block
@@ -250,12 +254,26 @@ impl Parser {
                 }
             }
         }
+
+        let fallthru_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&fallthru_index);
+        if fallthru_block.unwrap().is_empty() {
+            self.emit_instruction_in_block(fallthru_index, Operation::Empty);
+        }
+
+        let branch_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&branch_index);
+        if branch_block.unwrap().is_empty() {
+            self.emit_instruction_in_block(branch_index, Operation::Empty);
+        }
     
         self.match_token(Token::Fi);
     }
 
     // Parse a while statement
     fn parse_while_statement(&mut self) {
+        if self.internal_program.get_curr_block().is_empty() {
+            self.emit_instruction(Operation::Empty);
+        }
+
         self.match_token(Token::While);
 
         // Start of conditional block
@@ -290,6 +308,16 @@ impl Parser {
             // Modify the branch instruction in the conditional block
             let conditional_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&conditional_block_index).unwrap();
             conditional_block.modify_instruction(branch_instruction_line, branch_operation);
+        }
+
+        let fallthru_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&fallthru_index);
+        if fallthru_block.unwrap().is_empty() {
+            self.emit_instruction_in_block(fallthru_index, Operation::Empty);
+        }
+
+        let follow_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&follow_index);
+        if follow_block.unwrap().is_empty() {
+            self.emit_instruction_in_block(follow_index, Operation::Empty);
         }
 
         // Finalize the loop with an "od" token
