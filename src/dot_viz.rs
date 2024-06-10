@@ -32,7 +32,7 @@ fn generate_constant_table(output_graph: &mut String, program: &Program) {
         instructions.pop();
     }
 
-    output_graph.push_str(format!("\tCT [shape=record, label=\"<b>CT | {}\"];\n\n", instructions).as_str());
+    output_graph.push_str(format!("\tCB [shape=record, label=\"<b>CB | {}\"];\n\n", instructions).as_str());
 }
 
 fn generate_blocks(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicBlockType>) {

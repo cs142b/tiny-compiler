@@ -1,0 +1,35 @@
+
+running 1 test
+"x" 1
+"y" 2
+"z" 3
+digraph add { 
+	CB [shape=record, label="<b>CB | {-100: const #100|-300: const #300|-2: const #2|-6: const #6|-3: const #3|-1: const #1}"];
+
+	bb0 [shape=record, label="<b>BB0 | {1: getPar1|2: getPar2|3: add (-100) (-300)}"];
+
+	CT:s -> bb0:n;
+
+
+}
+digraph main { 
+	CB [shape=record, label="<b>CB | {-100: const #100|-300: const #300|-2: const #2|-6: const #6|-3: const #3|-1: const #1}"];
+
+	bb0 [shape=record, label="<b>BB0 | {4: setPar1 (-1)|5: setPar2 (-2)|6: add (-6) (-3)}"];
+	bb1 [shape=record, label="<b>BB1 | {7: End}"];
+
+	CT:s -> bb0:n;
+	bb0:s -> bb1:n [label="   exit"];
+
+	bb0:b -> bb1:b [color=blue, style=dotted];
+
+}
+test parser::parser_tests::test_functions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -41,6 +41,20 @@ impl Program {
         self.get_curr_fn_mut().insert_new_parameter(parameter_name);
     }
 
+    pub fn verify_function(&self, name: &str) {
+        if !self.functions.contains_key(&name.to_string()) {
+            panic!("{} is not declared as a function", name);
+        }
+    }
+
+    pub fn get_number_of_parameters_of_curr_fn(&self) -> usize {
+        self.get_curr_fn().parameters.len()
+    }
+    
+    pub fn get_number_of_parameters_of(&self, name: &str) -> usize {
+        self.get_fn(name).parameters.len()
+    }
+
 
     pub fn get_number_of_functions(&self) -> usize {
         self.functions.len()

@@ -46,14 +46,18 @@ impl Parser {
         if self.tokenizer.peek_token() == Token::Variable {
             self.parse_var_decl();
         }
-
+        
         // funcDecl
         loop {
             match self.tokenizer.peek_token() {
                 Token::Void | Token::Function => self.parse_func_decl(),
                 _ => break,
             }
+
         }
+        
+        // go back to main for parsing
+        self.internal_program.change_curr_fn_to("main");
 
         self.match_token(Token::OpenBrace);
         self.parse_stat_sequence();
@@ -137,6 +141,15 @@ impl Parser {
                 self.match_token(Token::CloseParen);
                 result
             },
+            Token::FunctionCall => {
+                    let (function_name, void) = self.get_func_name_and_verify_and_check_for_void();
+                    if void == true {
+                        panic!("{} is a void function and cannot be used as an expression", function_name);
+                    }
+                self.parse_func_call();
+
+                0
+            }
             _ => panic!("Syntax error in factor: {:?}", token),
         }
     }
@@ -309,6 +322,14 @@ impl Parser {
                 Token::If => self.parse_if_statement(),
                 Token::While => self.parse_while_statement(),
                 Token::Return => self.parse_return_statement(),
+                Token::FunctionCall => { 
+                    self.tokenizer.next_token();
+                    let (function_name, void) = self.get_func_name_and_verify_and_check_for_void();
+                    if void == false {
+                        panic!("{} is a non-void function and cannot be used as a statement", function_name);
+                    }
+                    self.parse_func_call(); 
+                },
                 _ => break,
             }
             
@@ -329,6 +350,70 @@ impl Parser {
             self.emit_instruction(Operation::Ret(expr_result));
         } else {
             self.emit_instruction(Operation::Ret(0));
+        }
+    }
+
+    fn get_func_name_and_verify_and_check_for_void(&mut self) -> (String, bool) {
+        let function_name = match self.tokenizer.peek_token() {
+            Token::Identifier(identifier) => identifier,
+            _ => panic!("Expected an identifier for a function call"),
+        };
+
+        self.internal_program.verify_function(&function_name);
+        
+        let void = self.internal_program.get_fn(&function_name).is_void;
+        (function_name, void)
+    }
+
+    fn parse_func_call(&mut self) {
+        // already matches Token::FunctionCall in factor
+        let function_name = match self.tokenizer.next_token() {
+            Token::Identifier(identifier) => identifier,
+            _ => panic!("Expected an identifier for a function call"),
+        };
+
+        let num_of_parameters = self.internal_program.get_number_of_parameters_of(&function_name);
+
+        if num_of_parameters == 0 {
+            if self.tokenizer.peek_token() == Token::OpenParen {
+                self.match_token(Token::OpenParen);
+                self.match_token(Token::CloseParen);
+            }
+        } else {
+            let mut arguments = Vec::<isize>::new();
+            self.match_token(Token::OpenParen);
+            loop {
+
+                let argument = self.parse_expression();
+                arguments.push(argument);
+                
+                if arguments.len() > 3 {
+                    panic!("A function should not have more than 3 arguments");
+                }
+
+                match self.tokenizer.peek_token() {
+                    Token::Comma => { self.tokenizer.next_token(); },
+                    _ => break,
+                }
+            }
+
+            if arguments.len() != self.internal_program.get_number_of_parameters_of(&function_name) {
+                panic!("Number of parameters does not match arguments"); 
+            }
+            self.match_token(Token::CloseParen);
+
+            // emit setpar...?
+            if arguments.len() >= 1 {
+                self.emit_instruction(Operation::SetPar1(arguments[0]));
+                if arguments.len() >= 2 {
+                    self.emit_instruction(Operation::SetPar2(arguments[1]));
+                    if arguments.len() == 3 {
+                        self.emit_instruction(Operation::SetPar3(arguments[2]));
+                    }
+                }
+            }
+
+
         }
     }
 
@@ -354,8 +439,6 @@ impl Parser {
         self.parse_func_body();
         self.match_token(Token::Semicolon);
         
-        // go back to main for parsing
-        self.internal_program.change_curr_fn_to("main");
     }
 
     fn parse_formal_param(&mut self) {
@@ -365,7 +448,11 @@ impl Parser {
                 Token::Identifier(parameter_name) => {
                     self.tokenizer.next_token();
                     // add to vec of strings
-                    self.internal_program.insert_new_parameter_to_curr_function(parameter_name.clone()); 
+                    self.internal_program.insert_new_parameter_to_curr_function(parameter_name.clone());
+                    self.internal_program.declare_variable_to_curr_block(&parameter_name);
+                    if self.internal_program.get_number_of_parameters_of_curr_fn() > 3 {
+                        panic!("A function should not have more than 3 parameters");
+                    }
                 },
                 Token::Comma => { 
                     self.tokenizer.next_token();
@@ -374,6 +461,23 @@ impl Parser {
                 _ => { break; },
             }
         }
+        if self.internal_program.get_number_of_parameters_of_curr_fn() >= 1 {
+            let line_number = self.emit_instruction(Operation::GetPar1);
+            let parameter_name = &self.internal_program.get_curr_fn().parameters[0].clone();
+            self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+            if self.internal_program.get_number_of_parameters_of_curr_fn() >= 2 {
+                let line_number = self.emit_instruction(Operation::GetPar2);
+                let parameter_name = &self.internal_program.get_curr_fn().parameters[1].clone();
+                self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+                if self.internal_program.get_number_of_parameters_of_curr_fn() == 3 {
+                    let line_number = self.emit_instruction(Operation::GetPar3);
+                    let parameter_name = &self.internal_program.get_curr_fn().parameters[2].clone();
+                    self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+                }
+            }
+        }
+
+        self.match_token(Token::CloseParen);
 
     }
 
@@ -468,21 +572,29 @@ mod parser_tests{
     #[test]
     fn test_functions() {
         let input = 
-        "main var a, b; {
-            let a <- 1 + 53;
-            if a < 2 then
-                let a <- 1;
-            fi;
+        "main var a, b; 
+        void function add(x, y); var z; {
+            let z <- 100;
+            let z <- z + 300;
+        };
+
+        {
+            let a <- 1;
+            let b <- 2;
+            call add(a, b);
+            let a <- 6 + 3;
         }.
         ".to_string();
         let mut parser = Parser::new(input);
 
-        let line_number = parser.parse_computation();
+        parser.parse_computation();
 
-        // Verify that the add operation is correct
-        let instructions = &parser.internal_program.get_curr_block().instructions;
+        assert_eq!(parser.internal_program.functions.len(), 2);
+        for (key, value) in &parser.internal_program.get_fn("add").get_curr_bb().variable_table {
+            println!("{:?} {:?}", key, value);
+        }
 
-        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz("add", &parser.internal_program));
         println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
 
