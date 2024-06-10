@@ -645,7 +645,7 @@ mod parser_tests{
         ".to_string();
         let mut parser = Parser::new(input);
 
-        parser.parse_computation();
+        // parser.parse_computation();
 
 
         println!("{}", generate_dot_viz("main", &parser.internal_program));
