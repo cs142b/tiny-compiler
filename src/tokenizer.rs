@@ -1,5 +1,5 @@
 /// Token types representing different elements of a simple programming language.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Number(isize),
     Identifier(String),

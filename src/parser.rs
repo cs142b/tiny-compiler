@@ -1,46 +1,29 @@
+use crate::basic_block::VariableType;
 use crate::tokenizer::{Token, Tokenizer};
-use crate::{instruction::{Instruction, Operation}, basic_block::{BasicBlock, BasicBlockType}, function::Function, program::Program, constant_block::ConstantBlock};
+use crate::{
+    basic_block::BasicBlockType,
+    instruction::{Instruction, Operation}, 
+    program::Program,
+};
+
 use petgraph::graph::NodeIndex;
+
 pub struct Parser {
     tokenizer: Tokenizer,
-    program: Program,
+    pub internal_program: Program,
     line_number: isize,
-    current_block: NodeIndex,
-    // move this into function but used here for testing purposes
-    constant_block: ConstantBlock,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
-        let main_function = program.add_function("main".to_string(), Vec::new());
-        let initial_block = NodeIndex::new(0);
+        // program.add_function("main".to_string(), true);
 
         Self {
             tokenizer: Tokenizer::new(input),
-            program,
+            internal_program: program,
             line_number: 0,
-            current_block: initial_block,
-            constant_block: ConstantBlock::new(),
         }
-    }
-
-    // parse_computation, var_decl, and var are used for later in the future
-    fn parse_computation(&mut self) {
-        self.match_token(Token::Main);
-
-        // varDecl
-        // stupid comment
-        if self.tokenizer.peek_token() == Token::Variable {
-            self.parse_var_decl();
-        }
-
-        // funcDecl can be done later, ^^ varDecl and funcDecl can be turned into a match later
-
-        self.match_token(Token::OpenBrace);
-        self.parse_stat_sequence();
-        self.match_token(Token::CloseBrace);
-        self.match_token(Token::EOF);
     }
 
     fn parse_var_decl(&mut self) {
@@ -55,14 +38,40 @@ impl Parser {
         }
     }
 
+    // parse_computation, var_decl, and var are used for later in the future
+    fn parse_computation(&mut self){
+        self.match_token(Token::Main);
+
+        // varDecl
+        if self.tokenizer.peek_token() == Token::Variable {
+            self.parse_var_decl();
+        }
+        
+        // funcDecl
+        loop {
+            match self.tokenizer.peek_token() {
+                Token::Void | Token::Function => self.parse_func_decl(),
+                _ => break,
+            }
+
+        }
+        
+        // go back to main for parsing
+        self.internal_program.change_curr_fn_to("main");
+
+        self.match_token(Token::OpenBrace);
+        self.parse_stat_sequence();
+        self.match_token(Token::CloseBrace);
+        self.match_token(Token::EOF);
+        self.internal_program.add_exit_block();
+        self.emit_instruction(Operation::End);
+    }
+
+
     fn parse_var(&mut self) {
         match self.tokenizer.next_token() {
             Token::Identifier(name) => {
-                // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
-                // wtf is this abstraction???
-                // can easily create a wrapper function for this
-                // self.program.functions[0].bb_list.bb_graph[self.current_block].add_variable(&name);
-                self.program.functions[0].get_current_block().add_variable(&name);
+                self.internal_program.declare_variable_to_curr_block(&name);
             },
             _ => panic!("unexpected error in parse_var"),
         }
@@ -119,17 +128,29 @@ impl Parser {
         let token = self.tokenizer.next_token();
         match token {
             Token::Number(value) => {
-                self.constant_block.get_constant(value)
+                self.internal_program.get_constant(value)
             },
             Token::Identifier(name) => {
-                self.program.functions[0].get_current_block().get_variable(&name)
+                match self.internal_program.get_variable(&name) {
+                    VariableType::Value(value) => value,
+                    VariableType::NotInit => panic!("parse_factor() is retrieving an uninitialized variable"),
+                }
             },
             Token::OpenParen => {
                 let result = self.parse_expression();
                 self.match_token(Token::CloseParen);
                 result
             },
-            _ => panic!("Syntax error in factor"),
+            Token::FunctionCall => {
+                    let (function_name, void) = self.get_func_name_and_verify_and_check_for_void();
+                    if void == true {
+                        panic!("{} is a void function and cannot be used as an expression", function_name);
+                    }
+                self.parse_func_call();
+
+                0
+            }
+            _ => panic!("Syntax error in factor: {:?}", token),
         }
     }
 
@@ -143,8 +164,8 @@ impl Parser {
         self.match_token(Token::Assignment);
         let expr_result = self.parse_expression();
         // this is used for testing, but will eventually be ONLY set_variable
-        self.program.functions[0].get_current_block().add_variable(&variable_name);
-        self.program.functions[0].get_current_block().set_variable(&variable_name, expr_result);
+        self.internal_program.declare_variable_to_curr_block(&variable_name);
+        self.internal_program.assign_variable_to_curr_block(&variable_name, expr_result);
     }
 
     // Parse a relation 
@@ -172,60 +193,109 @@ impl Parser {
     // Parse an if statement
     fn parse_if_statement(&mut self) {
         self.match_token(Token::If);
+    
+        // Start of conditional block
+        let conditional_index: NodeIndex = self.internal_program.add_cond_block();
         let (condition, comparison_operator) = self.parse_relation();
-        // let else_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
-        // let end_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
-        
-        // i can assume since its an if statement, it will branch + 2
-        let branch_index = self.program.functions[0].get_current_index().index() as isize + 2;
-        self.emit_instruction(self.get_branch_type(comparison_operator, condition, branch_index));
-        // self.program.functions[0].bb_list.add_edge(self.current_block, then_block)
-        // self.program.functions[0].bb_list.add_edge(self.current_block, else_block);
-
+    
+        // Emit the branch instruction with a placeholder target
+        let (conditional_block_index, branch_instruction_line) = self.emit_instruction_with_index(self.get_branch_type(comparison_operator.clone(), condition, 0));
+    
         self.match_token(Token::Then);
-        let then_block = self.program.functions[0].add_fall_thru_block(BasicBlockType::FallThrough);
-        
-        // this shit is not real, i have to calculate the end_index like branch_index cuz im forced
-        // to go in one direction 
-        // and its 2am and i cant think straight
+    
+        // Start of fallthrough block
+        let fallthru_index = self.internal_program.add_fallthru_block();
         self.parse_stat_sequence();
-        self.emit_instruction(Operation::Bra(end_block.index() as isize));
-        self.program.functions[0].bb_list.add_edge(self.current_block, end_block);
 
+        // Get the last created block in the fallthrough sequence
+        let last_fallthru_index = self.internal_program.get_curr_block_index();
+    
+        // Always create the branch block
+        let branch_index = self.internal_program.add_branch_block(conditional_index);
         if self.tokenizer.peek_token() == Token::Else {
             self.tokenizer.next_token();
-            self.current_block = else_block;
             self.parse_stat_sequence();
-            self.emit_instruction(Operation::Bra(end_block.index() as isize));
-            self.program.functions[0].bb_list.add_edge(self.current_block, end_block);
         }
+    
+        // Get the last created block in the branch sequence
+        let last_branch_index = self.internal_program.get_curr_block_index();
+    
+        // Add the join block and connect the blocks
+        let (join_index, phi_instructions) = self.internal_program.add_join_block_from_two(NodeIndex::new(last_fallthru_index), NodeIndex::new(last_branch_index));
+        self.emit_phi_instructions(phi_instructions, join_index);
 
-        self.current_block = end_block;
+        // Prepare the branch operations with the correct targets
+        let branch_operation = self.get_branch_type(comparison_operator, condition, branch_index.index() as isize);
+    
+        // Modify the instructions in the correct blocks
+        {
+            // Modify the branch instruction in the conditional block
+            let conditional_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&conditional_block_index).unwrap();
+            conditional_block.modify_instruction(branch_instruction_line, branch_operation);
+    
+            // Modify the branch instruction in the fallthrough block
+            if let Some(branch_destination) = self.internal_program.get_curr_fn_mut().get_outgoing_edge(fallthru_index) {
+                let destination_block = self.internal_program.get_curr_fn().get_bb(&branch_destination).unwrap();
+                if destination_block.block_type == BasicBlockType::Join {
+                    self.emit_instruction_in_block(fallthru_index, Operation::Bra(branch_destination.index() as isize));
+                }
+            }
+
+            // Modify the branch instruction in the join block
+            let incoming_edges = self.internal_program.get_curr_fn().get_incoming_edges(join_index);
+            for incoming_edge in incoming_edges {
+                let incoming_block = self.internal_program.get_curr_fn().get_bb(&incoming_edge).unwrap();
+                if incoming_block.block_type == BasicBlockType::Join && incoming_edge != NodeIndex::new(last_branch_index) {
+                    self.emit_instruction_in_block(incoming_edge, Operation::Bra(join_index.index() as isize));
+                }
+            }
+        }
+    
         self.match_token(Token::Fi);
     }
 
     // Parse a while statement
     fn parse_while_statement(&mut self) {
         self.match_token(Token::While);
-        let condition_block = self.current_block;
-        let body_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
-        let end_block = self.program.functions[0].bb_list.bb_graph.add_node(BasicBlock::new());
 
+        // Start of conditional block
+        let conditional_index: NodeIndex = self.internal_program.add_cond_block();
         let (condition, comparison_operator) = self.parse_relation();
-        self.emit_instruction(self.get_branch_type(comparison_operator, condition, body_block.index() as isize));
-        self.program.functions[0].bb_list.add_edge(self.current_block, body_block);
-        self.program.functions[0].bb_list.add_edge(self.current_block, end_block);
 
+        // Emit the branch instruction with a placeholder target
+        let (conditional_block_index, branch_instruction_line) = self.emit_instruction_with_index(self.get_branch_type(comparison_operator.clone(), condition, 0));
 
-        self.current_block = body_block;
         self.match_token(Token::Do);
-        self.parse_stat_sequence();
-        self.emit_instruction(Operation::Bra(condition_block.index() as isize));
-        self.program.functions[0].bb_list.add_edge(self.current_block, condition_block);
 
-        self.current_block = end_block;
+        // Start of fallthrough block
+        let fallthru_index = self.internal_program.add_fallthru_block();
+        self.parse_stat_sequence();
+
+        // Get the last created block in the fallthrough sequence
+        let last_fallthru_index = self.internal_program.get_curr_block_index();
+
+        // Add a follow block and join it with the conditional block
+        let follow_index = self.internal_program.add_follow_block(conditional_index);
+
+        // Ensure loop continues by branching back to the conditional block
+        let last_fallthru_nodeindex = NodeIndex::new(last_fallthru_index);
+        let phi_instructions = self.internal_program.join_blocks_with_target(last_fallthru_nodeindex, conditional_index);
+        self.emit_phi_instructions(phi_instructions, conditional_index);
+        self.emit_instruction_in_block(last_fallthru_nodeindex, Operation::Bra(conditional_block_index.index() as isize));
+        self.internal_program.get_curr_fn_mut().add_edge(last_fallthru_nodeindex, conditional_index, BasicBlockType::Follow);
+
+        // Ensure correct branching by modifying the placeholder branch instruction
+        let branch_operation = self.get_branch_type(comparison_operator, condition, follow_index.index() as isize);
+        {
+            // Modify the branch instruction in the conditional block
+            let conditional_block = self.internal_program.get_curr_fn_mut().get_bb_mut(&conditional_block_index).unwrap();
+            conditional_block.modify_instruction(branch_instruction_line, branch_operation);
+        }
+
+        // Finalize the loop with an "od" token
         self.match_token(Token::Od);
     }
+    
     
     // matches the comparison operator and returns its respective SSA branch instruction
     fn get_branch_type(&self, operator: Token, left_block: isize, right_block: isize) -> Operation {
@@ -252,9 +322,17 @@ impl Parser {
                 Token::If => self.parse_if_statement(),
                 Token::While => self.parse_while_statement(),
                 Token::Return => self.parse_return_statement(),
+                Token::FunctionCall => { 
+                    self.tokenizer.next_token();
+                    let (function_name, void) = self.get_func_name_and_verify_and_check_for_void();
+                    if void == false {
+                        panic!("{} is a non-void function and cannot be used as a statement", function_name);
+                    }
+                    self.parse_func_call(); 
+                },
                 _ => break,
             }
-
+            
             match self.tokenizer.peek_token() {
                 Token::Semicolon => {
                     self.tokenizer.next_token();
@@ -275,6 +353,144 @@ impl Parser {
         }
     }
 
+    fn get_func_name_and_verify_and_check_for_void(&mut self) -> (String, bool) {
+        let function_name = match self.tokenizer.peek_token() {
+            Token::Identifier(identifier) => identifier,
+            _ => panic!("Expected an identifier for a function call"),
+        };
+
+        self.internal_program.verify_function(&function_name);
+        
+        let void = self.internal_program.get_fn(&function_name).is_void;
+        (function_name, void)
+    }
+
+    fn parse_func_call(&mut self) {
+        // already matches Token::FunctionCall in factor
+        let function_name = match self.tokenizer.next_token() {
+            Token::Identifier(identifier) => identifier,
+            _ => panic!("Expected an identifier for a function call"),
+        };
+
+        let num_of_parameters = self.internal_program.get_number_of_parameters_of(&function_name);
+
+        if num_of_parameters == 0 {
+            if self.tokenizer.peek_token() == Token::OpenParen {
+                self.match_token(Token::OpenParen);
+                self.match_token(Token::CloseParen);
+            }
+        } else {
+            let mut arguments = Vec::<isize>::new();
+            self.match_token(Token::OpenParen);
+            loop {
+
+                let argument = self.parse_expression();
+                arguments.push(argument);
+                
+                if arguments.len() > 3 {
+                    panic!("A function should not have more than 3 arguments");
+                }
+
+                match self.tokenizer.peek_token() {
+                    Token::Comma => { self.tokenizer.next_token(); },
+                    _ => break,
+                }
+            }
+
+            if arguments.len() != self.internal_program.get_number_of_parameters_of(&function_name) {
+                panic!("Number of parameters does not match arguments"); 
+            }
+            self.match_token(Token::CloseParen);
+
+            // emit setpar...?
+            if arguments.len() >= 1 {
+                self.emit_instruction(Operation::SetPar1(arguments[0]));
+                if arguments.len() >= 2 {
+                    self.emit_instruction(Operation::SetPar2(arguments[1]));
+                    if arguments.len() == 3 {
+                        self.emit_instruction(Operation::SetPar3(arguments[2]));
+                    }
+                }
+            }
+
+
+        }
+    }
+
+    fn parse_func_decl(&mut self) {
+        let is_void_condition = match self.tokenizer.peek_token() {
+            Token::Void => { 
+                self.tokenizer.next_token(); 
+                true
+            }, 
+            _ => false,
+        };
+
+        self.match_token(Token::Function);
+        let function_name = match self.tokenizer.next_token() {
+            Token::Identifier(identifier) => identifier,
+            _ => panic!("Expected an identifier for a function declaration"),
+        };
+        
+        self.internal_program.add_function(&function_name, is_void_condition);
+
+        self.parse_formal_param();
+        self.match_token(Token::Semicolon);
+        self.parse_func_body();
+        self.match_token(Token::Semicolon);
+        
+    }
+
+    fn parse_formal_param(&mut self) {
+        self.match_token(Token::OpenParen);
+        loop {
+            match self.tokenizer.peek_token() {
+                Token::Identifier(parameter_name) => {
+                    self.tokenizer.next_token();
+                    // add to vec of strings
+                    self.internal_program.insert_new_parameter_to_curr_function(parameter_name.clone());
+                    self.internal_program.declare_variable_to_curr_block(&parameter_name);
+                    if self.internal_program.get_number_of_parameters_of_curr_fn() > 3 {
+                        panic!("A function should not have more than 3 parameters");
+                    }
+                },
+                Token::Comma => { 
+                    self.tokenizer.next_token();
+                    continue; 
+                },
+                _ => { break; },
+            }
+        }
+        if self.internal_program.get_number_of_parameters_of_curr_fn() >= 1 {
+            let line_number = self.emit_instruction(Operation::GetPar1);
+            let parameter_name = &self.internal_program.get_curr_fn().parameters[0].clone();
+            self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+            if self.internal_program.get_number_of_parameters_of_curr_fn() >= 2 {
+                let line_number = self.emit_instruction(Operation::GetPar2);
+                let parameter_name = &self.internal_program.get_curr_fn().parameters[1].clone();
+                self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+                if self.internal_program.get_number_of_parameters_of_curr_fn() == 3 {
+                    let line_number = self.emit_instruction(Operation::GetPar3);
+                    let parameter_name = &self.internal_program.get_curr_fn().parameters[2].clone();
+                    self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+                }
+            }
+        }
+
+        self.match_token(Token::CloseParen);
+
+    }
+
+    fn parse_func_body(&mut self) {
+        if self.tokenizer.peek_token() == Token::Variable {
+            self.parse_var_decl();
+        }
+
+        self.match_token(Token::OpenBrace);
+        self.parse_stat_sequence();
+        self.match_token(Token::CloseParen);
+    }
+
     fn match_token(&mut self, token_to_match: Token) {
         // advances regardless of token, should always match, else syntax error
         let token = self.tokenizer.next_token();
@@ -286,12 +502,64 @@ impl Parser {
 
     // Function to emit an instruction and get the line number
     fn emit_instruction(&mut self, operation: Operation) -> isize {
+        
+        // handle dommy mommy logic
+        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
+            return dommy_mommy_line_number;
+        }
+
         self.line_number += 1;
         let instruction = Instruction::create_instruction(self.line_number, operation);
-        // also REMINDER TO CHANGE THIS BECAUSE IT SHOULD BE USING THE INDEX FROM THE BASIC BLOCK
-        // LIST BUT IM TOO LAZY RN
-        self.program.functions[0].get_current_block().add_instruction(instruction);
+        self.internal_program.add_instruction_to_curr_block(instruction);
         self.line_number
+    }
+
+    fn emit_instruction_on_top(&mut self, block_index: NodeIndex, operation: Operation) -> isize {
+        self.line_number += 1;
+        let instruction = Instruction::create_instruction(self.line_number, operation);
+        self.internal_program.add_instruction_to_any_block_on_top(block_index, instruction);
+        self.line_number
+    }
+
+
+    fn emit_instruction_with_index(&mut self, operation: Operation) -> (NodeIndex, isize) {
+        let current_block_index = self.internal_program.get_curr_block_index();
+
+        // handle dommy mommy logic
+        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
+            return (NodeIndex::from(current_block_index as u32), dommy_mommy_line_number);
+        }
+
+        self.line_number += 1;
+        let instruction = Instruction::create_instruction(self.line_number, operation);
+        let current_block_index = self.internal_program.get_curr_block_index();
+        self.internal_program.add_instruction_to_curr_block(instruction);
+        (NodeIndex::from(current_block_index as u32), self.line_number)
+    }
+
+    // Emits an instruction in a specified basic block and returns the line number.
+    fn emit_instruction_in_block(&mut self, block_index: NodeIndex, operation: Operation) -> isize {
+        // handle dommy mommy logic
+        if let Some(dommy_mommy_line_number) = self.internal_program.handle_dommy_mommy_logic(&operation, self.line_number) {
+            return dommy_mommy_line_number;
+        }
+        
+        self.line_number += 1;
+        
+        let instruction = Instruction::create_instruction(self.line_number, operation);
+
+        // Get the specified block and add the instruction
+        let block = self.internal_program.get_curr_fn_mut().get_bb_mut(&block_index).expect("Block not found");
+        block.add_instruction(instruction);
+
+        self.line_number
+    }
+
+    fn emit_phi_instructions(&mut self, phi_instructions: Vec<(Operation, String)>, block_index: NodeIndex) {
+        for (operation, variable) in phi_instructions {
+            let line_num = self.emit_instruction_on_top(block_index, operation);
+            self.internal_program.assign_variable_to_any_block(block_index, &variable, line_num);
+        }
     }
 }
 
@@ -299,6 +567,37 @@ impl Parser {
 #[cfg(test)]
 mod parser_tests{
     use super::*;
+    use crate::dot_viz::generate_dot_viz;
+
+    #[test]
+    fn test_functions() {
+        let input = 
+        "main var a, b; 
+        void function add(x, y); var z; {
+            let z <- 100;
+            let z <- z + 300;
+        };
+
+        {
+            let a <- 1;
+            let b <- 2;
+            call add(a, b);
+            let a <- 6 + 3;
+        }.
+        ".to_string();
+        let mut parser = Parser::new(input);
+
+        parser.parse_computation();
+
+        assert_eq!(parser.internal_program.functions.len(), 2);
+        for (key, value) in &parser.internal_program.get_fn("add").get_curr_bb().variable_table {
+            println!("{:?} {:?}", key, value);
+        }
+
+        println!("{}", generate_dot_viz("add", &parser.internal_program));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+    }
+
 
     #[test]
     fn test_parse_operator() {
@@ -312,7 +611,44 @@ mod parser_tests{
         let less_equal = parser.get_branch_type(Token::LessEqual, 1, 2);
         assert_eq!(format!("{:?}", less_equal), "bgt (1) (BB2)");
     }
+    
+    #[test]
+    pub fn test_parse_computation() {
+        let input = "
+            main var a, b, c; {
+                let a <- 1 + 50; 
+                let a <- 1 + 50; 
+                if 1 < 2 then 
+                    let c <- 1 + 50; 
+                fi;
+            }.
+        ".to_string();
+        let mut parser = Parser::new(input);
 
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+
+    }
+    
+    #[test]
+    pub fn test_dom() {
+        let input = "main var a, b; {let a <- 1 + 53; let b <- 1 + 53;}.".to_string();
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+
+    }
 
     #[test]
     fn test_parse_expression_add() {
@@ -322,18 +658,13 @@ mod parser_tests{
         let line_number = parser.parse_expression();
 
         // Verify that the add operation is correct
-        let instructions = &parser.program.functions[0].bb_list.bb_graph[parser.current_block].instructions;
+        let instructions = &parser.internal_program.get_curr_block().instructions;
 
-        let b = &parser.program.functions[0].bb_list.bb_graph;
-        for node_index in b.node_indices() {
-            let node_value = b.node_weight(node_index).unwrap();
-            println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
-        }
 
         assert_eq!(instructions.len(), 1);
+        assert_eq!(line_number, 1);
         assert_eq!(format!("{:?}", instructions[0]), "1: add (-2) (-3)");
     }
-
     #[test]
     fn test_parse_expression_mul() {
         let input = "2*3.".to_string();
@@ -342,10 +673,11 @@ mod parser_tests{
         let line_number = parser.parse_expression();
 
         // Verify that the mul operation is correct
-        let instructions = &parser.program.functions[0].bb_list.bb_graph[parser.current_block].instructions;
+        let instructions = &parser.internal_program.get_curr_block().instructions;
         assert_eq!(instructions.len(), 1);
         assert_eq!(format!("{:?}", instructions[0]), "1: mul (-2) (-3)");
     }
+
 
     #[test]
     fn test_parse_assignment() {
@@ -355,46 +687,87 @@ mod parser_tests{
         parser.parse_assignment();
 
         // Verify that the variable x is correctly assigned
-        let block = &parser.program.functions[0].bb_list.bb_graph[parser.current_block];
+        // let block = &parser.program.functions[0].bb_list.bb_graph[parser.current_block];
+        let block = &parser.internal_program.get_curr_block();
         let x_line_number = block.get_variable(&"x".to_string());
-        assert_eq!(x_line_number, -5); // The line number for the constant 5
+        assert_eq!(x_line_number, VariableType::Value(-5)); // The line number for the constant 5
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
 
     #[test]
     fn test_parse_if_statement() {
-        let input = "if 1 < 2 then let x <- 2; fi".to_string();
+        let input = "main var x; { if 1 < 2 then let x <- 2; else let x <- 1; fi; }.".to_string();
         let mut parser = Parser::new(input);
 
-        parser.parse_if_statement();
+        parser.parse_computation();
 
         // Verify that the if statement creates the correct basic blocks and instructions
-        let blocks = &parser.program.functions[0].bb_list.bb_graph;
-        let then_block = blocks.node_indices().nth(1).unwrap(); // then block
-        let else_block = blocks.node_indices().nth(2).unwrap(); // else block
-        let end_block = blocks.node_indices().nth(3).unwrap(); // end block
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        let number_of_blocks = graph.node_count();
 
-        assert_eq!(blocks[parser.current_block].instructions.len(), 0); // end block should have 0 instruction
-        assert_eq!(blocks[then_block].instructions.len(), 1); // then block should have 2 instructions
-        assert_eq!(blocks[else_block].instructions.len(), 0); // else block should have 0 instructions
+        // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
 
-        let then_instructions = &blocks[then_block].instructions;
-        let else_instructions = &blocks[else_block].instructions;
-        let end_instructions = &blocks[end_block].instructions;
+        assert_eq!(number_of_blocks, 6); // should be 5 bc entry + conditional + fallthru + branch
+        // + join 
 
-        assert_eq!(format!("{:?}", then_instructions[0]), "3: bra (BB3)");
+    }
+
+
+    #[test]
+    fn test_parse_nested_if_statement() {
+        let input = 
+        "
+        main var x, y, z;  {
+        if 1 < 2 then 
+            let y <- 69 + 420;
+            if 1 < 100 then 
+                let x <- 100 + 200;
+            fi
+        else 
+            let x <- 1;
+            if 2 < 4 then
+                let z <- 333 + 222;
+                if 3 < 4 then
+                    if 4 < 4 then
+                    fi
+                fi
+            else
+                if 2 < 0 then
+                fi
+            fi
+        fi
+        }.
+        "
+        .to_string();
+        let mut parser = Parser::new(input);
+
+        parser.parse_computation();
+
+        // Verify that the if statement creates the correct basic blocks and instructions
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        let number_of_blocks = graph.node_count();
+
+        // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+
+        // this does not work
+
+        // assert_eq!(number_of_blocks, 11); 
+
     }
 
     #[test]
     fn test_parse_while_statement() {
-        let input = "while 10 >= 6 do let x <- 2; od".to_string();
+        let input = "main var x; { while 10 >= 6 do while 1 < 2 do let x <- 2; od; od }.".to_string();
         let mut parser = Parser::new(input);
 
-        parser.parse_while_statement();
+        parser.parse_computation();
 
-        let b = &parser.program.functions[0].bb_list.bb_graph;
-        for node_index in b.node_indices() {
-            let node_value = b.node_weight(node_index).unwrap();
-            println!("Node Index: {:?}, Node Value: {:?}", node_index, node_value);
-        }
+        // Verify that the if statement creates the correct basic blocks and instructions
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+
+        // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
 }

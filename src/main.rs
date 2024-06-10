@@ -5,7 +5,9 @@ mod program;
 mod tokenizer;
 mod constant_block;
 mod parser;
-mod basic_block_list;
+mod dot_viz;
+mod dominator_table;
+
 
 // use crate::parser::Parser;
 
