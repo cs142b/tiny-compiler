@@ -502,7 +502,15 @@ mod parser_tests{
     
     #[test]
     pub fn test_parse_computation() {
-        let input = "main var a, b, c; {let a <- 1 + 50; let a <- 1 + 51; let a <- 1 + 52; let a <- 1 + 54; let b <- 1 + 53; let c <- 1; if 1 < 2 then let c <- 1 + 53; fi;}.".to_string();
+        let input = "
+            main var a, b, c; {
+                let a <- 1 + 50; 
+                let a <- 1 + 50; 
+                if 1 < 2 then 
+                    let c <- 1 + 50; 
+                fi;
+            }.
+        ".to_string();
         let mut parser = Parser::new(input);
 
         let line_number = parser.parse_computation();
