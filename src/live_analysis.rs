@@ -178,8 +178,10 @@ fn create_set_edge_additions(
     }
 }
 
+/// bfs through use counts and get the requisite use counts of each line number this will help for choosing the variables 
+/// to put into a register if some need to get pushed out
 fn get_use_counts (g: &mut BasicBlockGraph, live_sets: HashMap<NodeIndex, BlockInfo>) -> HashMap<LineNumber, UsgCnt> {
-    let res = HashMap::<LineNumber, UsgCnt>::new(); 
+    let mut res = HashMap::<LineNumber, UsgCnt>::new(); 
 
     let curr_level: usize = 0; 
 
@@ -191,6 +193,7 @@ fn get_use_counts (g: &mut BasicBlockGraph, live_sets: HashMap<NodeIndex, BlockI
     let start: &NodeIndex<u32> = &NodeIndex::new(g.node_count() - 1); 
 
     let mut frontier:VecDeque<NodeIndex> = VecDeque::new(); 
+
     frontier.push_back(*start);
 
     while frontier.is_empty() == false {
@@ -209,7 +212,15 @@ fn get_use_counts (g: &mut BasicBlockGraph, live_sets: HashMap<NodeIndex, BlockI
 
         let bb_mut = &mut g[curr_el];
         for instruction in &mut bb_mut.instructions.iter().rev() {
-            instruction.get_operation_ref()
+            let relevant_lines = instruction.get_operation_ref().get_lines();
+            for relevant_line in relevant_lines {
+                let curr = res.get_mut(&relevant_line);
+                if curr != None {
+                    *curr.unwrap() += 1; 
+                } else {
+                    res.insert(relevant_line, 1);
+                }
+            }
         }
 
 
