@@ -1,11 +1,18 @@
-use petgraph::graph::NodeIndex;
-use petgraph::Direction::Outgoing;
-use std::collections::{HashMap, HashSet};
-use petgraph::graph::DiGraph;
 use crate::basic_block::{BasicBlock, BasicBlockType};
 use crate::instruction::Operation;
+use petgraph::data::Build;
+use petgraph::graph::{Node, NodeIndex};
+use petgraph::graph::{DiGraph, UnGraph};
+use petgraph::Direction::{Incoming, Outgoing};
+use core::panic;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 type LiveSet = HashSet<isize>;
+type LineNumber = isize;
+type InterferenceGraph = UnGraph<LineNumber, ()>;
+type BasicBlockGraph = DiGraph<BasicBlock, BasicBlockType>;
+type LineNumSet = HashSet<LineNumber>;
+type UsgCnt = usize; 
 
 #[derive(Default)]
 pub struct BlockInfo {
@@ -15,7 +22,7 @@ pub struct BlockInfo {
     pub out_set: LiveSet,
 }
 
-pub fn compute_live_sets(g: &DiGraph<BasicBlock, BasicBlockType>) -> HashMap<NodeIndex, BlockInfo> {
+pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
     let mut block_info = HashMap::new();
 
     // Initialize use and def sets
@@ -55,6 +62,8 @@ pub fn compute_live_sets(g: &DiGraph<BasicBlock, BasicBlockType>) -> HashMap<Nod
         block_info.insert(node_index, info);
     }
 
+    
+
     let mut changed = true;
     while changed {
         changed = false;
@@ -87,4 +96,165 @@ pub fn compute_live_sets(g: &DiGraph<BasicBlock, BasicBlockType>) -> HashMap<Nod
     }
 
     block_info
+}
+
+pub fn get_interference_graph(g: &BasicBlockGraph) -> InterferenceGraph {
+    let block_info_map = compute_live_sets(g);
+
+    let all_var_set = collect_all_variables(&block_info_map);
+
+    let mut ig: InterferenceGraph = InterferenceGraph::new_undirected();
+
+    let line_to_nodeidx_map = alter_ig_from_all_vars(&mut ig, &all_var_set);
+
+    for binfo in block_info_map.values() {
+        // draw edges between variables in the outset and make sure that those variables are connected in the live set
+        create_set_edge_additions(&mut ig, &binfo.out_set, &binfo.out_set, &line_to_nodeidx_map); 
+
+        // draw edges between variables in the inset and make sure that those variables are connected in the live set
+        create_set_edge_additions(&mut ig, &binfo.in_set, &binfo.in_set, &line_to_nodeidx_map); 
+        
+        create_set_edge_additions(&mut ig, &binfo.def_set, &binfo.in_set, &line_to_nodeidx_map);
+    }
+
+    ig
+}
+
+fn collect_all_variables(map: &HashMap<NodeIndex, BlockInfo>) -> LineNumSet {
+    let mut inst_num_set = LineNumSet::new();
+    // let mut ig = InterferenceGraph::new_undirected();
+    for (ni, bi) in map {
+        for def_num in &bi.def_set {
+            inst_num_set.insert(*def_num);
+        }
+        for use_num in &bi.use_set {
+            inst_num_set.insert(*use_num);
+        }
+        for in_num in &bi.in_set {
+            inst_num_set.insert(*in_num);
+        }
+        for out_num in &bi.out_set {
+            inst_num_set.insert(*out_num);
+        }
+    }
+
+    inst_num_set
+}
+
+fn alter_ig_from_all_vars(
+    ig: &mut InterferenceGraph,
+    all_vars_set: &LineNumSet,
+) -> HashMap<LineNumber, NodeIndex> {
+    let mut line_num_to_node_idx = HashMap::<LineNumber, NodeIndex>::new();
+
+    for line_num in all_vars_set {
+        let node = ig.add_node(*line_num);
+        line_num_to_node_idx.insert(*line_num, node);
+    }
+
+    line_num_to_node_idx
+}
+
+fn create_set_edge_additions(
+    ig: &mut InterferenceGraph,
+    set1: &LineNumSet,
+    set2: &LineNumSet,
+    line_nodeidx_map: &HashMap<LineNumber, NodeIndex>,
+) {
+    for line_num1 in set1 {
+        for line_num2 in set2 {
+            let ni1 = line_nodeidx_map.get(line_num1);
+            let ni2 = line_nodeidx_map.get(line_num2);
+            if ni1 == None || ni2 == None {
+                panic!("Can't actually add node as it doesnt exist in the interference graph");
+            }
+
+            let ni1 = ni1.unwrap();
+            let ni2 = ni2.unwrap();
+            if line_num1 != line_num2 && !ig.contains_edge(*ni1, *ni2) {
+                ig.add_edge(*ni1, *ni2, ());
+            }
+        }
+    }
+}
+
+fn get_use_counts (g: &mut BasicBlockGraph, live_sets: HashMap<NodeIndex, BlockInfo>) -> HashMap<LineNumber, UsgCnt> {
+    let res = HashMap::<LineNumber, UsgCnt>::new(); 
+
+    let curr_level: usize = 0; 
+
+    // let curr_node = NodeIndex::new(); 
+    
+
+
+    // let curr_bb = &g[NodeIndex::new(g.node_count() - 1)];
+    let start: &NodeIndex<u32> = &NodeIndex::new(g.node_count() - 1); 
+
+    let mut frontier:VecDeque<NodeIndex> = VecDeque::new(); 
+    frontier.push_back(*start);
+
+    while frontier.is_empty() == false {
+        let curr_el = frontier.pop_front(); 
+        if curr_el == None {
+            panic!("WTF");
+        }
+
+        let curr_el = curr_el.unwrap(); 
+
+        let parents = g.neighbors_directed(curr_el, Incoming); 
+        for parent in parents {
+            frontier.push_back(parent);
+        }
+
+
+        let bb_mut = &mut g[curr_el];
+        for instruction in &mut bb_mut.instructions.iter().rev() {
+            instruction.get_operation_ref()
+        }
+
+
+    }
+
+    
+
+
+    res
+}
+
+#[cfg(test)]
+mod live_anal_tests {
+    use super::*; 
+    use crate::parser::Parser; 
+    use crate::dot_viz::generate_dot_viz; 
+    use petgraph::dot::{Dot, Config};
+    #[test]
+    pub fn test_parse_computation() {
+        let input = "
+            main var a, b, c; {
+                let a <- 1 + 50;  
+                let a <- 1 + 50; 
+                if 1 < 2 then 
+                    let c <- 1 + 50; 
+                fi;
+            }.
+        ".to_string();
+
+        
+        let mut parser = Parser::new(input);
+
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+
+        let graph = get_interference_graph(&parser.internal_program.get_curr_fn().bb_graph);
+        println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+
+        
+
+
+    }
 }
