@@ -102,4 +102,20 @@ impl Instruction {
     pub fn create_instruction(line_number: isize, operation: Operation) -> Self {
         Instruction::new(line_number, operation)
     }
+
+    // Method to get the defined variable (if any) from an instruction
+    pub fn get_def(&self) -> Option<isize> {
+        match self.operation {
+            Operation::Add(_, _) |
+            Operation::Sub(_, _) |
+            Operation::Mul(_, _) |
+            Operation::Div(_, _) |
+            Operation::SetPar1(_) |
+            Operation::SetPar2(_) |
+            Operation::SetPar3(_) => Some(self.line_number),
+
+            // Add cases for other operations that define a variable
+            _ => None,
+        }
+    }
 }

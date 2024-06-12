@@ -1,20 +1,21 @@
 use petgraph::graph::NodeIndex;
+use petgraph::Direction::Outgoing;
 use std::collections::{HashMap, HashSet};
 use petgraph::graph::DiGraph;
-use crate::basic_block::BasicBlock;
+use crate::basic_block::{BasicBlock, BasicBlockType};
 use crate::instruction::Operation;
 
 type LiveSet = HashSet<isize>;
 
 #[derive(Default)]
-struct BlockInfo {
-    use_set: LiveSet,
-    def_set: LiveSet,
-    in_set: LiveSet,
-    out_set: LiveSet,
+pub struct BlockInfo {
+    pub use_set: LiveSet,
+    pub def_set: LiveSet,
+    pub in_set: LiveSet,
+    pub out_set: LiveSet,
 }
 
-pub fn compute_live_sets(g: &DiGraph<BasicBlock, ()>) -> HashMap<NodeIndex, BlockInfo> {
+pub fn compute_live_sets(g: &DiGraph<BasicBlock, BasicBlockType>) -> HashMap<NodeIndex, BlockInfo> {
     let mut block_info = HashMap::new();
 
     // Initialize use and def sets
@@ -38,10 +39,6 @@ pub fn compute_live_sets(g: &DiGraph<BasicBlock, ()>) -> HashMap<NodeIndex, Bloc
                 }
                 Operation::Write(l)
                 | Operation::Ret(l)
-                | Operation::Const(l)
-                | Operation::GetPar1(l)
-                | Operation::GetPar2(l)
-                | Operation::GetPar3(l)
                 | Operation::SetPar1(l)
                 | Operation::SetPar2(l)
                 | Operation::SetPar3(l) => {
@@ -63,24 +60,24 @@ pub fn compute_live_sets(g: &DiGraph<BasicBlock, ()>) -> HashMap<NodeIndex, Bloc
         changed = false;
 
         for node_index in g.node_indices().rev() {
-            let mut info = block_info.get_mut(&node_index).unwrap();
-
             // Compute OUT set
             let mut new_out_set = LiveSet::new();
-            for successor in g.neighbors_directed(node_index, Outgoing) {
+            let successors: Vec<NodeIndex> = g.neighbors_directed(node_index, Outgoing).collect();
+            for successor in &successors {
                 let successor_info = &block_info[&successor];
                 new_out_set.extend(&successor_info.in_set);
             }
 
             // Compute IN set
-            let mut new_in_set = info.use_set.clone();
+            let mut new_in_set = block_info[&node_index].use_set.clone();
             for &var in &new_out_set {
-                if !info.def_set.contains(&var) {
+                if !block_info[&node_index].def_set.contains(&var) {
                     new_in_set.insert(var);
                 }
             }
 
             // Check for changes
+            let info = block_info.get_mut(&node_index).unwrap();
             if new_out_set != info.out_set || new_in_set != info.in_set {
                 info.out_set = new_out_set;
                 info.in_set = new_in_set;
