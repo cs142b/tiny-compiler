@@ -79,23 +79,46 @@ pub fn backtrack<N, E>(
 #[cfg(test)]
 mod graph_test {
     use super::*;
+    use crate::parser::Parser;
+    use crate::live_analysis::*; //{get_interference_graph, get_upgraded_interference_graph};
+    use petgraph::dot::{Dot, Config};
+
     #[test]
     pub fn first() {
-        let mut graph = Graph::<isize, (), Undirected>::new_undirected();
-        let a = graph.add_node(1);
-        let b = graph.add_node(2);
-        let c = graph.add_node(3);
-        let d = graph.add_node(4);
+        let input = "
+            main var a, b, c; {
+                let a <- 1 + 50;  
+                let a <- 1 + 50; 
+                if 1 < 2 then 
+                    let c <- 1 + 50; 
+                
+                
+                fi;
 
-        graph.add_edge(a, b, ());
-        graph.add_edge(b, c, ());
-        graph.add_edge(a, c, ());
-        graph.add_edge(a, d, ());
+                let c <- a + 2;
+            }.
+        "
+        .to_string();
 
-        let color_mapping = color_graph(&graph);
+        let mut parser = Parser::new(input);
 
-        for (key, value) in &color_mapping {
-            println!("{:?} maps to Color({})", key, value);
+        let line_number = parser.parse_computation();
+
+        // Verify that the add operation is correct
+        let instructions = &parser.internal_program.get_curr_block().instructions;
+
+        let bbg = &parser.internal_program.get_curr_fn().bb_graph;
+
+        let graph = get_interference_graph(&parser.internal_program.get_curr_fn().bb_graph);
+
+        let cluster_possibilities = get_clusters(&bbg);
+        let upgraded_ig = get_upgraded_interference_graph(&graph, &cluster_possibilities);
+        println!("{:?}", Dot::with_config(&upgraded_ig, &[Config::EdgeNoLabel]));
+        println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        
+        println!("line numbers start here");
+        for (line_number, register_num) in &generate_register_mapping(&upgraded_ig) {
+            println!("{:?}: {:?}", line_number, register_num);
         }
 
     }

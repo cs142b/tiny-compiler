@@ -278,7 +278,7 @@ fn graph_edge_additions <N> (g: &mut UnGraph<N, ()>, edges_to_add1: &Vec<LineNum
 } 
 
 
-fn get_clusters(g: &BasicBlockGraph) -> Clusters {
+pub fn get_clusters(g: &BasicBlockGraph) -> Clusters {
     let mut clusters = Clusters::new(); 
 
     for ni in g.node_indices().into_iter().rev() {
@@ -354,7 +354,7 @@ fn get_use_counts(
 
 pub type UpgradedInterferenceGraph = UnGraph<Cluster, ()>;
 
-fn get_upgraded_interference_graph (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> UpgradedInterferenceGraph {
+pub fn get_upgraded_interference_graph (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> UpgradedInterferenceGraph {
     let mut remapped = LineNumSet::new(); 
     let (mut upgraded_ig, mut line_to_node_idx) = convert_ig_to_upgraded(g);
 

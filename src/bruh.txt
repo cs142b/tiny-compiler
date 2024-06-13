@@ -1,40 +1,103 @@
 
 running 1 test
-"y" 2
-"x" 1
-digraph add { 
-	CB [shape=record, label="<b>CB | {-2: const #2|-1: const #1}"];
-
-	bb0 [shape=record, label="<b>BB0 | {1: getPar1|2: getPar2|3: add (1) (2)|4: ret (3)}"];
-
-	CT:s -> bb0:n;
-
-
+NodeIndex(3)
+def set: 
+1
+0
+use set: 
+in set: 
+-2
+out set: 
+-2
+0
+1
+NodeIndex(5)
+def set: 
+0
+7
+1
+use set: 
+in set: 
+out set: 
+NodeIndex(2)
+def set: 
+1
+0
+use set: 
+in set: 
+-2
+out set: 
+-2
+0
+1
+NodeIndex(0)
+def set: 
+use set: 
+-1
+-50
+in set: 
+-1
+-50
+-2
+out set: 
+-1
+-2
+NodeIndex(1)
+def set: 
+0
+1
+use set: 
+-2
+-1
+in set: 
+-2
+-1
+out set: 
+-2
+NodeIndex(4)
+def set: 
+use set: 
+1
+0
+-2
+in set: 
+1
+0
+-2
+out set: 
+graph {
+    0 [ label = "[-1]" ]
+    1 [ label = "[7]" ]
+    2 [ label = "[-2]" ]
+    3 [ label = "[-50]" ]
+    4 [ label = "[1, 0]" ]
 }
-digraph sub { 
-	CB [shape=record, label="<b>CB | {-2: const #2|-1: const #1}"];
 
-	bb0 [shape=record, label="<b>BB0 | {5: getPar1|6: getPar2|7: sub (5) (6)|8: ret (7)}"];
-
-	CT:s -> bb0:n;
-
-
+graph {
+    0 [ label = "-1" ]
+    1 [ label = "0" ]
+    2 [ label = "-2" ]
+    3 [ label = "-50" ]
+    4 [ label = "1" ]
+    5 [ label = "7" ]
+    2 -- 1 [ ]
+    2 -- 4 [ ]
+    1 -- 4 [ ]
+    0 -- 2 [ ]
+    0 -- 3 [ ]
+    3 -- 2 [ ]
 }
-digraph main { 
-	CB [shape=record, label="<b>CB | {-2: const #2|-1: const #1}"];
 
-	bb0 [shape=record, label="<b>BB0 | {9: setPar1 (-1)|10: setPar2 (-2)|11: jsr (1)|12: setPar1 (-1)|13: setPar2 (-2)|14: jsr (5)}"];
-	bb1 [shape=record, label="<b>BB1 | {15: End}"];
+line numbers start here
+-1: 1
+7: 1
+-50: 1
+1: 1
+0: 1
+-2: 1
+test graph_coloring::graph_test::first ... ok
 
-	CT:s -> bb0:n;
-	bb0:s -> bb1:n [label="   exit"];
-
-	bb0:b -> bb1:b [color=blue, style=dotted];
-
-}
-test parser::parser_tests::test_functions ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.02s
 
 
 running 0 tests
