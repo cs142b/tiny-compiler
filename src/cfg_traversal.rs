@@ -8,27 +8,31 @@ enum ConditionalType {
 }
 
 use crate::{basic_block::BasicBlockType, live_analysis::{BasicBlockGraph, Instructions}};
-fn traverse_in_order (g: &BasicBlockGraph) -> Instructions {
-    let ret_ins = Instructions::new(); 
+fn traverse_in_order (g: &mut BasicBlockGraph) -> Instructions {
+    let mut ret_ins = Instructions::new(); 
 
-    let start_node = NodeIndex::<u32>::new(1);
+    let start_node = NodeIndex::<u32>::new(0);
 
-    let mut frontier: VecDeque<NodeIndex> = VecDeque::new(); 
-    frontier.push_back(start_node);
+    traverse_straight_til_conditional(start_node, &mut ret_ins, g);
 
-    while !frontier.is_empty() {
-        let curr_node = frontier.pop_front().unwrap(); 
-        let curr_bb = &g[curr_node];    
-        match curr_bb.block_type {
-            BasicBlockType::Conditional => {
+    // let mut frontier: VecDeque<NodeIndex> = VecDeque::new(); 
+    // frontier.push_back(start_node);
+
+    // while !frontier.is_empty() {
+    //     let curr_node = frontier.pop_front().unwrap(); 
+    //     let curr_bb = &g[curr_node];    
+    //     match curr_bb.block_type {
+    //         BasicBlockType::Conditional => {
                 
-            }, 
-            _ => {}
-        }
+    //         }, 
+    //         _ => {}
+    //     }
 
 
 
-    }
+    // }
+
+
 
 
 
