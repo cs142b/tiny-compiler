@@ -1,19 +1,23 @@
-// use petgraph::graph::NodeIndex;
-// use crate::instruction::{Instruction, Operation};
-// use crate::dominator_table::DominatorTable;
-// use std::collections::HashMap;
+use petgraph::graph::NodeIndex;
+use crate::instruction::{Instruction, Operation};
+use crate::dominator_table::DominatorTable;
+use std::collections::HashMap;
+use std::fmt;
 
-// #[derive(Debug, Clone, Copy, Default)]
-// pub enum BasicBlockType {
-//     #[default]
-//     Entry,
-//     Conditional,
-//     FallThrough, 
-//     Branch, 
-//     Follow,
-//     Join,
-//     Exit,
-// }
+// in our implementation, all basic blocks have a type 
+// conditional blocks should only store two pieces of information for bookkeeping which are the cmp and then the jmp instruction
+// blocks that loop back to the conditional block will loop back to the block and not the instruction number in the IR
+#[derive(Clone, Copy, Default, PartialEq)]
+pub enum BasicBlockType {
+    #[default]
+    Entry,
+    Conditional,
+    FallThrough, 
+    Branch, 
+    Follow,
+    Join,
+    Exit,
+}
 
 // impl fmt::Debug for BasicBlockType {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -118,13 +122,21 @@
 //         self.variable_table.insert(variable.to_string(), VariableType::Value(line_number));
 //     }
 
-//     pub fn get_first_instruction_line_number(&self) -> isize {
-//         if let Some(instruction) = self.instructions.first() {
-//             instruction.get_line_number()
-//         } else {
-//             panic!("Basic block is empty")
-//         }
-//     }
+    pub fn get_first_instruction_line_number(&self) -> isize {
+        if let Some(instruction) = self.instructions.first() {
+            instruction.get_line_number()
+        } else {
+            panic!("Basic block is empty")
+        }
+    }
+    
+    pub fn get_last_instruction_line_number(&self) -> isize {
+        if let Some(instruction) = self.instructions.last() {
+            instruction.get_line_number()
+        } else {
+            panic!("Basic block is empty")
+        }
+    }
 
 
 //     pub fn get_max_parents(&self) -> usize {
@@ -145,17 +157,21 @@
 //         }
 //     }
 
-//     // Function to modify an existing instruction by its line number
-//     pub fn modify_instruction(&mut self, line_number: isize, new_operation: Operation) {
-//         for instruction in &mut self.instructions {
-//             if instruction.get_line_number() == line_number {
-//                 instruction.operation = new_operation;
-//                 return;
-//             }
-//         }
-//         panic!("Instruction with line number {} not found", line_number);
-//     }
-// }
+    // Function to modify an existing instruction by its line number
+    pub fn modify_instruction(&mut self, line_number: isize, new_operation: Operation) {
+        for instruction in &mut self.instructions {
+            if instruction.get_line_number() == line_number {
+                instruction.operation = new_operation;
+                return;
+            }
+        }
+        panic!("Instruction with line number {} not found", line_number);
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.instructions.is_empty()
+    }
+}
 
 // #[cfg(test)]
 // pub mod bb_tests {

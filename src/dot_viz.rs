@@ -3,6 +3,7 @@ use crate::basic_block::{BasicBlock, BasicBlockType};
 use crate::constant_block::ConstantBlock;
 use crate::function::Function;
 use crate::program::Program;
+use crate::instruction::Operation;
 
 pub fn generate_dot_viz(input_function: &str, program: &Program) -> String {
     let input_graph = program.get_fn(input_function).get_graph();
@@ -32,7 +33,7 @@ fn generate_constant_table(output_graph: &mut String, program: &Program) {
         instructions.pop();
     }
 
-    output_graph.push_str(format!("\tCT [shape=record, label=\"<b>CT | {}\"];\n\n", instructions).as_str());
+    output_graph.push_str(format!("\tCB [shape=record, label=\"<b>CB | {}\"];\n\n", instructions).as_str());
 }
 
 fn generate_blocks(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicBlockType>) {
@@ -48,6 +49,11 @@ fn generate_blocks(output_graph: &mut String, graph: &DiGraph<BasicBlock, BasicB
 fn cat_instructions(block: &BasicBlock) -> String {
     let mut instructions = String::from("{");
     for instruction in &block.instructions {
+        if *instruction.get_operation_ref() == Operation::Empty {
+            instructions.push_str("\\<empty\\>");
+            instructions.push('|');
+            continue;
+        }
         instructions.push_str(format!("{:?}", instruction).as_str());
         instructions.push('|');
     }
