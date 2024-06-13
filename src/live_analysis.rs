@@ -5,7 +5,6 @@ use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::graph::{Node, NodeIndex};
 use petgraph::Direction::{Incoming, Outgoing};
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::env::var;
 
 type LiveSet = HashSet<isize>;
 type LineNumber = isize;
@@ -183,7 +182,7 @@ pub fn get_interference_graph(g: &BasicBlockGraph) -> InterferenceGraph {
 
     let mut ig: InterferenceGraph = InterferenceGraph::new_undirected();
 
-    let line_to_nodeidx_map = alter_ig_from_all_vars(&mut ig, &all_var_set);
+    let line_to_nodeidx_map = all_vars_node_defined(&mut ig, &all_var_set);
 
     for binfo in block_info_map.values() {
         // draw edges between variables in the outset and make sure that those variables are connected in the live set
@@ -230,7 +229,7 @@ fn collect_all_variables(map: &HashMap<NodeIndex, BlockInfo>) -> LineNumSet {
     inst_num_set
 }
 
-fn alter_ig_from_all_vars(
+fn all_vars_node_defined(
     ig: &mut InterferenceGraph,
     all_vars_set: &LineNumSet,
 ) -> HashMap<LineNumber, NodeIndex> {
@@ -266,6 +265,17 @@ fn create_set_edge_additions(
         }
     }
 }
+fn graph_edge_additions <N> (g: &mut UnGraph<N, ()>, edges_to_add1: &Vec<LineNumber>, edges_to_add2: &Vec<LineNumber>, generic_to_nodeindex: &mut HashMap<LineNumber, NodeIndex>) {
+    for node1 in edges_to_add1 {
+        for node2 in edges_to_add2 {
+            if node1 != node2 {
+                let nodeidx1 = generic_to_nodeindex.get(node1);
+                let nodeidx2 = generic_to_nodeindex.get(node2); 
+                g.add_edge(*nodeidx1.unwrap(), *nodeidx2.unwrap(), ());  
+            }
+        }
+    }
+} 
 
 
 fn get_clusters(g: &BasicBlockGraph) -> Clusters {
@@ -342,6 +352,62 @@ fn get_use_counts(
 }
 
 
+pub type UpgradedInterferenceGraph = UnGraph<Cluster, ()>;
+
+fn get_upgraded_interference_graph (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> UpgradedInterferenceGraph {
+    let mut remapped = LineNumSet::new(); 
+    let (mut upgraded_ig, mut line_to_node_idx) = convert_ig_to_upgraded(g);
+
+    for cluster in cluster_possibilities {
+        for (idx, line_num) in cluster.iter().enumerate() {
+        
+            // this line not yet remapped
+            for (idx2, line_num2) in cluster.iter().enumerate() {
+                if line_num != line_num2 && !remapped.contains(line_num) && !remapped.contains(line_num2) {
+                    remapped.insert(*line_num);
+                    remapped.insert(*line_num2);
+                    let removed_neighbors = upgraded_ig.neighbors_undirected(*line_to_node_idx.get(line_num2).unwrap());
+                    
+                    
+                    upgraded_ig.remove_node(*line_to_node_idx.get(line_num2).unwrap());
+                    line_to_node_idx.remove(line_num2);
+                    let curr_saved_node: NodeIndex = *line_to_node_idx.get(line_num).unwrap(); 
+                    line_to_node_idx.insert(*line_num2, curr_saved_node);
+
+                    let cluster_to_change = &mut upgraded_ig[curr_saved_node];
+                    cluster_to_change.push(*line_num2);
+
+                } 
+            }
+        }
+    }
+
+    
+
+    // for cluster in cluster_possibilities {
+
+    // }
+
+    upgraded_ig
+}   
+
+fn convert_ig_to_upgraded(g: &InterferenceGraph) -> (UpgradedInterferenceGraph, HashMap<LineNumber, NodeIndex>) {
+    let mut upgraded_ig: petgraph::Graph<Vec<isize>, (), petgraph::Undirected> = UpgradedInterferenceGraph::new_undirected();
+    let mut line_to_nodeidx: HashMap<isize, NodeIndex> = HashMap::<LineNumber, NodeIndex>::new(); 
+
+    for node in g.node_indices() {
+        let mut new_cluster = Cluster::new(); 
+        let curr_num = g[node]; 
+        new_cluster.push(curr_num); 
+
+        let new_node = upgraded_ig.add_node(new_cluster);
+        line_to_nodeidx.insert(curr_num, new_node);
+    }   
+
+    (upgraded_ig, line_to_nodeidx)
+}
+
+
 fn mark_graph_with_layers_helper (g: &BasicBlockGraph, start_node: NodeIndex, layers_map: &mut HashMap<NodeIndex, Layer>, curr_layer: &mut Layer, lower_layer_idx: Option<NodeIndex>) {
     let mut frontier: VecDeque<NodeIndex> = VecDeque::new(); 
     frontier.push_back(start_node);
@@ -403,8 +469,6 @@ fn mark_graph_with_layers(g: &BasicBlockGraph) -> HashMap<NodeIndex, Layer> {
 }
 
 
-
-
 #[cfg(test)]
 mod live_anal_tests {
     use super::*;
@@ -435,10 +499,15 @@ mod live_anal_tests {
         // Verify that the add operation is correct
         let instructions = &parser.internal_program.get_curr_block().instructions;
 
-        let graph = &parser.internal_program.get_curr_fn().bb_graph;
+        let bbg = &parser.internal_program.get_curr_fn().bb_graph;
         println!("{}", generate_dot_viz("main", &parser.internal_program));
 
         let graph = get_interference_graph(&parser.internal_program.get_curr_fn().bb_graph);
         println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+
+        let cluster_possibilities = get_clusters(&bbg);
+        let upgraded_ig = get_upgraded_interference_graph(&graph, &cluster_possibilities);
+
+        println!("{:?}", Dot::with_config(&upgraded_ig, &[Config::EdgeNoLabel]));
     }
 }
