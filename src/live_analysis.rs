@@ -328,7 +328,6 @@ pub fn get_clusters(g: &BasicBlockGraph) -> Clusters {
             }
         }
     }
-
     clusters
 }
 
@@ -381,13 +380,8 @@ fn get_use_counts(
     res
 }
 
-pub type UpgradedInterferenceGraph = UnGraph<Cluster, ()>;
 
-pub fn get_upgraded_interference_graph(
-    g: &InterferenceGraph,
-    cluster_possibilities: &Clusters,
-) -> UpgradedInterferenceGraph {
-    let mut remapped = LineNumSet::new();
+
 pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> (UpgradedInterferenceGraph, HashMap<LineNumber, NodeIndex>) {
     let mut remapped = LineNumSet::new(); 
     let (mut upgraded_ig, mut line_to_node_idx) = convert_ig_to_upgraded(g);
@@ -411,19 +405,23 @@ pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Cluster
                     let cluster_to_change = &mut upgraded_ig[curr_saved_node];
                     cluster_to_change.push(*line_num2);
 
-                } 
+                }
             }
         }
     }
-
-    
-
-    // for cluster in cluster_possibilities {
-
-    // }
-
     (upgraded_ig, line_to_node_idx)
-}   
+}
+
+pub type UpgradedInterferenceGraph = UnGraph<Cluster, ()>;
+
+// pub fn get_upgraded_interference_graph(
+//     g: &InterferenceGraph,
+//     cluster_possibilities: &Clusters,
+// ) -> UpgradedInterferenceGraph {
+//     let mut remapped = LineNumSet::new();
+// }
+
+   
 pub fn get_upgraded_interference_graph (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> UpgradedInterferenceGraph {
     let mut remapped = LineNumSet::new(); 
     let (mut upgraded_ig, mut line_to_node_idx) = convert_ig_to_upgraded(g);
