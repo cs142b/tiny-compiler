@@ -71,10 +71,13 @@ enum AssemblyInstruction {
     WRL,
 }
 
+type AssemblyIndex = usize;
 
 pub struct CodeGeneration {
     instructions: Vec<Instruction>,
-    register_mapping: HashMap<LineNumber, RegisterNumber>
+    register_mapping: HashMap<LineNumber, RegisterNumber>,
+    assembly_instructions: Vec<AssemblyInstruction>,
+    line_number_to_assembly_map: HashMap<LineNumber, AssemblyIndex>,
 }
 
 impl CodeGeneration {
@@ -82,7 +85,7 @@ impl CodeGeneration {
         let graph1 = graph.clone();
         let new_graph = get_interference_graph(&graph1);
         let cluster_possibilities = get_clusters(&graph1);
-        let new_upgraded_graph = get_upgraded_interference_graph(&new_graph, &cluster_possibilities);
+        let (new_upgraded_graph, line_node_map) = get_graph_and_map(&new_graph, &cluster_possibilities);
         
         let register_mapping = generate_register_mapping(&new_upgraded_graph);
 
@@ -92,11 +95,12 @@ impl CodeGeneration {
         Self {
             instructions,
             register_mapping,
+            assembly_instructions: Vec::new(),
+            line_number_to_assembly_map: HashMap::new(),
         }
     }
 
     pub fn generate_code(&mut self) {
-        let mut assembly_instructions: Vec<AssemblyInstruction> = Vec::new();
         for instruction in &self.instructions {
             let line_number = instruction.get_line_number();
             let operation = *instruction.get_operation_ref();
@@ -114,24 +118,24 @@ impl CodeGeneration {
                 Operation::Add(value1, value2) => {
                     match (value1, value2) {
                         _ if value1 <= 0 && value2 <= 0 => {
-                            assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value1));
-                            assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value2));
+                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value1));
+                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value2));
                         },
                         _ if value1 > 0 && value2 > 0 => {
                             let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::ADD(line_num_register, value1_register, value2_register));
+                            self.assembly_instructions.push(AssemblyInstruction::ADD(line_num_register, value1_register, value2_register));
 
                         },
                         _ if value1 <= 0 => {
                             let constant = -value1;
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value2_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value2_register, constant));
                         },
                         _ if value2 <= 0 => {
                             let constant = -value2;
                             let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value1_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value1_register, constant));
 
                         },
                         _ => unreachable!("should never reach here"),
@@ -140,25 +144,25 @@ impl CodeGeneration {
                 Operation::Sub(value1, value2) => {
                     match (value1, value2) {
                         _ if value1 <= 0 && value2 <= 0 => {
-                            assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value1));
-                            assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value2));
+                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value1));
+                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value2));
 
                         },
                         _ if value1 > 0 && value2 > 0 => {
                             let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::SUB(line_num_register, value1_register, value2_register));
+                            self.assembly_instructions.push(AssemblyInstruction::SUB(line_num_register, value1_register, value2_register));
 
                         },
                         _ if value1 <= 0 => {
                             let constant = -value1;
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value2_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value2_register, constant));
                         },
                         _ if value2 <= 0 => {
                             let constant = -value2;
                             let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value1_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value1_register, constant));
 
                         },
                         _ => unreachable!("should never reach here"),
@@ -167,25 +171,25 @@ impl CodeGeneration {
                 Operation::Mul(value1, value2) => {
                     match (value1, value2) {
                         _ if value1 <= 0 && value2 <= 0 => {
-                            assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value1));
-                            assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value2));
+                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value1));
+                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value2));
 
                         },
                         _ if value1 > 0 && value2 > 0 => {
                             let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::MUL(line_num_register, value1_register, value2_register));
+                            self.assembly_instructions.push(AssemblyInstruction::MUL(line_num_register, value1_register, value2_register));
 
                         },
                         _ if value1 <= 0 => {
                             let constant = -value1;
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value2_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value2_register, constant));
                         },
                         _ if value2 <= 0 => {
                             let constant = -value2;
                             let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value1_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value1_register, constant));
 
                         },
                         _ => unreachable!("should never reach here"),
@@ -194,25 +198,25 @@ impl CodeGeneration {
                 Operation::Div(value1, value2) => {
                     match (value1, value2) {
                         _ if value1 <= 0 && value2 <= 0 => {
-                            assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value1));
-                            assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value2));
+                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value1));
+                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value2));
 
                         },
                         _ if value1 > 0 && value2 > 0 => {
                             let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::DIV(line_num_register, value1_register, value2_register));
+                            self.assembly_instructions.push(AssemblyInstruction::DIV(line_num_register, value1_register, value2_register));
 
                         },
                         _ if value1 <= 0 => {
                             let constant = -value1;
                             let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value2_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value2_register, constant));
                         },
                         _ if value2 <= 0 => {
                             let constant = -value2;
                             let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value1_register, constant));
+                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value1_register, constant));
 
                         },
                         _ => unreachable!("should never reach here"),
@@ -222,28 +226,23 @@ impl CodeGeneration {
                     let value1_register = *self.register_mapping.get(&value1).unwrap();
                     let value2_register = *self.register_mapping.get(&value2).unwrap();
 
-                    match (line_num_register, value1_register, value2_register) {
-                        _ if (line_num_register == value1_register) & (value1_register == value2_register) => {
-                            // if all phi matches, do nothing?
-                        },
-                        _ if (line_num_register != value1_register) & (value1_register == value2_register) => {
-                            // conflict
-                            assembly_instructions.push(AssemblyInstruction::ADD(value1_register, line_num_register, 0));
+                    if line_num_register != value1_register {
+                        let index_to_insert = self.find_instruction_index_in_vector_given_line(value1_register as isize);
+                        self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register, value1_register, 0));
 
-                        },
-                        _ if (line_num_register == value1_register) & (value1_register != value2_register) => {
-                            // conflict
-                            assembly_instructions.push(AssemblyInstruction::ADD(line_num_register, value2_register, 0));
-                        },
-                        _ => unreachable!("should never reach here"),
-                        
                     }
+
+                    if line_num_register != value2_register {
+                        let index_to_insert = self.find_instruction_index_in_vector_given_line(value2_register as isize);
+                        self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register, value2_register, 0));
+                    }
+
 
                 },
                 _ => unreachable!("placeholder"),
             }
-
-
+            
+            self.line_number_to_assembly_map.insert(line_number, self.assembly_instructions.len() - 1);
         }
 
         println!("MAPPING OF REGISTERS");
@@ -253,9 +252,13 @@ impl CodeGeneration {
         }
         
         println!("ASSEMBLY INSTRUCTIONS");
-        for assembly_instruction in &assembly_instructions {
+        for assembly_instruction in &self.assembly_instructions {
             println!("{:?}", assembly_instruction);
         }
+    }
+
+    fn find_instruction_index_in_vector_given_line(&self, line_number: isize) -> AssemblyIndex {
+        *self.line_number_to_assembly_map.get(&line_number).unwrap()
     }
 
 }
