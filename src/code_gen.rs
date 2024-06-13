@@ -136,6 +136,11 @@ impl CodeGeneration {
     pub fn generate_code(&mut self) {
         let mut waiting_to_be_mapped: HashMap<LineNumber, LineNumber> = HashMap::new(); // the line
         // number that needs to be fined and the line number thats waiting to update
+        println!("MAPPING OF REGISTERS");
+        for (line_number, register_num) in &self.register_mapping {
+            println!("Line({}): R{}", line_number, register_num);
+
+        }
         for instruction in &self.instructions {
 
             // update any waiting instructions
@@ -151,10 +156,11 @@ impl CodeGeneration {
                 break;
             }
 
-            let line_num_register = *self.register_mapping.get(&line_number).unwrap();
-            println!("{}", line_num_register);
+            println!("{}", line_number);
+
             match operation {
                 Operation::Add(value1, value2) => {
+                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value1));
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value2));
@@ -180,6 +186,7 @@ impl CodeGeneration {
                     }
                 },
                 Operation::Sub(value1, value2) => {
+                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
                         self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value1));
                         self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value2));
@@ -206,6 +213,7 @@ impl CodeGeneration {
                     }
                 },
                 Operation::Mul(value1, value2) => {
+                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
                         self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value1));
                         self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value2));
@@ -233,6 +241,7 @@ impl CodeGeneration {
                     }
                 },
                 Operation::Div(value1, value2) => {
+                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
                         self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value1));
                         self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value2));
@@ -257,6 +266,7 @@ impl CodeGeneration {
                     }
                 },
                 Operation::Phi(value1, value2) => {
+                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                     let value2_register = *self.register_mapping.get(&value2).unwrap();
 
@@ -275,6 +285,7 @@ impl CodeGeneration {
                 },
 
                 Operation::Cmp(value1, value2) => {
+                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
                         let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(value1_register, 0, -value1));
@@ -388,6 +399,9 @@ mod tests {
             main var a, b, c, d; {
                 let a <- 1 + 2;  
                 let b <- a - 2; 
+                if 1 < 2 then 
+                    let c <- 100 + 2;
+                fi;
             }.
         "
         .to_string();
