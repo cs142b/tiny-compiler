@@ -447,6 +447,9 @@ impl AssemblyInstruction {
             AssemblyInstruction::BGT(_, ref mut value2) => {
                 *value2 = new_value2;
             },
+            AssemblyInstruction::JSR(ref mut value2) => {
+                *value2 = new_value2;
+            }
             _ => {
                 panic!("yaaa add more shit later {:?}", self);
                 
@@ -734,6 +737,14 @@ impl CodeGeneration {
                 },
                 Operation::Bra(value) => {
                     self.assembly_instructions.push(AssemblyInstruction::JSR(0)); // 0 is a BS valuegi
+                    let len = self.assembly_instructions.len() - 1;
+                    let mut new_instruction_line_num = self.original_graph[NodeIndex::new(value as usize)].get_first_instruction_line_number();
+                    if self.original_graph.node_weight(NodeIndex::from(value as u32)).unwrap().instructions[0].get_operation_ref() == &Operation::Empty {
+                        new_instruction_line_num = self.original_graph[NodeIndex::new((value + 1) as usize)].get_first_instruction_line_number(); 
+                    }
+
+                    // self.assembly_instructions[len].update(self.original_graph[block_index].); // yay this works
+                    self.branch_map.insert(new_instruction_line_num, len);
                 },
                 _ => panic!("placeholder: {:?}", operation),
             }
@@ -742,8 +753,27 @@ impl CodeGeneration {
             
             if self.branch_map.contains_key(&line_number) {
                 let assembly_index = *self.line_number_to_assembly_map.get(&line_number).unwrap();
+                
                 let skill_diff = assembly_index - self.branch_map.get(&line_number).unwrap();
-                self.assembly_instructions[assembly_index - skill_diff].update(skill_diff as isize);
+                println!("fuck {:?}", self.assembly_instructions[assembly_index]);
+                match self.assembly_instructions[assembly_index - skill_diff] {
+                    AssemblyInstruction::JSR(_) => {
+                        let x = self.line_number_to_assembly_map.get(&line_number); 
+                        let x = x.unwrap();
+                        self.assembly_instructions[assembly_index - skill_diff].update(*x as isize);
+                        // self.assembly_instructions[assembly_index] = AssemblyInstruction::JSR(line_number);
+                    },
+                    _ => {
+                        self.assembly_instructions[assembly_index - skill_diff].update(skill_diff as isize);
+                    }
+                }
+
+
+
+
+
+
+
 ;            }
             
         }
