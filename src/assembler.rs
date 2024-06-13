@@ -6,7 +6,7 @@ type MachineCodeInstruction = u32;
 type MachineCodeInstructions = Vec<u32>;
 
 
-fn convert_assembly_to_opcode(asm: AssemblyInstruction) -> MachineCodeInstruction {
+fn convert_assembly_to_machine_code(asm: AssemblyInstruction) -> MachineCodeInstruction {
     let a = asm.get_a(); 
     let b = asm.get_b();
     let c = asm.get_c(); 
@@ -73,6 +73,17 @@ fn convert_assembly_to_opcode(asm: AssemblyInstruction) -> MachineCodeInstructio
 
 fn get_lower_n_bits(num: u32, n: u32) -> u32 {
     num & ((1 << n) - 1)
+}
+
+
+fn get_machine_code_instructions(asm_instructions: Vec<AssemblyInstruction>) -> MachineCodeInstructions {
+    let mut mci = MachineCodeInstructions::new(); 
+
+    for instruction in asm_instructions {
+        mci.push(convert_assembly_to_machine_code(instruction)); 
+    }
+
+    mci
 }
 
 
