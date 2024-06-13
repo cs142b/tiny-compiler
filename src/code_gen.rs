@@ -667,6 +667,71 @@ impl CodeGeneration {
                     self.branch_map.insert(new_instruction_line_num, len);
 
                 },
+                Operation::Ble(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BLE(comparison_line_number_register as u8, 0)); // 0 is a BS value
+                    let len = self.assembly_instructions.len() - 1;
+                    let mut new_instruction_line_num = self.original_graph[NodeIndex::new(block_index as usize)].get_first_instruction_line_number();
+                    if self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions[0].get_operation_ref() == &Operation::Empty {
+                        new_instruction_line_num = self.original_graph[NodeIndex::new((block_index + 1) as usize)].get_first_instruction_line_number(); 
+                    }
+
+                    // self.assembly_instructions[len].update(self.original_graph[block_index].); // yay this works
+                    self.branch_map.insert(new_instruction_line_num, len);
+
+                },
+                Operation::Bge(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BGE(comparison_line_number_register as u8, 0)); // 0 is a BS value
+                    let len = self.assembly_instructions.len() - 1;
+                    let mut new_instruction_line_num = self.original_graph[NodeIndex::new(block_index as usize)].get_first_instruction_line_number();
+                    if self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions[0].get_operation_ref() == &Operation::Empty {
+                        new_instruction_line_num = self.original_graph[NodeIndex::new((block_index + 1) as usize)].get_first_instruction_line_number(); 
+                    }
+
+                    // self.assembly_instructions[len].update(self.original_graph[block_index].); // yay this works
+                    self.branch_map.insert(new_instruction_line_num, len);
+
+                },
+                Operation::Bgt(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BGT(comparison_line_number_register as u8, 0)); // 0 is a BS value
+                    let len = self.assembly_instructions.len() - 1;
+                    let mut new_instruction_line_num = self.original_graph[NodeIndex::new(block_index as usize)].get_first_instruction_line_number();
+                    if self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions[0].get_operation_ref() == &Operation::Empty {
+                        new_instruction_line_num = self.original_graph[NodeIndex::new((block_index + 1) as usize)].get_first_instruction_line_number(); 
+                    }
+
+                    // self.assembly_instructions[len].update(self.original_graph[block_index].); // yay this works
+                    self.branch_map.insert(new_instruction_line_num, len);
+
+                },
+                Operation::Blt(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BLT(comparison_line_number_register as u8, 0)); // 0 is a BS value
+                    let len = self.assembly_instructions.len() - 1;
+                    let mut new_instruction_line_num = self.original_graph[NodeIndex::new(block_index as usize)].get_first_instruction_line_number();
+                    if self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions[0].get_operation_ref() == &Operation::Empty {
+                        new_instruction_line_num = self.original_graph[NodeIndex::new((block_index + 1) as usize)].get_first_instruction_line_number(); 
+                    }
+
+                    // self.assembly_instructions[len].update(self.original_graph[block_index].); // yay this works
+                    self.branch_map.insert(new_instruction_line_num, len);
+
+                },
+                Operation::Beq(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BEQ(comparison_line_number_register as u8, 0)); // 0 is a BS value
+                    let len = self.assembly_instructions.len() - 1;
+                    let mut new_instruction_line_num = self.original_graph[NodeIndex::new(block_index as usize)].get_first_instruction_line_number();
+                    if self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions[0].get_operation_ref() == &Operation::Empty {
+                        new_instruction_line_num = self.original_graph[NodeIndex::new((block_index + 1) as usize)].get_first_instruction_line_number(); 
+                    }
+
+                    // self.assembly_instructions[len].update(self.original_graph[block_index].); // yay this works
+                    self.branch_map.insert(new_instruction_line_num, len);
+
+                },
                 Operation::Bra(value) => {
                     self.assembly_instructions.push(AssemblyInstruction::JSR(0)); // 0 is a BS value
                 },
