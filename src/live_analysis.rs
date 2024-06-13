@@ -97,28 +97,28 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
         }
     }
 
-    for (b, binfo) in &block_info {
-        println!("{:?}", b);
-        println!("def set: ");
-        for ins in &binfo.def_set {
-            println!("{:?}", ins);
-        }
-            println!("use set: ");
-        for ins in &binfo.use_set {
-            println!("{:?}", ins);
-        }
-            println!("in set: ");
-        for ins in &binfo.in_set {
-            println!("{:?}", ins);
-
-        }
-
-            println!("out set: ");
-        for ins in &binfo.out_set {
-            println!("{:?}", ins);
-        }
-
-    }
+    // for (b, binfo) in &block_info {
+    //     println!("{:?}", b);
+    //     println!("def set: ");
+    //     for ins in &binfo.def_set {
+    //         println!("{:?}", ins);
+    //     }
+    //         println!("use set: ");
+    //     for ins in &binfo.use_set {
+    //         println!("{:?}", ins);
+    //     }
+    //         println!("in set: ");
+    //     for ins in &binfo.in_set {
+    //         println!("{:?}", ins);
+    //
+    //     }
+    //
+    //         println!("out set: ");
+    //     for ins in &binfo.out_set {
+    //         println!("{:?}", ins);
+    //     }
+    //
+    // }
 
     block_info
 }
