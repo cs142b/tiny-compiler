@@ -390,7 +390,11 @@ pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Cluster
         for (idx, line_num) in cluster.iter().enumerate() {
             let mut was_remapped: bool = false; 
             // this line not yet remapped
+            // let curr_node = 
+
+            println!("Current line num = {:?}, ni = {:?}", line_num, line_to_node_idx.get(line_num).unwrap());
             for (idx2, line_num2) in cluster.iter().enumerate() {
+                println!();
                 if line_num != line_num2 && !remapped.contains(line_num) && !remapped.contains(line_num2) {
                     was_remapped = true; 
                     // remapped.insert(*line_num);
@@ -404,14 +408,54 @@ pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Cluster
                             upgraded_ig.add_edge(*curr_node, removed_neighbor, ());
                         }
                     }
+                    let mut curr_ni:Option<NodeIndex> = None; 
+                    {
+                    let curr = line_to_node_idx.get(line_num);
+                    let curr = curr.unwrap();
+                    curr_ni = Some(*curr); 
+                    }
+
+                    let mut to_del : Option<NodeIndex> = None; 
+
+                    {
+                    let for_delete = line_to_node_idx.get_mut(line_num2);
+                    let for_delete = for_delete.unwrap();
+                    to_del = Some(*for_delete);
+                    }
+
+                    println!("Curr saved node = {:?}", curr_ni);
+
+                    // let curr = line_to_node_idx.get(line_num).unwrap(); 
+                    // let node_to_remove = line_to_node_idx.get(line_num2).unwrap();
+                    if curr_ni.unwrap().index() == upgraded_ig.node_count() - 1 && to_del.unwrap().index() != upgraded_ig.node_count() - 1 {
+                        // let to_alter = line_to_node_idx.get_mut(&line_num);
+                        // let to_alter = to_alter.unwrap(); 
+                        // to_alter = &mut for_delete.clone();
+                        println!("Changing this fucking bull shit from {:?} to {:?}", curr_ni.unwrap(), to_del.unwrap());
+
+                        if curr_ni.unwrap().index() > to_del.unwrap().index() {
+
+                        line_to_node_idx.remove(line_num);
+                        line_to_node_idx.insert(*line_num, to_del.unwrap());
+                        }
+
+                    }
                     
                     
-                    upgraded_ig.remove_node(*line_to_node_idx.get(line_num2).unwrap());
-                    line_to_node_idx.remove(line_num2);
+                    
                     let curr_saved_node: NodeIndex = *line_to_node_idx.get(line_num).unwrap(); 
+
+                    upgraded_ig.remove_node(to_del.unwrap());
+                    println!("Removing to del: {:?}", to_del.unwrap());
+                    line_to_node_idx.remove(line_num2);
                     line_to_node_idx.insert(*line_num2, curr_saved_node);
 
                     println!("Curr saved node = {:?}", curr_saved_node);
+
+                    // if curr_saved_node.index() == upgraded_ig.node_count() {
+                    //     line_to_node_idx.remove(line_num);
+                    //     line_to_node_idx.insert(*line_num, to_del.unwrap()); 
+                    // }
 
 
                     let cluster_to_change = &mut upgraded_ig[curr_saved_node];
