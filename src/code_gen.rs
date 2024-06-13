@@ -511,7 +511,7 @@ impl CodeGeneration {
                     let line_num_register: u8 = *self.register_mapping.get(&line_number).unwrap() as u8;
                     if value1 <= 0 && value2 <= 0 {
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value1));
-                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value2));
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, line_num_register as u8, -value2));
                     } else if value1 > 0 && value2 > 0 {
                         let value1_register:u8 = *self.register_mapping.get(&value1).unwrap() as u8; 
                         let value2_register:u8 = *self.register_mapping.get(&value2).unwrap() as u8;
@@ -530,8 +530,8 @@ impl CodeGeneration {
                 Operation::Sub(value1, value2) => {
                     let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
-                        self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register as u8, 0, -value1));
-                        self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register as u8, 0, -value2));
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register as u8, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register as u8, line_num_register as u8, -value2));
 
                     }
 
@@ -557,8 +557,8 @@ impl CodeGeneration {
                 Operation::Mul(value1, value2) => {
                     let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
-                        self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register as u8, 0, -value1));
-                        self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register as u8, 0, -value2));
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register as u8, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register as u8, line_num_register as u8, -value2));
 
                     }
                     
@@ -585,8 +585,8 @@ impl CodeGeneration {
                 Operation::Div(value1, value2) => {
                     let line_num_register = *self.register_mapping.get(&line_number).unwrap();
                     if value1 <= 0 && value2 <= 0 {
-                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, 0, -value1));
-                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, 0, -value2));
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register as u8, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, line_num_register as u8, -value2));
 
                     }
                     else if value1 > 0 && value2 > 0 {
@@ -608,20 +608,20 @@ impl CodeGeneration {
                     }
                 },
                 Operation::Phi(value1, value2) => {
-                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
-                    let value1_register = *self.register_mapping.get(&value1).unwrap(); 
-                    let value2_register = *self.register_mapping.get(&value2).unwrap();
-
-                    if line_num_register != value1_register {
-                        let index_to_insert = self.find_instruction_index_in_vector_given_line(value1_register as isize);
-                        self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value1_register as u8, 0));
-
-                    }
-
-                    if line_num_register != value2_register {
-                        let index_to_insert = self.find_instruction_index_in_vector_given_line(value2_register as isize);
-                        self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value2_register as u8, 0));
-                    }
+                    // let line_num_register = *self.register_mapping.get(&line_number).unwrap();
+                    // let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                    // let value2_register = *self.register_mapping.get(&value2).unwrap();
+                    //
+                    // if line_num_register != value1_register {
+                    //     let index_to_insert = self.find_instruction_index_in_vector_given_line(value1_register as isize);
+                    //     self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value1_register as u8, 0));
+                    //
+                    // }
+                    //
+                    // if line_num_register != value2_register {
+                    //     let index_to_insert = self.find_instruction_index_in_vector_given_line(value2_register as isize);
+                    //     self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value2_register as u8, 0));
+                    // }
 
 
                 },
@@ -653,9 +653,10 @@ impl CodeGeneration {
                 Operation::Bne(comparison_line_number, block_index) => {
                     let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
                     self.assembly_instructions.push(AssemblyInstruction::BNE(comparison_line_number_register as u8, 0)); // 0 is a BS value
+                    let len = self.assembly_instructions.len() - 1;
+                    self.assembly_instructions[len].update(100); // yay this works
                 },
                 Operation::Bra(value) => {
-                    println!("hello world");
                     self.assembly_instructions.push(AssemblyInstruction::JSR(0)); // 0 is a BS value
                 },
                 _ => panic!("placeholder: {:?}", operation),
@@ -696,9 +697,8 @@ mod tests {
     pub fn first() {
         let input = "
             main var a, b, c, d; {
-                let a <- 1 + 2;  
-                if a == 2 then
-                    let b <- 3;
+                if 1 == 1 then
+                    let a <- 1 + 1;
                 fi;
             }.
         "
