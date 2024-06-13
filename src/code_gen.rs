@@ -246,6 +246,13 @@ impl CodeGeneration {
 
         }
 
+        println!("MAPPING OF REGISTERS");
+        for (line_number, register_num) in &self.register_mapping {
+            println!("Line({}): R{}", line_number, register_num);
+
+        }
+        
+        println!("ASSEMBLY INSTRUCTIONS");
         for assembly_instruction in &assembly_instructions {
             println!("{:?}", assembly_instruction);
         }
@@ -256,6 +263,7 @@ impl CodeGeneration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dot_viz::generate_dot_viz;
     #[test]
     pub fn first() {
         let input = "
@@ -270,12 +278,14 @@ mod tests {
 
         parser.parse_computation();
 
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
 
         let mut bbg = &parser.internal_program.get_curr_fn().bb_graph;
         let mut bbg = bbg.clone(); 
 
         let mut bruh = CodeGeneration::new(&mut bbg);
         bruh.generate_code();
+
 
     }
 }
