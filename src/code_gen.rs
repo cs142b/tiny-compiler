@@ -1,6 +1,8 @@
 use crate::instruction::{Operation, Instruction};
 use crate::graph_coloring::color_graph;
-
+enum AssemblyInstructions {
+    
+}
 pub struct CodeGeneration {
     instructions: Vec<Instruction>,
     // register_mapping: HashMap<LineNumber, RegisterNumber>
