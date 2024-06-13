@@ -5,13 +5,19 @@ use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::graph::{Node, NodeIndex};
 use petgraph::Direction::{Incoming, Outgoing};
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::env::var;
 
 type LiveSet = HashSet<isize>;
 type LineNumber = isize;
+type LineNumbers = Vec<LineNumber>;
+type Cluster = LineNumbers;
+type Clusters = Vec<Cluster>; 
 pub type InterferenceGraph = UnGraph<LineNumber, ()>;
-type BasicBlockGraph = DiGraph<BasicBlock, BasicBlockType>;
+pub type BasicBlockGraph = DiGraph<BasicBlock, BasicBlockType>;
 type LineNumSet = HashSet<LineNumber>;
 type UsgCnt = usize;
+
+
 
 #[derive(Default)]
 pub struct BlockInfo {
@@ -28,6 +34,8 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
     for node_index in g.node_indices() {
         let block = &g[node_index];
         let mut info = BlockInfo::default();
+
+        info.def_set = get_def_set(&block, g);
 
         for instruction in &block.instructions {
             // Determine the use and def sets for each instruction
@@ -51,9 +59,9 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
                 _ => {}
             }
             // Collect defs (simplified for this example, adjust as needed)
-            if let Some(def) = instruction.get_def() {
-                info.def_set.insert(def);
-            }
+            // if let Some(def) = instruction.get_def() {
+            //     info.def_set.insert(def);
+            // }
         }
 
         block_info.insert(node_index, info);
@@ -91,23 +99,82 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
     }
 
     for (b, binfo) in &block_info {
+        println!("{:?}", b);
+        println!("def set: ");
+        for ins in &binfo.def_set {
+            println!("{:?}", ins);
+        }
+            println!("use set: ");
         for ins in &binfo.use_set {
             println!("{:?}", ins);
         }
+            println!("in set: ");
+        for ins in &binfo.in_set {
+            println!("{:?}", ins);
 
-        println!("Next block");
+        }
+
+            println!("out set: ");
+        for ins in &binfo.out_set {
+            println!("{:?}", ins);
+        }
+
     }
 
     block_info
 }
+pub type Instructions = Vec<Instruction>; 
+fn dead_code_elimination(v: &mut Instructions, inherited_set: &mut LiveSet) {
 
+    // in this case, the set to eliminate should be the out set and given code elimination block by block
+    // this function should work
+    let v_clone = v.clone();
+    for (idx, instruction) in v_clone.iter().rev().enumerate() {
+        match instruction.get_operation_ref() {
+            Operation::Phi(_, _)
+            | Operation::Add(_, _)
+            | Operation::Mul(_, _)
+            | Operation::Sub(_, _)
+            | Operation::Div(_, _) 
+            | Operation::Read 
+            | Operation::GetPar1
+            | Operation::GetPar2
+            | Operation::GetPar3
+            | Operation::SetPar1(_)
+            | Operation::SetPar2(_)
+            | Operation::SetPar3(_) => {
+                if !inherited_set.contains(&instruction.get_line_number()) {
+                    v.remove(v.len() - idx - 1);
+                }
+            }
 
+            Operation::Cmp(l, r) => {
+                inherited_set.insert(l.clone());
+                inherited_set.insert(r.clone());
+            }, 
+            Operation::Write(l) | Operation::Ret(l)  => {
+                inherited_set.insert(l.clone());
+            }
+            _ => {}
+        }
+    }
+}
 
-// fn get_def_set (b: &BasicBlock, g: &BasicBlockGraph) -> LineNumSet {
-//     let parents = g.neighbors_directed(b.id, Incoming); 
-//     for (var_name, ins_num) in b.
-// }
+fn get_def_set(b: &BasicBlock, g: &BasicBlockGraph) -> LineNumSet {
+    let mut def_set = LineNumSet::new();
+    let parents: Vec<NodeIndex> = g.neighbors_directed(b.id, Incoming).collect();
+    for (var_name, var_type) in &b.variable_table {
+        for parent in &parents {
+            let par_var_table = &g[*parent].variable_table;
 
+            let par_var = par_var_table.get(var_name);
+            if par_var != None && par_var.unwrap() == var_type {
+                def_set.insert(var_type.get_value());
+            } 
+        }
+    }
+    def_set
+}
 
 pub fn get_interference_graph(g: &BasicBlockGraph) -> InterferenceGraph {
     let block_info_map = compute_live_sets(g);
@@ -130,13 +197,13 @@ pub fn get_interference_graph(g: &BasicBlockGraph) -> InterferenceGraph {
         // draw edges between variables in the inset and make sure that those variables are connected in the live set
         create_set_edge_additions(&mut ig, &binfo.in_set, &binfo.in_set, &line_to_nodeidx_map);
 
-        create_set_edge_additions(&mut ig, &binfo.def_set, &binfo.in_set, &line_to_nodeidx_map);
-        create_set_edge_additions(
-            &mut ig,
-            &binfo.use_set,
-            &binfo.use_set,
-            &line_to_nodeidx_map,
-        );
+        // create_set_edge_additions(&mut ig, &binfo.def_set, &binfo.in_set, &line_to_nodeidx_map);
+        // create_set_edge_additions(
+        //     &mut ig,
+        //     &binfo.use_set,
+        //     &binfo.use_set,
+        //     &line_to_nodeidx_map,
+        // );
     }
 
     ig
@@ -200,6 +267,31 @@ fn create_set_edge_additions(
     }
 }
 
+
+fn get_clusters(g: &BasicBlockGraph) -> Clusters {
+    let mut clusters = Clusters::new(); 
+
+    for ni in g.node_indices().into_iter().rev() {
+        let bb_vec = &g[ni].instructions; 
+
+        for instruction in bb_vec.iter().rev() {
+            match *instruction.get_operation_ref() {
+                Operation::Phi(l, r) => {
+                    let mut new_cluster = Cluster::new(); 
+                    new_cluster.push(l);
+                    new_cluster.push(r);
+                    new_cluster.push(instruction.get_line_number());
+
+                    clusters.push(new_cluster);
+                }, 
+                _ => {}
+            }
+        }  
+    }
+
+    clusters
+}
+
 /// bfs through use counts and get the requisite use counts of each line number this will help for choosing the variables
 /// to put into a register if some need to get pushed out
 fn get_use_counts(
@@ -249,6 +341,39 @@ fn get_use_counts(
     res
 }
 
+
+fn mark_graph_with_layers_helper (g: &BasicBlockGraph, start_node: NodeIndex, layers_map: &mut HashMap<NodeIndex, Layer>, curr_layer: &mut Layer, lower_layer_idx: Option<NodeIndex>) {
+    let mut frontier: VecDeque<NodeIndex> = VecDeque::new(); 
+    frontier.push_back(start_node);
+
+    while !frontier.is_empty() {
+        let curr_ni = frontier.pop_front(); 
+        let curr_ni = curr_ni.unwrap(); 
+        let curr_bb_type = &g[curr_ni].block_type; 
+
+        layers_map.insert(curr_ni, *curr_layer); 
+
+        match curr_bb_type {
+            BasicBlockType::Follow => {
+                // go plus and set the starting point to the end
+                let assoc_conditional = *g.neighbors_directed(curr_ni, Incoming).peekable().peek().unwrap(); 
+
+                *curr_layer += 1; 
+                
+                // recursive solution here abuses the fuck out of the fact that a graph is also a one way tree in this case as we 
+                // are isolating for the actual loop blocks 
+                mark_graph_with_layers_helper(g, start_node, layers_map, curr_layer, Some(assoc_conditional));
+            }, 
+            _ => {}
+        }
+
+        if lower_layer_idx != None && lower_layer_idx.unwrap() == curr_ni {
+            *curr_layer -= 1; 
+            // just continue as normal going upwards here no reason to change anything.
+        }
+    }
+}
+
 type Layer = usize;
 fn mark_graph_with_layers(g: &BasicBlockGraph) -> HashMap<NodeIndex, Layer> {
     let mut ret_map = HashMap::<NodeIndex, Layer>::new();
@@ -277,6 +402,9 @@ fn mark_graph_with_layers(g: &BasicBlockGraph) -> HashMap<NodeIndex, Layer> {
     ret_map
 }
 
+
+
+
 #[cfg(test)]
 mod live_anal_tests {
     use super::*;
@@ -291,7 +419,11 @@ mod live_anal_tests {
                 let a <- 1 + 50; 
                 if 1 < 2 then 
                     let c <- 1 + 50; 
+                
+                
                 fi;
+
+                let c <- a + 2;
             }.
         "
         .to_string();
