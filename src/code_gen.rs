@@ -5,6 +5,7 @@ use crate::cfg_traversal::*;
 use crate::parser::*;
 use crate::register_allocation::*;
 use std::collections::HashMap;
+use petgraph::graph::NodeIndex;
 
 type RegSource = usize;
 type RegDestination = usize;
@@ -71,10 +72,39 @@ enum AssemblyInstruction {
     WRL,
 }
 
+impl AssemblyInstruction {
+    fn update(&mut self, new_value2: isize) {
+        match self {
+            AssemblyInstruction::BEQ(_, ref mut value2) => {
+                *value2 = new_value2;
+            },
+            AssemblyInstruction::BNE(_, ref mut value2) => {
+                *value2 = new_value2;
+            },
+            AssemblyInstruction::BLT(_, ref mut value2) => {
+                *value2 = new_value2;
+            },
+            AssemblyInstruction::BGE(_, ref mut value2) => {
+                *value2 = new_value2;
+            },
+            AssemblyInstruction::BLE(_, ref mut value2) => {
+                *value2 = new_value2;
+            },
+            AssemblyInstruction::BGT(_, ref mut value2) => {
+                *value2 = new_value2;
+            },
+            _ => {
+                panic!("yaaa add more shit later");
+            }
+        }
+    }
+}
+
 type AssemblyIndex = usize;
 
 pub struct CodeGeneration {
     instructions: Vec<Instruction>,
+    original_graph: BasicBlockGraph,
     register_mapping: HashMap<LineNumber, RegisterNumber>,
     assembly_instructions: Vec<AssemblyInstruction>,
     line_number_to_assembly_map: HashMap<LineNumber, AssemblyIndex>,
@@ -91,8 +121,11 @@ impl CodeGeneration {
 
         let mut graph2 = graph.clone();
         let instructions = traverse_in_order(&mut graph2);
+        
+        let mut graph3 = graph.clone();
 
         Self {
+            original_graph: graph3,
             instructions,
             register_mapping,
             assembly_instructions: Vec::new(),
@@ -101,7 +134,11 @@ impl CodeGeneration {
     }
 
     pub fn generate_code(&mut self) {
+        let mut waiting_to_be_mapped: HashMap<LineNumber, LineNumber> = HashMap::new(); // the line
+        // number that needs to be fined and the line number thats waiting to update
         for instruction in &self.instructions {
+
+            // update any waiting instructions
             let line_number = instruction.get_line_number();
             let operation = *instruction.get_operation_ref();
 
@@ -110,10 +147,12 @@ impl CodeGeneration {
             }
 
             if operation == Operation::End {
+                self.assembly_instructions.push(AssemblyInstruction::RET(0));
                 break;
             }
-            
+
             let line_num_register = *self.register_mapping.get(&line_number).unwrap();
+            println!("{}", line_num_register);
             match operation {
                 Operation::Add(value1, value2) => {
                     if value1 <= 0 && value2 <= 0 {
@@ -218,7 +257,7 @@ impl CodeGeneration {
                     }
                 },
                 Operation::Phi(value1, value2) => {
-                    let value1_register = *self.register_mapping.get(&value1).unwrap();
+                    let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                     let value2_register = *self.register_mapping.get(&value2).unwrap();
 
                     if line_num_register != value1_register {
@@ -234,11 +273,92 @@ impl CodeGeneration {
 
 
                 },
+
+                Operation::Cmp(value1, value2) => {
+                    if value1 <= 0 && value2 <= 0 {
+                        let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(value1_register, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::CMPI(line_num_register, value1_register, -value2));
+
+                    }
+                    if value1 > 0 && value2 > 0 {
+                        let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::CMP(line_num_register, value1_register, value2_register));
+
+                    }
+                    if value1 <= 0 {
+                        let value2_register = *self.register_mapping.get(&value2).unwrap(); 
+                        self.assembly_instructions.push(AssemblyInstruction::CMPI(line_num_register, value2_register, -value1));
+                    }
+                    if value2 <= 0 {
+                        let value1_register = *self.register_mapping.get(&value1).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value1_register, -value2));
+
+                    }
+                },
+                Operation::Beq(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BEQ(comparison_line_number_register, 0)); // 0 is a BS value
+                    // get first instruction of block_index
+                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
+                    let first_instruction_line = first_instruction.get_line_number();
+                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
+                },
+                Operation::Bne(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BNE(comparison_line_number_register, 0)); // 0 is a BS value
+                    // get first instruction of block_index
+                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
+                    let first_instruction_line = first_instruction.get_line_number();
+                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
+                },
+                Operation::Blt(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BLT(comparison_line_number_register, 0)); // 0 is a BS value
+                    // get first instruction of block_index
+                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
+                    let first_instruction_line = first_instruction.get_line_number();
+                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
+                },
+                Operation::Bge(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BGE(comparison_line_number_register, 0)); // 0 is a BS value
+                    // get first instruction of block_index
+                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
+                    let first_instruction_line = first_instruction.get_line_number();
+                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
+                },
+                Operation::Ble(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BLE(comparison_line_number_register, 0)); // 0 is a BS value
+                    // get first instruction of block_index
+                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
+                    let first_instruction_line = first_instruction.get_line_number();
+                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
+                },
+                Operation::Bgt(comparison_line_number, block_index) => {
+                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
+                    self.assembly_instructions.push(AssemblyInstruction::BGT(comparison_line_number_register, 0)); // 0 is a BS value
+                    // get first instruction of block_index
+                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
+                    let first_instruction_line = first_instruction.get_line_number();
+                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
+                },
                 _ => unreachable!("placeholder"),
             }
             
             self.line_number_to_assembly_map.insert(line_number, self.assembly_instructions.len() - 1);
+            
+            // update any waiting instructions ( the magic happens here for branching )
+            if waiting_to_be_mapped.contains_key(&line_number) {
+                let new_index = self.assembly_instructions.len() - 1;
+                let original_index = self.find_instruction_index_in_vector_given_line(line_number);
+                self.assembly_instructions[original_index].update((new_index - original_index) as isize);
+                waiting_to_be_mapped.remove(&line_number);
+            }
         }
+
 
         println!("MAPPING OF REGISTERS");
         for (line_number, register_num) in &self.register_mapping {

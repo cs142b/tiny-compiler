@@ -1,0 +1,25 @@
+
+running 1 test
+digraph main { 
+	CB [shape=record, label="<b>CB | {-1: const #1|-2: const #2}"];
+
+	bb0 [shape=record, label="<b>BB0 | {1: add (-1) (-2)|2: sub (1) (-2)}"];
+	bb1 [shape=record, label="<b>BB1 | {3: End}"];
+
+	CT:s -> bb0:n;
+	bb0:s -> bb1:n [label="   exit"];
+
+	bb0:b -> bb1:b [color=blue, style=dotted];
+
+}
+1
+1
+test code_gen::tests::first ... FAILED
+
+failures:
+
+failures:
+    code_gen::tests::first
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+
