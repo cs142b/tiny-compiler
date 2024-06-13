@@ -105,7 +105,7 @@ fn traverse_straight_til_conditional (start: NodeIndex, v: &mut Instructions, g:
     while !frontier.is_empty() {
         let curr_node = frontier.pop_front().unwrap(); 
         
-        
+        let double_clone = g.clone(); 
 
         let curr_bb = &mut g[curr_node];
         if !curr_bb.instructions.is_empty() {
@@ -114,8 +114,17 @@ fn traverse_straight_til_conditional (start: NodeIndex, v: &mut Instructions, g:
         }
 
         if curr_bb.block_type == BasicBlockType::Conditional {
-            if is_if(curr_node, g) {
-                traverse_if_fall_thru(curr_node, v, g, visited);
+            if is_if(curr_node, &double_clone) {
+
+                let mut ni = curr_node;
+                let clone_g = double_clone.clone();
+                for neighbor in clone_g.neighbors_directed(curr_bb.id, Outgoing) {
+                    if g[neighbor].block_type == BasicBlockType::FallThrough {
+                        ni = neighbor; 
+                        break; 
+                    }
+                }
+                traverse_if_fall_thru(ni, v, g, visited);
                 let branch_block = select_non_fall_thru(curr_node, g); 
                 frontier.push_front(traverse_if_branch(branch_block.unwrap(), v, g, visited));
 
@@ -148,7 +157,48 @@ fn traverse_til_join(start: NodeIndex, v: &mut Instructions, g: &mut BasicBlockG
     let mut frontier: VecDeque<NodeIndex> = VecDeque::new(); 
     frontier.push_back(start);
     while !frontier.is_empty() {
+        let g_clone = g.clone();
         let curr_node = frontier.pop_front().unwrap(); 
+        let curr_bb = &mut g[curr_node];
+
+        if curr_bb.block_type == BasicBlockType::Join{
+            return Some(curr_node)
+        } else {
+            let children = g_clone.neighbors_directed(curr_node, Outgoing); 
+            for child in children {
+                frontier.push_back(child);
+            }
+        }
+
+
+        if curr_bb.block_type == BasicBlockType::Conditional {
+            let mut double_clone = g_clone.clone();
+            if is_if(curr_node, &double_clone) {
+
+                let mut ni = curr_node;
+                let clone_g = double_clone.clone();
+                for neighbor in clone_g.neighbors_directed(curr_bb.id, Outgoing) {
+                    if g_clone[neighbor].block_type == BasicBlockType::FallThrough {
+                        ni = neighbor; 
+                        break; 
+                    }
+                }
+                traverse_if_fall_thru(ni, v, &mut double_clone, visited);
+                let branch_block = select_non_fall_thru(curr_node, &g_clone); 
+                frontier.push_front(traverse_if_branch(branch_block.unwrap(), v, &mut double_clone, visited));
+
+            } else {
+                if visited.contains(&curr_node) {
+                    // return (None, None);
+                } else {
+                    visited.insert(curr_node);
+                }
+                // traverse_in_order_follow_thru_while(curr_node, v, g);
+                traverse_while_fall_thru(curr_node, v, &mut double_clone, visited);
+                let follow_block = select_non_fall_thru(curr_node, &g_clone);
+                frontier.push_front(follow_block.unwrap());
+            }
+        }
         // if visited.contains(&curr_node) {
         //     return None; 
         // } else {
@@ -156,19 +206,11 @@ fn traverse_til_join(start: NodeIndex, v: &mut Instructions, g: &mut BasicBlockG
         // }
         visited.insert(curr_node);
 
-        let curr_bb = &mut g[curr_node];
         if !curr_bb.instructions.is_empty() {
 
             v.append(&mut curr_bb.instructions); 
         }
-        if curr_bb.block_type == BasicBlockType::Join{
-            return Some(curr_node)
-        } else {
-            let children = g.neighbors_directed(curr_node, Outgoing); 
-            for child in children {
-                frontier.push_back(child);
-            }
-        }
+        
 
 
     } 

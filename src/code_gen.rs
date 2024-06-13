@@ -1,4 +1,4 @@
-use crate::instruction::{Instruction, Operation};
+use crate::instruction::{self, Instruction, Operation};
 use crate::register_allocation::color_graph;
 use crate::live_analysis::*;
 use crate::cfg_traversal::*;
@@ -612,20 +612,20 @@ impl CodeGeneration {
                     }
                 },
                 Operation::Phi(value1, value2) => {
-                    // let line_num_register = *self.register_mapping.get(&line_number).unwrap();
-                    // let value1_register = *self.register_mapping.get(&value1).unwrap(); 
-                    // let value2_register = *self.register_mapping.get(&value2).unwrap();
-                    //
-                    // if line_num_register != value1_register {
-                    //     let index_to_insert = self.find_instruction_index_in_vector_given_line(value1_register as isize);
-                    //     self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value1_register as u8, 0));
-                    //
-                    // }
-                    //
-                    // if line_num_register != value2_register {
-                    //     let index_to_insert = self.find_instruction_index_in_vector_given_line(value2_register as isize);
-                    //     self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value2_register as u8, 0));
-                    // }
+                    let line_num_register = *self.register_mapping.get(&line_number).unwrap();
+                    let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                    let value2_register = *self.register_mapping.get(&value2).unwrap();
+                    
+                    if line_num_register != value1_register {
+                        let index_to_insert = self.find_instruction_index_in_vector_given_line(value1_register as isize);
+                        self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value1_register as u8, 0));
+                    
+                    }
+                    
+                    if line_num_register != value2_register {
+                        let index_to_insert = self.find_instruction_index_in_vector_given_line(value2_register as isize);
+                        self.assembly_instructions.insert(index_to_insert, AssemblyInstruction::ADD(line_num_register as u8, value2_register as u8, 0));
+                    }
 
 
                 },
@@ -733,7 +733,7 @@ impl CodeGeneration {
 
                 },
                 Operation::Bra(value) => {
-                    self.assembly_instructions.push(AssemblyInstruction::JSR(0)); // 0 is a BS value
+                    self.assembly_instructions.push(AssemblyInstruction::JSR(0)); // 0 is a BS valuegi
                 },
                 _ => panic!("placeholder: {:?}", operation),
             }
@@ -759,6 +759,11 @@ impl CodeGeneration {
         for assembly_instruction in &self.assembly_instructions {
             println!("{:?}", assembly_instruction);
         }
+
+        println!("SUPA PRINTS");
+        for instruction in &self.instructions {
+            println!("{:?}", instruction);
+        }
     }
 
 
@@ -779,8 +784,11 @@ mod tests {
     pub fn first() {
         let input = "
             main var a, b, c, d; {
+                let a <- 2 + 1;
                 if 1 == 1 then
                     let a <- 1 + 1;
+                else 
+                    let a <- 2 + a;
                 fi;
             }.
         "
@@ -796,7 +804,10 @@ mod tests {
         let mut bbg = bbg.clone(); 
 
         let mut bruh = CodeGeneration::new(&mut bbg);
+
         bruh.generate_code();
+
+       
 
 
     }
