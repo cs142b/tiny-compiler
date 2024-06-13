@@ -1,6 +1,5 @@
 use crate::basic_block::{BasicBlock, BasicBlockType};
-use crate::instruction::Operation;
-use core::panic;
+use crate::instruction::{Instruction, Operation};
 use petgraph::data::Build;
 use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::graph::{Node, NodeIndex};
@@ -9,7 +8,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 type LiveSet = HashSet<isize>;
 type LineNumber = isize;
-type InterferenceGraph = UnGraph<LineNumber, ()>;
+pub type InterferenceGraph = UnGraph<LineNumber, ()>;
 type BasicBlockGraph = DiGraph<BasicBlock, BasicBlockType>;
 type LineNumSet = HashSet<LineNumber>;
 type UsgCnt = usize;
@@ -33,11 +32,9 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
         for instruction in &block.instructions {
             // Determine the use and def sets for each instruction
             match instruction.get_operation_ref() {
-                Operation::Phi(l, r) | Operation::Cmp(l, r) => {
-                    info.use_set.insert(*l);
-                    info.use_set.insert(*r);
-                }
-                Operation::Add(l, r)
+                Operation::Phi(l, r)
+                | Operation::Cmp(l, r)
+                | Operation::Add(l, r)
                 | Operation::Mul(l, r)
                 | Operation::Div(l, r)
                 | Operation::Sub(l, r) => {
@@ -98,13 +95,19 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
             println!("{:?}", ins);
         }
 
-
         println!("Next block");
     }
 
-
     block_info
 }
+
+
+
+// fn get_def_set (b: &BasicBlock, g: &BasicBlockGraph) -> LineNumSet {
+//     let parents = g.neighbors_directed(b.id, Incoming); 
+//     for (var_name, ins_num) in b.
+// }
+
 
 pub fn get_interference_graph(g: &BasicBlockGraph) -> InterferenceGraph {
     let block_info_map = compute_live_sets(g);
@@ -128,7 +131,12 @@ pub fn get_interference_graph(g: &BasicBlockGraph) -> InterferenceGraph {
         create_set_edge_additions(&mut ig, &binfo.in_set, &binfo.in_set, &line_to_nodeidx_map);
 
         create_set_edge_additions(&mut ig, &binfo.def_set, &binfo.in_set, &line_to_nodeidx_map);
-        create_set_edge_additions(&mut ig, &binfo.use_set, &binfo.use_set, &line_to_nodeidx_map);
+        create_set_edge_additions(
+            &mut ig,
+            &binfo.use_set,
+            &binfo.use_set,
+            &line_to_nodeidx_map,
+        );
     }
 
     ig
