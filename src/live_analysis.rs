@@ -1,5 +1,5 @@
 use crate::basic_block::{BasicBlock, BasicBlockType};
-use crate::instruction::{Instruction, Operation};
+use crate::instruction::{self, Instruction, Operation};
 use petgraph::data::Build;
 use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::graph::{Node, NodeIndex};
@@ -10,13 +10,11 @@ type LiveSet = HashSet<isize>;
 type LineNumber = isize;
 type LineNumbers = Vec<LineNumber>;
 type Cluster = LineNumbers;
-type Clusters = Vec<Cluster>; 
+type Clusters = Vec<Cluster>;
 pub type InterferenceGraph = UnGraph<LineNumber, ()>;
 pub type BasicBlockGraph = DiGraph<BasicBlock, BasicBlockType>;
 type LineNumSet = HashSet<LineNumber>;
 type UsgCnt = usize;
-
-
 
 #[derive(Default)]
 pub struct BlockInfo {
@@ -97,6 +95,26 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
         }
     }
 
+    for (b, binfo) in &block_info {
+        println!("{:?}", b);
+        println!("def set: ");
+        for ins in &binfo.def_set {
+            println!("{:?}", ins);
+        }
+        println!("use set: ");
+        for ins in &binfo.use_set {
+            println!("{:?}", ins);
+        }
+        println!("in set: ");
+        for ins in &binfo.in_set {
+            println!("{:?}", ins);
+        }
+
+        println!("out set: ");
+        for ins in &binfo.out_set {
+            println!("{:?}", ins);
+        }
+    }
     // for (b, binfo) in &block_info {
     //     println!("{:?}", b);
     //     println!("def set: ");
@@ -122,9 +140,8 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
 
     block_info
 }
-pub type Instructions = Vec<Instruction>; 
+pub type Instructions = Vec<Instruction>;
 fn dead_code_elimination(v: &mut Instructions, inherited_set: &mut LiveSet) {
-
     // in this case, the set to eliminate should be the out set and given code elimination block by block
     // this function should work
     let v_clone = v.clone();
@@ -134,8 +151,8 @@ fn dead_code_elimination(v: &mut Instructions, inherited_set: &mut LiveSet) {
             | Operation::Add(_, _)
             | Operation::Mul(_, _)
             | Operation::Sub(_, _)
-            | Operation::Div(_, _) 
-            | Operation::Read 
+            | Operation::Div(_, _)
+            | Operation::Read
             | Operation::GetPar1
             | Operation::GetPar2
             | Operation::GetPar3
@@ -150,8 +167,8 @@ fn dead_code_elimination(v: &mut Instructions, inherited_set: &mut LiveSet) {
             Operation::Cmp(l, r) => {
                 inherited_set.insert(l.clone());
                 inherited_set.insert(r.clone());
-            }, 
-            Operation::Write(l) | Operation::Ret(l)  => {
+            }
+            Operation::Write(l) | Operation::Ret(l) => {
                 inherited_set.insert(l.clone());
             }
             _ => {}
@@ -169,7 +186,16 @@ fn get_def_set(b: &BasicBlock, g: &BasicBlockGraph) -> LineNumSet {
             let par_var = par_var_table.get(var_name);
             if par_var != None && par_var.unwrap() == var_type {
                 def_set.insert(var_type.get_value());
-            } 
+            }
+        }
+    }
+
+    for ins in &b.instructions {
+        match ins.operation {
+            Operation::Cmp(_, _) => {
+                def_set.insert(ins.get_line_number());
+            }
+            _ => {}
         }
     }
     def_set
@@ -265,38 +291,42 @@ fn create_set_edge_additions(
         }
     }
 }
-fn graph_edge_additions <N> (g: &mut UnGraph<N, ()>, edges_to_add1: &Vec<LineNumber>, edges_to_add2: &Vec<LineNumber>, generic_to_nodeindex: &mut HashMap<LineNumber, NodeIndex>) {
+fn graph_edge_additions<N>(
+    g: &mut UnGraph<N, ()>,
+    edges_to_add1: &Vec<LineNumber>,
+    edges_to_add2: &Vec<LineNumber>,
+    generic_to_nodeindex: &mut HashMap<LineNumber, NodeIndex>,
+) {
     for node1 in edges_to_add1 {
         for node2 in edges_to_add2 {
             if node1 != node2 {
                 let nodeidx1 = generic_to_nodeindex.get(node1);
-                let nodeidx2 = generic_to_nodeindex.get(node2); 
-                g.add_edge(*nodeidx1.unwrap(), *nodeidx2.unwrap(), ());  
+                let nodeidx2 = generic_to_nodeindex.get(node2);
+                g.add_edge(*nodeidx1.unwrap(), *nodeidx2.unwrap(), ());
             }
         }
     }
-} 
-
+}
 
 pub fn get_clusters(g: &BasicBlockGraph) -> Clusters {
-    let mut clusters = Clusters::new(); 
+    let mut clusters = Clusters::new();
 
     for ni in g.node_indices().into_iter().rev() {
-        let bb_vec = &g[ni].instructions; 
+        let bb_vec = &g[ni].instructions;
 
         for instruction in bb_vec.iter().rev() {
             match *instruction.get_operation_ref() {
                 Operation::Phi(l, r) => {
-                    let mut new_cluster = Cluster::new(); 
+                    let mut new_cluster = Cluster::new();
                     new_cluster.push(l);
                     new_cluster.push(r);
                     new_cluster.push(instruction.get_line_number());
 
                     clusters.push(new_cluster);
-                }, 
+                }
                 _ => {}
             }
-        }  
+        }
     }
 
     clusters
@@ -351,9 +381,13 @@ fn get_use_counts(
     res
 }
 
-
 pub type UpgradedInterferenceGraph = UnGraph<Cluster, ()>;
 
+pub fn get_upgraded_interference_graph(
+    g: &InterferenceGraph,
+    cluster_possibilities: &Clusters,
+) -> UpgradedInterferenceGraph {
+    let mut remapped = LineNumSet::new();
 pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> (UpgradedInterferenceGraph, HashMap<LineNumber, NodeIndex>) {
     let mut remapped = LineNumSet::new(); 
     let (mut upgraded_ig, mut line_to_node_idx) = convert_ig_to_upgraded(g);
@@ -396,101 +430,113 @@ pub fn get_upgraded_interference_graph (g: &InterferenceGraph, cluster_possibili
 
     for cluster in cluster_possibilities {
         for (idx, line_num) in cluster.iter().enumerate() {
-        
             // this line not yet remapped
             for (idx2, line_num2) in cluster.iter().enumerate() {
-                if line_num != line_num2 && !remapped.contains(line_num) && !remapped.contains(line_num2) {
+                if line_num != line_num2
+                    && !remapped.contains(line_num)
+                    && !remapped.contains(line_num2)
+                {
                     remapped.insert(*line_num);
                     remapped.insert(*line_num2);
-                    let removed_neighbors = upgraded_ig.neighbors_undirected(*line_to_node_idx.get(line_num2).unwrap());
-                    
-                    
+                    let removed_neighbors =
+                        upgraded_ig.neighbors_undirected(*line_to_node_idx.get(line_num2).unwrap());
+
                     upgraded_ig.remove_node(*line_to_node_idx.get(line_num2).unwrap());
                     line_to_node_idx.remove(line_num2);
-                    let curr_saved_node: NodeIndex = *line_to_node_idx.get(line_num).unwrap(); 
+                    let curr_saved_node: NodeIndex = *line_to_node_idx.get(line_num).unwrap();
                     line_to_node_idx.insert(*line_num2, curr_saved_node);
 
                     let cluster_to_change = &mut upgraded_ig[curr_saved_node];
                     cluster_to_change.push(*line_num2);
-
-                } 
+                }
             }
         }
     }
-
-    
 
     // for cluster in cluster_possibilities {
 
     // }
 
     upgraded_ig
-}   
+}
 
-fn convert_ig_to_upgraded(g: &InterferenceGraph) -> (UpgradedInterferenceGraph, HashMap<LineNumber, NodeIndex>) {
-    let mut upgraded_ig: petgraph::Graph<Vec<isize>, (), petgraph::Undirected> = UpgradedInterferenceGraph::new_undirected();
-    let mut line_to_nodeidx: HashMap<isize, NodeIndex> = HashMap::<LineNumber, NodeIndex>::new(); 
+fn convert_ig_to_upgraded(
+    g: &InterferenceGraph,
+) -> (UpgradedInterferenceGraph, HashMap<LineNumber, NodeIndex>) {
+    let mut upgraded_ig: petgraph::Graph<Vec<isize>, (), petgraph::Undirected> =
+        UpgradedInterferenceGraph::new_undirected();
+    let mut line_to_nodeidx: HashMap<isize, NodeIndex> = HashMap::<LineNumber, NodeIndex>::new();
 
-    let mut old_to_new_map: HashMap<NodeIndex, NodeIndex> = HashMap::<NodeIndex, NodeIndex>::new(); 
+    let mut old_to_new_map: HashMap<NodeIndex, NodeIndex> = HashMap::<NodeIndex, NodeIndex>::new();
 
     for node in g.node_indices() {
-        let mut new_cluster = Cluster::new(); 
-        let curr_num = g[node]; 
-        new_cluster.push(curr_num); 
+        let mut new_cluster = Cluster::new();
+        let curr_num = g[node];
+        new_cluster.push(curr_num);
 
         let new_node = upgraded_ig.add_node(new_cluster);
         line_to_nodeidx.insert(curr_num, new_node);
 
         old_to_new_map.insert(node, new_node);
-    }  
+    }
 
     for old in g.node_indices() {
         let new_node = old_to_new_map.get(&old).unwrap();
-        let old_neighbors = g.neighbors_undirected(old); 
+        let old_neighbors = g.neighbors_undirected(old);
         for old_neighbor in old_neighbors {
             let new_neighbor = old_to_new_map.get(&old_neighbor).unwrap();
             if !upgraded_ig.contains_edge(*new_node, *new_neighbor) {
                 upgraded_ig.add_edge(*new_node, *new_neighbor, ());
             }
-
         }
-    } 
-
-
-
-
+    }
 
     (upgraded_ig, line_to_nodeidx)
 }
 
-
-fn mark_graph_with_layers_helper (g: &BasicBlockGraph, start_node: NodeIndex, layers_map: &mut HashMap<NodeIndex, Layer>, curr_layer: &mut Layer, lower_layer_idx: Option<NodeIndex>) {
-    let mut frontier: VecDeque<NodeIndex> = VecDeque::new(); 
+fn mark_graph_with_layers_helper(
+    g: &BasicBlockGraph,
+    start_node: NodeIndex,
+    layers_map: &mut HashMap<NodeIndex, Layer>,
+    curr_layer: &mut Layer,
+    lower_layer_idx: Option<NodeIndex>,
+) {
+    let mut frontier: VecDeque<NodeIndex> = VecDeque::new();
     frontier.push_back(start_node);
 
     while !frontier.is_empty() {
-        let curr_ni = frontier.pop_front(); 
-        let curr_ni = curr_ni.unwrap(); 
-        let curr_bb_type = &g[curr_ni].block_type; 
+        let curr_ni = frontier.pop_front();
+        let curr_ni = curr_ni.unwrap();
+        let curr_bb_type = &g[curr_ni].block_type;
 
-        layers_map.insert(curr_ni, *curr_layer); 
+        layers_map.insert(curr_ni, *curr_layer);
 
         match curr_bb_type {
             BasicBlockType::Follow => {
                 // go plus and set the starting point to the end
-                let assoc_conditional = *g.neighbors_directed(curr_ni, Incoming).peekable().peek().unwrap(); 
+                let assoc_conditional = *g
+                    .neighbors_directed(curr_ni, Incoming)
+                    .peekable()
+                    .peek()
+                    .unwrap();
 
-                *curr_layer += 1; 
-                
-                // recursive solution here abuses the fuck out of the fact that a graph is also a one way tree in this case as we 
-                // are isolating for the actual loop blocks 
-                mark_graph_with_layers_helper(g, start_node, layers_map, curr_layer, Some(assoc_conditional));
-            }, 
+                *curr_layer += 1;
+
+                // recursive solution here abuses the fuck out of the fact that a graph is also a one way tree in this case as we
+                // are isolating for the actual loop blocks
+                mark_graph_with_layers_helper(
+                    g,
+                    start_node,
+                    layers_map,
+                    curr_layer,
+                    Some(assoc_conditional),
+                );
+            }
             _ => {}
         }
 
         if lower_layer_idx != None && lower_layer_idx.unwrap() == curr_ni {
-            *curr_layer -= 1; 
+            *curr_layer -= 1;
             // just continue as normal going upwards here no reason to change anything.
         }
     }
@@ -523,7 +569,6 @@ fn mark_graph_with_layers(g: &BasicBlockGraph) -> HashMap<NodeIndex, Layer> {
 
     ret_map
 }
-
 
 #[cfg(test)]
 mod live_anal_tests {
@@ -564,6 +609,9 @@ mod live_anal_tests {
         let cluster_possibilities = get_clusters(&bbg);
         let upgraded_ig = get_upgraded_interference_graph(&graph, &cluster_possibilities);
 
-        println!("{:?}", Dot::with_config(&upgraded_ig, &[Config::EdgeNoLabel]));
+        println!(
+            "{:?}",
+            Dot::with_config(&upgraded_ig, &[Config::EdgeNoLabel])
+        );
     }
 }

@@ -11,6 +11,7 @@ mod live_analysis;
 mod cfg_traversal;
 mod register_allocation;
 mod code_gen;
+mod assembler;
 
 // use crate::parser::Parser;
 
