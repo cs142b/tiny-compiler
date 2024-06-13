@@ -45,7 +45,11 @@ impl Parser {
         if self.tokenizer.peek_token() == Token::Variable {
             self.parse_var_decl();
         }
-        
+
+
+        // add predefined functions
+        self.internal_program.add_predefined_functions();
+
         // funcDecl
         loop {
             match self.tokenizer.peek_token() {
@@ -61,8 +65,8 @@ impl Parser {
         self.match_token(Token::OpenBrace);
         self.parse_stat_sequence();
         if self.internal_program.get_curr_block().is_empty() {
-        self.match_token(Token::CloseBrace);
-        self.match_token(Token::EOF);
+            self.match_token(Token::CloseBrace);
+            self.match_token(Token::EOF);
             self.emit_instruction(Operation::Empty);
         }
         self.internal_program.add_exit_block();
@@ -150,7 +154,9 @@ impl Parser {
                 }
                 self.parse_func_call()
             },
-            _ => panic!("Syntax error in factor: {:?}", token),
+            _ => {
+                panic!("Syntax error in factor: {:?}", token);
+            },
         }
     }
 
@@ -344,7 +350,7 @@ impl Parser {
 
     // Parse a sequence of statements
     fn parse_stat_sequence(&mut self) {
-        loop {
+        loop {            
             match self.tokenizer.peek_token() {
                 Token::Let => self.parse_assignment(),
                 Token::If => self.parse_if_statement(),
@@ -417,21 +423,24 @@ impl Parser {
             }
 
             // predefined functions
-            // if function_name == "InputNum".to_string() {
-            //     let input_num = self.internal_program.input_num();
-            //     self.internal_program.add_constant(input_num);
-            //
-            //     return self.internal_program.get_constant(input_num);
-            // } else if function_name == "OutputNewLine".to_string() {
-            //     self.internal_program.output_new_line();
-            //
-            //     return 0;
-            // }
+            if function_name == "InputNum".to_string() {
+                let input_num = self.internal_program.input_num();
+                self.internal_program.add_constant(input_num);
+                return self.internal_program.get_constant(input_num);
+            } else if function_name == "OutputNewLine".to_string() {
+                self.internal_program.output_new_line();
+
+                return 0;
+            }
 
 
         } else {
             let mut arguments = Vec::<isize>::new();
             self.match_token(Token::OpenParen);
+            if self.tokenizer.peek_token() == Token::CloseParen {
+                panic!("Calling a function with arguments with none");
+            }
+
             loop {
 
                 let argument = self.parse_expression();
@@ -446,16 +455,15 @@ impl Parser {
                     _ => break,
                 }
             }
-
             if arguments.len() != self.internal_program.get_number_of_parameters_of(&function_name) {
                 panic!("Number of parameters does not match arguments"); 
             }
             self.match_token(Token::CloseParen);
-
-            // if function_name == "OutputNum".to_string() {
-            //     self.internal_program.output_num(arguments[0]);
-            //     return 0;
-            // }
+            
+            if function_name == "OutputNum".to_string() {
+                self.internal_program.output_num(arguments[0]);
+                return 0;
+            }
 
             // emit setpar...?
             for i in 0..arguments.len() {
@@ -498,7 +506,6 @@ impl Parser {
             }, 
             _ => false,
         };
-
         self.match_token(Token::Function);
         let function_name = match self.tokenizer.next_token() {
             Token::Identifier(identifier) => identifier,
@@ -665,17 +672,16 @@ mod parser_tests{
     #[test]
     fn test_stuff() {
         let input = 
-        "main 
-        var a, b;
-    
+        "main var a, b;
         {
             let a <- call InputNum();
+            call OutputNum(a);
+            
         }.
         ".to_string();
         let mut parser = Parser::new(input);
 
-        // parser.parse_computation();
-
+        parser.parse_computation();
 
         println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
@@ -705,7 +711,7 @@ mod parser_tests{
 
         parser.parse_computation();
 
-        assert_eq!(parser.internal_program.functions.len(), 3);
+        assert_eq!(parser.internal_program.functions.len(), 6);
         for (key, value) in &parser.internal_program.get_fn("add").get_curr_bb().variable_table {
             println!("{:?} {:?}", key, value);
         }

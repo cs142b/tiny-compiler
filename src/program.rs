@@ -34,6 +34,18 @@ impl Program {
         self.functions.insert(name.to_string(), new_fn);
         self.current_function = name.to_string();
     }
+
+    pub fn add_predefined_functions(&mut self) {
+        let input_num_fn = Function::new("InputNum".to_string(), false);
+        self.functions.insert("InputNum".to_string(), input_num_fn);
+
+        let mut output_num_fn = Function::new("OutputNum".to_string(), true);
+        output_num_fn.insert_new_parameter("x".to_string());
+        self.functions.insert("OutputNum".to_string(), output_num_fn);
+        
+        let output_nl_fn = Function::new("OutputNewLine".to_string(), true);
+        self.functions.insert("OutputNewLine".to_string(), output_nl_fn);
+    }
     
     pub fn insert_new_parameter_to_curr_function(&mut self, parameter_name: String) {
         self.get_curr_fn_mut().insert_new_parameter(parameter_name);
@@ -217,10 +229,24 @@ impl Program {
     }
 
     pub fn output_num(&self, num: isize) {
-        println!("OutputNum: {}", num);
+        println!("OutputNum: {}", num * -1);
     }
     
     pub fn output_new_line(&self) {
         println!("\n");
+    }
+}
+
+#[cfg(test)]
+mod program_test {
+    use super::*;
+
+    #[test]
+    fn test_stuff() {
+
+        let program = Program::new();
+        program.output_num(program.input_num());
+        program.output_new_line();
+        program.output_num(program.input_num());
     }
 }
