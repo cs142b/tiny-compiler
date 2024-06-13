@@ -9,7 +9,7 @@ mod dot_viz;
 mod dominator_table;
 mod live_analysis;
 mod cfg_traversal;
-mod graph_coloring;
+mod register_allocation;
 mod code_gen;
 
 // use crate::parser::Parser;

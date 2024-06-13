@@ -19,108 +19,108 @@ pub enum BasicBlockType {
     Exit,
 }
 
-// impl fmt::Debug for BasicBlockType {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match *self {
-//             BasicBlockType::Entry => write!(f, "entry"),
-//             BasicBlockType::Conditional=> write!(f, "conditional"),
-//             BasicBlockType::FallThrough=> write!(f, "fall-through"),
-//             BasicBlockType::Branch=> write!(f, "branch"),
-//             BasicBlockType::Follow=> write!(f, "follow"),
-//             BasicBlockType::Join=> write!(f, "join"),
-//             BasicBlockType::Exit=> write!(f, "exit"),
-//         }
-//     }
-// }
+impl fmt::Debug for BasicBlockType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            BasicBlockType::Entry => write!(f, "entry"),
+            BasicBlockType::Conditional=> write!(f, "conditional"),
+            BasicBlockType::FallThrough=> write!(f, "fall-through"),
+            BasicBlockType::Branch=> write!(f, "branch"),
+            BasicBlockType::Follow=> write!(f, "follow"),
+            BasicBlockType::Join=> write!(f, "join"),
+            BasicBlockType::Exit=> write!(f, "exit"),
+        }
+    }
+}
 
 
-// #[derive(Clone, PartialEq, Eq, Copy)]
-// pub enum VariableType {
-//     Value(isize),
-//     NotInit,
-// }
+#[derive(Clone, PartialEq, Eq, Copy)]
+pub enum VariableType {
+    Value(isize),
+    NotInit,
+}
 
-// // pub type Predecessors = Vec<BasicBlock>;
-// impl fmt::Debug for VariableType {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match *self {
-//             VariableType::Value(value) => write!(f, "{}", value),
-//             VariableType::NotInit => write!(f, "NotInit"),
-//         }
-//     }
-// }
+// pub type Predecessors = Vec<BasicBlock>;
+impl fmt::Debug for VariableType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            VariableType::Value(value) => write!(f, "{}", value),
+            VariableType::NotInit => write!(f, "NotInit"),
+        }
+    }
+}
 
-// impl VariableType {
+impl VariableType {
 
-//     pub fn get_value(&self) -> isize {
-//         if let VariableType::Value(value) = self {
-//             return *value;
-//         }
-//         eprintln!("Use of an uninitialized value");
-//         0
-//     }
-// }
+    pub fn get_value(&self) -> isize {
+        if let VariableType::Value(value) = self {
+            return *value;
+        }
+        eprintln!("Use of an uninitialized value");
+        0
+    }
+}
 
-// #[derive(Debug, Default, Clone)]
-// pub struct BasicBlock {
-//     pub id: NodeIndex,
-//     pub instructions: Vec<Instruction>,
-//     pub variable_table: HashMap<String, VariableType>,
-//     pub block_type: BasicBlockType,
-//     pub dominator_table: DominatorTable,
-// }
+#[derive(Debug, Default, Clone)]
+pub struct BasicBlock {
+    pub id: NodeIndex,
+    pub instructions: Vec<Instruction>,
+    pub variable_table: HashMap<String, VariableType>,
+    pub block_type: BasicBlockType,
+    pub dominator_table: DominatorTable,
+}
 
-// impl PartialEq for BasicBlock {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.id == other.id
-//     }
-// }
+impl PartialEq for BasicBlock {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
 
-// impl BasicBlock {
-//     pub fn new(block_type: BasicBlockType) -> Self {
-//         Self {
-//             id: NodeIndex::new(0),
-//             instructions: Vec::new(),
-//             variable_table: HashMap::new(),
-//             block_type,
-//             dominator_table: DominatorTable::new(),
-//         }
-//     }
+impl BasicBlock {
+    pub fn new(block_type: BasicBlockType) -> Self {
+        Self {
+            id: NodeIndex::new(0),
+            instructions: Vec::new(),
+            variable_table: HashMap::new(),
+            block_type,
+            dominator_table: DominatorTable::new(),
+        }
+    }
 
-//     pub fn new_with_id(block_type: BasicBlockType, block_id: usize) -> Self {
-//         Self {
-//             id: NodeIndex::new(block_id), 
-//             instructions: Vec::new(),
-//             variable_table: HashMap::new(),
-//             block_type,
-//             dominator_table: DominatorTable::new(),
-//         }
-//     }
+    pub fn new_with_id(block_type: BasicBlockType, block_id: usize) -> Self {
+        Self {
+            id: NodeIndex::new(block_id), 
+            instructions: Vec::new(),
+            variable_table: HashMap::new(),
+            block_type,
+            dominator_table: DominatorTable::new(),
+        }
+    }
 
-//     pub fn add_instruction(&mut self, instruction: Instruction) {
-//         self.instructions.push(instruction);
-//     }
+    pub fn add_instruction(&mut self, instruction: Instruction) {
+        self.instructions.push(instruction);
+    }
 
-//     pub fn add_instruction_on_top(&mut self, instruction: Instruction) {
-//         self.instructions.insert(0, instruction);
-//     }
+    pub fn add_instruction_on_top(&mut self, instruction: Instruction) {
+        self.instructions.insert(0, instruction);
+    }
 
-//     pub fn declare_variable(&mut self, variable: &String) {
-//         self.variable_table.insert(variable.to_string(), VariableType::NotInit);
-//     }
+    pub fn declare_variable(&mut self, variable: &String) {
+        self.variable_table.insert(variable.to_string(), VariableType::NotInit);
+    }
 
-//     pub fn get_block_type(&self) -> BasicBlockType {
-//         self.block_type
-//     }
+    pub fn get_block_type(&self) -> BasicBlockType {
+        self.block_type
+    }
 
-//     pub fn get_variable(&self, variable: &String) -> VariableType {
-//         // need to generate phi resolutions in parser
-//         *self.variable_table.get(variable).unwrap()
-//     }
+    pub fn get_variable(&self, variable: &String) -> VariableType {
+        // need to generate phi resolutions in parser
+        *self.variable_table.get(variable).unwrap()
+    }
 
-//     pub fn assign_variable(&mut self, variable: &String, line_number: isize) {
-//         self.variable_table.insert(variable.to_string(), VariableType::Value(line_number));
-//     }
+    pub fn assign_variable(&mut self, variable: &String, line_number: isize) {
+        self.variable_table.insert(variable.to_string(), VariableType::Value(line_number));
+    }
 
     pub fn get_first_instruction_line_number(&self) -> isize {
         if let Some(instruction) = self.instructions.first() {
@@ -139,23 +139,23 @@ pub enum BasicBlockType {
     }
 
 
-//     pub fn get_max_parents(&self) -> usize {
-//         match self.block_type {
-//             BasicBlockType::Entry  => return 0,
-//             BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Follow => return 1,
-//             BasicBlockType::Conditional | BasicBlockType::Join => return 2,
-//             BasicBlockType::Exit => return 1,
-//         }
-//     }
+    pub fn get_max_parents(&self) -> usize {
+        match self.block_type {
+            BasicBlockType::Entry  => return 0,
+            BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Follow => return 1,
+            BasicBlockType::Conditional | BasicBlockType::Join => return 2,
+            BasicBlockType::Exit => return 1,
+        }
+    }
 
-//     pub fn get_max_children(&self) -> usize {
-//         match self.block_type {
-//             BasicBlockType::Entry => return 1,
-//             BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Join | BasicBlockType::Follow=> return 1,
-//             BasicBlockType::Conditional => return 2,
-//             BasicBlockType::Exit => return 0,
-//         }
-//     }
+    pub fn get_max_children(&self) -> usize {
+        match self.block_type {
+            BasicBlockType::Entry => return 1,
+            BasicBlockType::Branch | BasicBlockType::FallThrough | BasicBlockType::Join | BasicBlockType::Follow=> return 1,
+            BasicBlockType::Conditional => return 2,
+            BasicBlockType::Exit => return 0,
+        }
+    }
 
     // Function to modify an existing instruction by its line number
     pub fn modify_instruction(&mut self, line_number: isize, new_operation: Operation) {

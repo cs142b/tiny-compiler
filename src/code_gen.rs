@@ -1,5 +1,5 @@
 use crate::instruction::{Operation, Instruction};
-use crate::graph_coloring::color_graph;
+use crate::register_allocation::color_graph;
 enum AssemblyInstructions {
     
 }
