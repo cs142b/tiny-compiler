@@ -395,6 +395,8 @@ fn convert_ig_to_upgraded(g: &InterferenceGraph) -> (UpgradedInterferenceGraph, 
     let mut upgraded_ig: petgraph::Graph<Vec<isize>, (), petgraph::Undirected> = UpgradedInterferenceGraph::new_undirected();
     let mut line_to_nodeidx: HashMap<isize, NodeIndex> = HashMap::<LineNumber, NodeIndex>::new(); 
 
+    let mut old_to_new_map: HashMap<NodeIndex, NodeIndex> = HashMap::<NodeIndex, NodeIndex>::new(); 
+
     for node in g.node_indices() {
         let mut new_cluster = Cluster::new(); 
         let curr_num = g[node]; 
@@ -402,7 +404,25 @@ fn convert_ig_to_upgraded(g: &InterferenceGraph) -> (UpgradedInterferenceGraph, 
 
         let new_node = upgraded_ig.add_node(new_cluster);
         line_to_nodeidx.insert(curr_num, new_node);
-    }   
+
+        old_to_new_map.insert(node, new_node);
+    }  
+
+    for old in g.node_indices() {
+        let new_node = old_to_new_map.get(&old).unwrap();
+        let old_neighbors = g.neighbors_undirected(old); 
+        for old_neighbor in old_neighbors {
+            let new_neighbor = old_to_new_map.get(&old_neighbor).unwrap();
+            if !upgraded_ig.contains_edge(*new_node, *new_neighbor) {
+                upgraded_ig.add_edge(*new_node, *new_neighbor, ());
+            }
+
+        }
+    } 
+
+
+
+
 
     (upgraded_ig, line_to_nodeidx)
 }
