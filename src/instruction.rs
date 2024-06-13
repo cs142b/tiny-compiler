@@ -53,6 +53,7 @@ impl fmt::Debug for Operation {
             Operation::Bge(value1, value2) => write!(f, "bge ({:?}) (BB{})", value1, value2),
             Operation::Bgt(value1, value2) => write!(f, "bgt ({:?}) (BB{})", value1, value2),
             Operation::Jsr(value1) => write!(f, "jsr ({})", value1),
+            Operation::Ret(value1) => write!(f, "ret ({})", value1),
             Operation::GetPar1 => write!(f, "getPar1"),
             Operation::GetPar2 => write!(f, "getPar2"),
             Operation::GetPar3 => write!(f, "getPar3"),

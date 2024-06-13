@@ -129,6 +129,14 @@ impl BasicBlock {
             panic!("Basic block is empty")
         }
     }
+    
+    pub fn get_last_instruction_line_number(&self) -> isize {
+        if let Some(instruction) = self.instructions.last() {
+            instruction.get_line_number()
+        } else {
+            panic!("Basic block is empty")
+        }
+    }
 
 
     pub fn get_max_parents(&self) -> usize {

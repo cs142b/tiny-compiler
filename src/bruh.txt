@@ -1,22 +1,30 @@
 
 running 1 test
-"x" 1
 "y" 2
-"z" 3
+"x" 1
 digraph add { 
-	CB [shape=record, label="<b>CB | {-100: const #100|-300: const #300|-2: const #2|-6: const #6|-3: const #3|-1: const #1}"];
+	CB [shape=record, label="<b>CB | {-2: const #2|-1: const #1}"];
 
-	bb0 [shape=record, label="<b>BB0 | {1: getPar1|2: getPar2|3: add (-100) (-300)}"];
+	bb0 [shape=record, label="<b>BB0 | {1: getPar1|2: getPar2|3: add (1) (2)|4: ret (3)}"];
+
+	CT:s -> bb0:n;
+
+
+}
+digraph sub { 
+	CB [shape=record, label="<b>CB | {-2: const #2|-1: const #1}"];
+
+	bb0 [shape=record, label="<b>BB0 | {5: getPar1|6: getPar2|7: sub (5) (6)|8: ret (7)}"];
 
 	CT:s -> bb0:n;
 
 
 }
 digraph main { 
-	CB [shape=record, label="<b>CB | {-100: const #100|-300: const #300|-2: const #2|-6: const #6|-3: const #3|-1: const #1}"];
+	CB [shape=record, label="<b>CB | {-2: const #2|-1: const #1}"];
 
-	bb0 [shape=record, label="<b>BB0 | {4: setPar1 (-1)|5: setPar2 (-2)|6: add (-6) (-3)}"];
-	bb1 [shape=record, label="<b>BB1 | {7: End}"];
+	bb0 [shape=record, label="<b>BB0 | {9: setPar1 (-1)|10: setPar2 (-2)|11: jsr (1)|12: setPar1 (-1)|13: setPar2 (-2)|14: jsr (5)}"];
+	bb1 [shape=record, label="<b>BB1 | {15: End}"];
 
 	CT:s -> bb0:n;
 	bb0:s -> bb1:n [label="   exit"];
@@ -26,7 +34,7 @@ digraph main {
 }
 test parser::parser_tests::test_functions ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
 
 
 running 0 tests
