@@ -18,6 +18,7 @@ pub fn color_graph(interference_graph: &InterferenceGraph) -> HashMap<LineNumber
         for node_neighbor in interference_graph.neighbors_undirected(node) {
             let neighbor_node_weight = interference_graph.node_weight(node_neighbor).unwrap();
             if let Some(register_num) = register_mapping.get(neighbor_node_weight) {
+                // get the index of the register number I want to remove
                 if let Some(index) = avaliable_registers.iter().position(|&r| r == *register_num) {
                     avaliable_registers.remove(index);
                 }
