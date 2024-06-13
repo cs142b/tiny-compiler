@@ -86,5 +86,45 @@ fn get_machine_code_instructions(asm_instructions: Vec<AssemblyInstruction>) -> 
     mci
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::code_gen::CodeGeneration;
+    use crate::parser::Parser;
+    use crate::dot_viz::generate_dot_viz;
+    #[test]
+    pub fn first() {
+        let input = "
+            main var a, b, c, d; {
+                let a <- 1 + 2;  
+                let b <- a - 2; 
+                // if 1 < 2 then 
+                //     let c <- 100 + 2;
+                // fi;
+            }.
+        "
+        .to_string();
+
+        let mut parser = Parser::new(input);
+
+        parser.parse_computation();
+
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+
+        let mut bbg = &parser.internal_program.get_curr_fn().bb_graph;
+        let mut bbg = bbg.clone(); 
+
+        let mut bruh = CodeGeneration::new(&mut bbg);
+        bruh.generate_code();
+
+        let machine_code = get_machine_code_instructions(bruh.assembly_instructions);
+
+        for l in machine_code {
+            println!("{l:#032b},");
+        }
+
+
+    }
+}
 
 
