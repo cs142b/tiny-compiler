@@ -1,14 +1,14 @@
 
 running 1 test
 digraph main { 
-	CB [shape=record, label="<b>CB | {-2: const #2|-100: const #100|-1: const #1|-200: const #200}"];
+	CB [shape=record, label="<b>CB | {-1: const #1|-2: const #2|-3: const #3}"];
 
-	bb0 [shape=record, label="<b>BB0 | {1: add (-1) (-2)|2: sub (1) (-2)}"];
-	bb1 [shape=record, label="<b>BB1 | {3: cmp (-1) (-2)|4: bge (3) (BB3)}"];
-	bb2 [shape=record, label="<b>BB2 | {5: add (-100) (-200)|7: bra (BB4)}"];
+	bb0 [shape=record, label="<b>BB0 | {1: add (-1) (-2)}"];
+	bb1 [shape=record, label="<b>BB1 | {2: cmp (1) (-2)|3: bne (2) (BB3)}"];
+	bb2 [shape=record, label="<b>BB2 | {5: bra (BB4)}"];
 	bb3 [shape=record, label="<b>BB3 | {\<empty\>}"];
-	bb4 [shape=record, label="<b>BB4 | {6: phi (5) (0)}"];
-	bb5 [shape=record, label="<b>BB5 | {9: End}"];
+	bb4 [shape=record, label="<b>BB4 | {4: phi (-3) (0)}"];
+	bb5 [shape=record, label="<b>BB5 | {7: End}"];
 
 	CT:s -> bb0:n;
 	bb0:s -> bb1:n [label="   conditional"];
@@ -25,114 +25,102 @@ digraph main {
 	bb4:b -> bb5:b [color=blue, style=dotted];
 
 }
-NodeIndex(1)
+NodeIndex(2)
 def set: 
-0
-2
-3
 1
+0
 use set: 
--1
--2
 in set: 
--100
--1
--2
--200
-5
+-3
 out set: 
-5
--100
--200
+-3
+0
 NodeIndex(0)
 def set: 
 use set: 
-1
 -1
 -2
 in set: 
+-1
 1
-5
--1
--200
--100
 -2
+-3
 out set: 
--100
+1
 -2
--1
-5
--200
+-3
 NodeIndex(3)
 def set: 
-2
-0
-1
-use set: 
-in set: 
-5
-out set: 
-5
-0
-NodeIndex(2)
-def set: 
-2
 1
 0
 use set: 
--200
--100
 in set: 
--200
--100
-5
+-3
 out set: 
 0
-5
+-3
 NodeIndex(4)
 def set: 
 use set: 
-5
+-3
 0
 in set: 
-5
+-3
 0
 out set: 
-NodeIndex(5)
+NodeIndex(1)
 def set: 
-0
-6
 1
 2
+0
+use set: 
+-2
+1
+in set: 
+-2
+1
+-3
+out set: 
+-3
+NodeIndex(5)
+def set: 
+1
+0
+4
 use set: 
 in set: 
 out set: 
-MAPPING OF REGISTERS
-Line(2): R1
-Line(0): R6
-Line(1): R5
-Line(-200): R3
-Line(3): R1
-Line(6): R1
-Line(-2): R1
-Line(-1): R4
-Line(-100): R2
-Line(5): R6
 1
 2
 3
-4
 5
-7
 hello world
-6
-YA: 6
-test code_gen::tests::first ... FAILED
+4
+YA: 3
+YA: 3
+MAPPING OF REGISTERS
+Line(-1): R1
+Line(2): R1
+Line(1): R2
+Line(-2): R4
+Line(-3): R3
+Line(4): R1
+Line(0): R3
+ASSEMBLY INSTRUCTIONS
+ADDI(2, 0, 1)
+ADDI(2, 0, 2)
+CMPI(1, 2, 2)
+ADD(1, 3, 0)
+ADD(1, 3, 0)
+BNE(1, 0)
+JSR(0)
+RET(0)
+test code_gen::tests::first ... ok
 
-failures:
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
 
-failures:
-    code_gen::tests::first
 
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 

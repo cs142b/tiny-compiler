@@ -448,7 +448,8 @@ impl AssemblyInstruction {
                 *value2 = new_value2;
             },
             _ => {
-                panic!("yaaa add more shit later");
+                panic!("yaaa add more shit later {:?}", self);
+                
             }
         }
     }
@@ -488,13 +489,6 @@ impl CodeGeneration {
     }
 
     pub fn generate_code(&mut self) {
-        let mut waiting_to_be_mapped: HashMap<LineNumber, LineNumber> = HashMap::new(); // the line
-        // number that needs to be fined and the line number thats waiting to update
-        println!("MAPPING OF REGISTERS");
-        for (line_number, register_num) in &self.register_mapping {
-            println!("Line({}): R{}", line_number, register_num);
-
-        }
         for instruction in &self.instructions {
 
             // update any waiting instructions
@@ -652,71 +646,23 @@ impl CodeGeneration {
                     }
                     else if value2 <= 0 {
                         let value1_register = *self.register_mapping.get(&value1).unwrap();
-                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, value1_register as u8, -value2));
+                        self.assembly_instructions.push(AssemblyInstruction::CMPI(line_num_register as u8, value1_register as u8, -value2));
 
                     }
-                },
-                Operation::Beq(comparison_line_number, block_index) => {
-                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
-                    self.assembly_instructions.push(AssemblyInstruction::BEQ(comparison_line_number_register as u8, 0)); // 0 is a BS value
-                    // get first instruction of block_index
-                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
-                    let first_instruction_line = first_instruction.get_line_number();
-                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
                 },
                 Operation::Bne(comparison_line_number, block_index) => {
                     let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
                     self.assembly_instructions.push(AssemblyInstruction::BNE(comparison_line_number_register as u8, 0)); // 0 is a BS value
-                    // get first instruction of block_index
-                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
-                    let first_instruction_line = first_instruction.get_line_number();
-                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
                 },
-                Operation::Blt(comparison_line_number, block_index) => {
-                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
-                    self.assembly_instructions.push(AssemblyInstruction::BLT(comparison_line_number_register as u8, 0)); // 0 is a BS value
-                    // get first instruction of block_index
-                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
-                    let first_instruction_line = first_instruction.get_line_number();
-                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
+                Operation::Bra(value) => {
+                    println!("hello world");
+                    self.assembly_instructions.push(AssemblyInstruction::JSR(0)); // 0 is a BS value
                 },
-                Operation::Bge(comparison_line_number, block_index) => {
-                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
-                    self.assembly_instructions.push(AssemblyInstruction::BGE(comparison_line_number_register as u8, 0)); // 0 is a BS value
-                    // get first instruction of block_index
-                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
-                    let first_instruction_line = first_instruction.get_line_number();
-                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
-                },
-                Operation::Ble(comparison_line_number, block_index) => {
-                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
-                    self.assembly_instructions.push(AssemblyInstruction::BLE(comparison_line_number_register as u8, 0)); // 0 is a BS value
-                    // get first instruction of block_index
-                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
-                    let first_instruction_line = first_instruction.get_line_number();
-                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
-                },
-                Operation::Bgt(comparison_line_number, block_index) => {
-                    let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
-                    self.assembly_instructions.push(AssemblyInstruction::BGT(comparison_line_number_register as u8, 0)); // 0 is a BS value
-                    // get first instruction of block_index
-                    let first_instruction = self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions.first().unwrap();
-                    let first_instruction_line = first_instruction.get_line_number();
-                    waiting_to_be_mapped.insert(first_instruction_line, line_number);
-                },
-                Operation::Bra(value) => println!("hello world"),
-                _ => unreachable!("placeholder"),
+                _ => panic!("placeholder: {:?}", operation),
             }
             
             self.line_number_to_assembly_map.insert(line_number, self.assembly_instructions.len() - 1);
             
-            // update any waiting instructions ( the magic happens here for branching )
-            // if waiting_to_be_mapped.contains_key(&line_number) {
-            //     let new_index = self.assembly_instructions.len() - 1;
-            //     let original_index = self.find_instruction_index_in_vector_given_line(line_number);
-            //     self.assembly_instructions[original_index].update((new_index - original_index) as isize);
-            //     waiting_to_be_mapped.remove(&line_number);
-            // }
         }
 
 
@@ -751,9 +697,8 @@ mod tests {
         let input = "
             main var a, b, c, d; {
                 let a <- 1 + 2;  
-                let b <- a - 2; 
-                if 1 < 2 then 
-                    let c <- 100 + 200;
+                if a == 2 then
+                    let b <- 3;
                 fi;
             }.
         "
