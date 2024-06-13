@@ -1,32 +1,35 @@
 use std::fmt;
 
+type LineNumber = isize; 
+type FunctionNumber = isize; 
+type BasicBlockNumber = isize; 
 
 #[derive(Clone, PartialEq, Eq, Hash, Copy)]
 pub enum Operation {
-    Const(isize),
-    Add(isize, isize),
-    Sub(isize, isize),
-    Mul(isize, isize),
-    Div(isize, isize),
-    Cmp(isize, isize),
-    Phi(isize, isize),
-    Bra(isize),
-    Bne(isize, isize),
-    Beq(isize, isize),
-    Ble(isize, isize),
-    Blt(isize, isize),
-    Bge(isize, isize),
-    Bgt(isize, isize),
-    Jsr(isize),
-    Ret(isize),
+    Const(LineNumber),
+    Add(LineNumber, LineNumber),
+    Sub(LineNumber, LineNumber),
+    Mul(LineNumber, LineNumber),
+    Div(LineNumber, LineNumber),
+    Cmp(LineNumber, LineNumber),
+    Phi(LineNumber, LineNumber),
+    Bra(BasicBlockNumber),
+    Bne(LineNumber, BasicBlockNumber),
+    Beq(LineNumber, BasicBlockNumber),
+    Ble(LineNumber, BasicBlockNumber),
+    Blt(LineNumber, BasicBlockNumber),
+    Bge(LineNumber, BasicBlockNumber),
+    Bgt(LineNumber, BasicBlockNumber),
+    Jsr(FunctionNumber),
+    Ret(LineNumber),
     GetPar1,
     GetPar2,
     GetPar3,
-    SetPar1(isize),
-    SetPar2(isize),
-    SetPar3(isize),
+    SetPar1(LineNumber),
+    SetPar2(LineNumber),
+    SetPar3(LineNumber),
     Read,
-    Write(isize),
+    Write(LineNumber),
     WriteNL,
     Empty,
     End,
@@ -67,6 +70,34 @@ impl fmt::Debug for Operation {
     }
 }
 
+impl Operation {
+    pub fn get_lines(&self) -> Vec<isize> {
+        let mut v: Vec<isize> = Vec::new(); 
+        match *self {
+            Operation::Add(l,r)|
+            Operation::Sub(l, r)|
+            Operation::Mul(l, r)|
+            Operation::Div(l, r)|
+            Operation::Cmp(l, r)|
+            Operation::Phi(l, r) => {
+                v.push(l);
+                v.push(r); 
+            },
+            Operation::SetPar1(l) |
+            Operation::SetPar3(l) |
+            Operation::SetPar3(l) |
+            Operation::Write(l) => {
+                v.push(l);
+            }
+            _ => {}
+            
+            
+        }
+        v
+    }
+
+    
+}
 
 #[derive(Clone, PartialEq)]
 pub struct Instruction {
@@ -102,5 +133,21 @@ impl Instruction {
 
     pub fn create_instruction(line_number: isize, operation: Operation) -> Self {
         Instruction::new(line_number, operation)
+    }
+
+    // Method to get the defined variable (if any) from an instruction
+    pub fn get_def(&self) -> Option<isize> {
+        match self.operation {
+            Operation::Add(_, _) |
+            Operation::Sub(_, _) |
+            Operation::Mul(_, _) |
+            Operation::Div(_, _) |
+            Operation::SetPar1(_) |
+            Operation::SetPar2(_) |
+            Operation::SetPar3(_) => Some(self.line_number),
+
+            // Add cases for other operations that define a variable
+            _ => None,
+        }
     }
 }

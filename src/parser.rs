@@ -38,7 +38,7 @@ impl Parser {
     }
 
     // parse_computation, var_decl, and var are used for later in the future
-    fn parse_computation(&mut self){
+    pub fn parse_computation(&mut self){
         self.match_token(Token::Main);
 
         // varDecl
