@@ -463,6 +463,8 @@ pub struct CodeGeneration {
     register_mapping: HashMap<LineNumber, RegisterNumber>,
     assembly_instructions: Vec<AssemblyInstruction>,
     line_number_to_assembly_map: HashMap<LineNumber, AssemblyIndex>,
+    // maps future instruction to past instruction
+    branch_map: HashMap<LineNumber, AssemblyIndex>
 }
 
 impl CodeGeneration {
@@ -485,6 +487,7 @@ impl CodeGeneration {
             register_mapping,
             assembly_instructions: Vec::new(),
             line_number_to_assembly_map: HashMap::new(),
+            branch_map: HashMap::new()
         }
     }
 
@@ -494,6 +497,7 @@ impl CodeGeneration {
             // update any waiting instructions
             let line_number = instruction.get_line_number();
             let operation = *instruction.get_operation_ref();
+
 
             if operation == Operation::Empty {
                 continue;
@@ -654,7 +658,14 @@ impl CodeGeneration {
                     let comparison_line_number_register = *self.register_mapping.get(&comparison_line_number).unwrap();
                     self.assembly_instructions.push(AssemblyInstruction::BNE(comparison_line_number_register as u8, 0)); // 0 is a BS value
                     let len = self.assembly_instructions.len() - 1;
-                    self.assembly_instructions[len].update(100); // yay this works
+                    let mut new_instruction_line_num = self.original_graph[NodeIndex::new(block_index as usize)].get_first_instruction_line_number();
+                    if self.original_graph.node_weight(NodeIndex::from(block_index as u32)).unwrap().instructions[0].get_operation_ref() == &Operation::Empty {
+                        new_instruction_line_num = self.original_graph[NodeIndex::new((block_index + 1) as usize)].get_first_instruction_line_number(); 
+                    }
+
+                    // self.assembly_instructions[len].update(self.original_graph[block_index].); // yay this works
+                    self.branch_map.insert(new_instruction_line_num, len);
+
                 },
                 Operation::Bra(value) => {
                     self.assembly_instructions.push(AssemblyInstruction::JSR(0)); // 0 is a BS value
@@ -663,6 +674,12 @@ impl CodeGeneration {
             }
             
             self.line_number_to_assembly_map.insert(line_number, self.assembly_instructions.len() - 1);
+            
+            if self.branch_map.contains_key(&line_number) {
+                let assembly_index = *self.line_number_to_assembly_map.get(&line_number).unwrap();
+                let skill_diff = assembly_index - self.branch_map.get(&line_number).unwrap();
+                self.assembly_instructions[assembly_index - skill_diff].update(skill_diff as isize);
+;            }
             
         }
 
