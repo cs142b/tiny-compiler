@@ -17,7 +17,6 @@ pub struct Parser {
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
-        // program.add_function("main".to_string(), true);
 
         Self {
             tokenizer: Tokenizer::new(input),
@@ -46,7 +45,11 @@ impl Parser {
         if self.tokenizer.peek_token() == Token::Variable {
             self.parse_var_decl();
         }
-        
+
+
+        // add predefined functions
+        self.internal_program.add_predefined_functions();
+
         // funcDecl
         loop {
             match self.tokenizer.peek_token() {
@@ -62,8 +65,8 @@ impl Parser {
         self.match_token(Token::OpenBrace);
         self.parse_stat_sequence();
         if self.internal_program.get_curr_block().is_empty() {
-        self.match_token(Token::CloseBrace);
-        self.match_token(Token::EOF);
+            self.match_token(Token::CloseBrace);
+            self.match_token(Token::EOF);
             self.emit_instruction(Operation::Empty);
         }
         self.internal_program.add_exit_block();
@@ -151,7 +154,9 @@ impl Parser {
                 }
                 self.parse_func_call()
             },
-            _ => panic!("Syntax error in factor: {:?}", token),
+            _ => {
+                panic!("Syntax error in factor: {:?}", token);
+            },
         }
     }
 
@@ -345,7 +350,7 @@ impl Parser {
 
     // Parse a sequence of statements
     fn parse_stat_sequence(&mut self) {
-        loop {
+        loop {            
             match self.tokenizer.peek_token() {
                 Token::Let => self.parse_assignment(),
                 Token::If => self.parse_if_statement(),
@@ -421,7 +426,6 @@ impl Parser {
             if function_name == "InputNum".to_string() {
                 let input_num = self.internal_program.input_num();
                 self.internal_program.add_constant(input_num);
-
                 return self.internal_program.get_constant(input_num);
             } else if function_name == "OutputNewLine".to_string() {
                 self.internal_program.output_new_line();
@@ -433,6 +437,10 @@ impl Parser {
         } else {
             let mut arguments = Vec::<isize>::new();
             self.match_token(Token::OpenParen);
+            if self.tokenizer.peek_token() == Token::CloseParen {
+                panic!("Calling a function with arguments with none");
+            }
+
             loop {
 
                 let argument = self.parse_expression();
@@ -447,27 +455,36 @@ impl Parser {
                     _ => break,
                 }
             }
-
             if arguments.len() != self.internal_program.get_number_of_parameters_of(&function_name) {
                 panic!("Number of parameters does not match arguments"); 
             }
             self.match_token(Token::CloseParen);
-
+            
             if function_name == "OutputNum".to_string() {
                 self.internal_program.output_num(arguments[0]);
                 return 0;
             }
 
             // emit setpar...?
-            if arguments.len() >= 1 {
-                self.emit_instruction(Operation::SetPar1(arguments[0]));
-                if arguments.len() >= 2 {
-                    self.emit_instruction(Operation::SetPar2(arguments[1]));
-                    if arguments.len() == 3 {
-                        self.emit_instruction(Operation::SetPar3(arguments[2]));
-                    }
-                }
+            for i in 0..arguments.len() {
+                let operation = match i {
+                    0 => Operation::SetPar1(arguments[0]),
+                    1 => Operation::SetPar2(arguments[1]),
+                    2 => Operation::SetPar3(arguments[2]),
+                    _ => unreachable!("Should not reach here since max is 3 parameters"),
+                };
+
+                self.emit_instruction(operation);
             }
+            // if arguments.len() >= 1 {
+            //     self.emit_instruction(Operation::SetPar1(arguments[0]));
+            //     if arguments.len() >= 2 {
+            //         self.emit_instruction(Operation::SetPar2(arguments[1]));
+            //         if arguments.len() == 3 {
+            //             self.emit_instruction(Operation::SetPar3(arguments[2]));
+            //         }
+            //     }
+            // }
             
         }
 
@@ -489,7 +506,6 @@ impl Parser {
             }, 
             _ => false,
         };
-
         self.match_token(Token::Function);
         let function_name = match self.tokenizer.next_token() {
             Token::Identifier(identifier) => identifier,
@@ -511,9 +527,10 @@ impl Parser {
             match self.tokenizer.peek_token() {
                 Token::Identifier(parameter_name) => {
                     self.tokenizer.next_token();
-                    // add to vec of strings
+                    // add to vec of strings then add to the variable table
                     self.internal_program.insert_new_parameter_to_curr_function(parameter_name.clone());
                     self.internal_program.declare_variable_to_curr_block(&parameter_name);
+
                     if self.internal_program.get_number_of_parameters_of_curr_fn() > 3 {
                         panic!("A function should not have more than 3 parameters");
                     }
@@ -525,21 +542,40 @@ impl Parser {
                 _ => { break; },
             }
         }
-        if self.internal_program.get_number_of_parameters_of_curr_fn() >= 1 {
-            let line_number = self.emit_instruction(Operation::GetPar1);
-            let parameter_name = &self.internal_program.get_curr_fn().parameters[0].clone();
+
+        let num_of_parameters = self.internal_program.get_number_of_parameters_of_curr_fn();
+
+        for i in 0..num_of_parameters {
+            let operation = match i {
+                0 => Operation::GetPar1,
+                1 => Operation::GetPar2,
+                2 => Operation::GetPar3,
+                _ => unreachable!("Should not reach here since max is 3 parameters"),
+            };
+
+            let line_number = self.emit_instruction(operation);
+            let parameter_name = &self.internal_program.get_curr_fn().parameters[i].clone();
+
             self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
-            if self.internal_program.get_number_of_parameters_of_curr_fn() >= 2 {
-                let line_number = self.emit_instruction(Operation::GetPar2);
-                let parameter_name = &self.internal_program.get_curr_fn().parameters[1].clone();
-                self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
-                if self.internal_program.get_number_of_parameters_of_curr_fn() == 3 {
-                    let line_number = self.emit_instruction(Operation::GetPar3);
-                    let parameter_name = &self.internal_program.get_curr_fn().parameters[2].clone();
-                    self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
-                }
-            }
         }
+        
+        // LOLCODE
+        //
+        // if self.internal_program.get_number_of_parameters_of_curr_fn() >= 1 {
+        //     let line_number = self.emit_instruction(Operation::GetPar1);
+        //     let parameter_name = &self.internal_program.get_curr_fn().parameters[0].clone();
+        //     self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+        //     if self.internal_program.get_number_of_parameters_of_curr_fn() >= 2 {
+        //         let line_number = self.emit_instruction(Operation::GetPar2);
+        //         let parameter_name = &self.internal_program.get_curr_fn().parameters[1].clone();
+        //         self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+        //         if self.internal_program.get_number_of_parameters_of_curr_fn() == 3 {
+        //             let line_number = self.emit_instruction(Operation::GetPar3);
+        //             let parameter_name = &self.internal_program.get_curr_fn().parameters[2].clone();
+        //             self.internal_program.assign_variable_to_curr_block(&parameter_name, line_number);
+        //         }
+        //     }
+        // }
 
         self.match_token(Token::CloseParen);
 
@@ -636,17 +672,16 @@ mod parser_tests{
     #[test]
     fn test_stuff() {
         let input = 
-        "main 
-        var a, b;
-    
+        "main var a, b;
         {
             let a <- call InputNum();
+            call OutputNum(a);
+            
         }.
         ".to_string();
         let mut parser = Parser::new(input);
 
-        // parser.parse_computation();
-
+        parser.parse_computation();
 
         println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
@@ -676,7 +711,7 @@ mod parser_tests{
 
         parser.parse_computation();
 
-        assert_eq!(parser.internal_program.functions.len(), 3);
+        assert_eq!(parser.internal_program.functions.len(), 6);
         for (key, value) in &parser.internal_program.get_fn("add").get_curr_bb().variable_table {
             println!("{:?} {:?}", key, value);
         }

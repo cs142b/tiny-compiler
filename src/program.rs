@@ -11,9 +11,7 @@ use std::io;
 
 #[derive(Debug)]
 pub struct Program {
-    // pub functions: Vec<Function>,
     pub functions: HashMap<String, Function>,
-    // pub current_function: usize,
     pub current_function: String,
     pub constant_block: ConstantBlock,
 }
@@ -35,7 +33,18 @@ impl Program {
         let new_fn = Function::new(name.to_string(), is_void);
         self.functions.insert(name.to_string(), new_fn);
         self.current_function = name.to_string();
-        // self.functions.len() - 1
+    }
+
+    pub fn add_predefined_functions(&mut self) {
+        let input_num_fn = Function::new("InputNum".to_string(), false);
+        self.functions.insert("InputNum".to_string(), input_num_fn);
+
+        let mut output_num_fn = Function::new("OutputNum".to_string(), true);
+        output_num_fn.insert_new_parameter("x".to_string());
+        self.functions.insert("OutputNum".to_string(), output_num_fn);
+        
+        let output_nl_fn = Function::new("OutputNewLine".to_string(), true);
+        self.functions.insert("OutputNewLine".to_string(), output_nl_fn);
     }
     
     pub fn insert_new_parameter_to_curr_function(&mut self, parameter_name: String) {
@@ -220,10 +229,24 @@ impl Program {
     }
 
     pub fn output_num(&self, num: isize) {
-        println!("OutputNum: {}", num);
+        println!("OutputNum: {}", num * -1);
     }
     
     pub fn output_new_line(&self) {
         println!("\n");
+    }
+}
+
+#[cfg(test)]
+mod program_test {
+    use super::*;
+
+    #[test]
+    fn test_stuff() {
+
+        let program = Program::new();
+        program.output_num(program.input_num());
+        program.output_new_line();
+        program.output_num(program.input_num());
     }
 }
