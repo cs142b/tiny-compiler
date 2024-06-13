@@ -9,7 +9,7 @@ enum ConditionalType {
 
 type Visited = HashSet<NodeIndex>;
 use crate::{basic_block::BasicBlockType, live_analysis::{BasicBlockGraph, Instructions}};
-fn traverse_in_order (g: &mut BasicBlockGraph) -> Instructions {
+pub fn traverse_in_order (g: &mut BasicBlockGraph) -> Instructions {
     let mut ret_ins = Instructions::new(); 
 
     let start_node = NodeIndex::<u32>::new(0);
