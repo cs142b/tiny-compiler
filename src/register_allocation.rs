@@ -3,34 +3,29 @@ use std::collections::HashMap;
 use petgraph::graph::{Graph, UnGraph};
 use petgraph::Undirected;
 
-type LineNumber = isize;
-type RegisterNumber = usize;
-type InterferenceGraph = UnGraph<LineNumber, ()>;
+type Color = usize;
 
-pub fn color_graph(interference_graph: &InterferenceGraph) -> HashMap<LineNumber, RegisterNumber> {
-    let mut register_mapping = HashMap::<LineNumber, RegisterNumber>::new();
-    let max_registers = 5; // max according to doc
+pub fn color_graph <N, E> (interference_graph: &UnGraph<N, E>) -> HashMap<NodeIndex, Color> {
+    let mut color_mapping = HashMap::<NodeIndex, Color>::new();
+    let max_colors = 5; // max according to doc
 
-    // node's weight is a line number
     for node in interference_graph.node_indices() {
-        let mut avaliable_registers: Vec<usize> = (1..=max_registers).collect();
+        let mut avaliable_colors: Vec<Color> = (1..=max_colors).collect();
 
         for node_neighbor in interference_graph.neighbors_undirected(node) {
-            let neighbor_node_weight = interference_graph.node_weight(node_neighbor).unwrap();
-            if let Some(register_num) = register_mapping.get(neighbor_node_weight) {
+            if let Some(color_num) = color_mapping.get(&node_neighbor) {
                 // get the index of the register number I want to remove
-                if let Some(index) = avaliable_registers.iter().position(|&r| r == *register_num) {
-                    avaliable_registers.remove(index);
+                if let Some(index) = avaliable_colors.iter().position(|&r| r == *color_num) {
+                    avaliable_colors.remove(index);
                 }
             }
         }
 
-        let node_weight = *interference_graph.node_weight(node).unwrap();
-        let node_register = *avaliable_registers.iter().next().unwrap();
-        register_mapping.insert(node_weight, node_register);
+        let node_color = *avaliable_colors.iter().next().unwrap();
+        color_mapping.insert(node, node_color);
     }
 
-    register_mapping
+    color_mapping
 }
 
 #[cfg(test)]
@@ -38,7 +33,7 @@ mod graph_test {
     use super::*;
     #[test]
     pub fn first() {
-        let mut graph = Graph::<LineNumber, (), Undirected>::new_undirected();
+        let mut graph = Graph::<isize, (), Undirected>::new_undirected();
         let a = graph.add_node(1);
         let b = graph.add_node(2);
         let c = graph.add_node(3);
@@ -49,10 +44,10 @@ mod graph_test {
         graph.add_edge(a, c, ());
         graph.add_edge(a, d, ());
 
-        let register_mapping = color_graph(&graph);
+        let color_mapping = color_graph(&graph);
 
-        for (key, value) in &register_mapping {
-            println!("Line({}) maps to R{}", key, value);
+        for (key, value) in &color_mapping {
+            println!("{:?} maps to Color({})", key, value);
         }
 
     }

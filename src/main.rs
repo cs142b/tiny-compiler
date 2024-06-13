@@ -8,7 +8,7 @@ mod parser;
 mod dot_viz;
 mod dominator_table;
 mod live_analysis;
-mod graph_coloring;
+mod register_allocation;
 mod code_gen;
 
 
