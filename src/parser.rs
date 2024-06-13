@@ -17,7 +17,6 @@ pub struct Parser {
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut program = Program::new();
-        // program.add_function("main".to_string(), true);
 
         Self {
             tokenizer: Tokenizer::new(input),

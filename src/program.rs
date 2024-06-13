@@ -11,9 +11,7 @@ use std::io;
 
 #[derive(Debug)]
 pub struct Program {
-    // pub functions: Vec<Function>,
     pub functions: HashMap<String, Function>,
-    // pub current_function: usize,
     pub current_function: String,
     pub constant_block: ConstantBlock,
 }
@@ -35,7 +33,6 @@ impl Program {
         let new_fn = Function::new(name.to_string(), is_void);
         self.functions.insert(name.to_string(), new_fn);
         self.current_function = name.to_string();
-        // self.functions.len() - 1
     }
     
     pub fn insert_new_parameter_to_curr_function(&mut self, parameter_name: String) {
