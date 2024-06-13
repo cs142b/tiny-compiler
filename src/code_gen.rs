@@ -116,110 +116,105 @@ impl CodeGeneration {
             let line_num_register = *self.register_mapping.get(&line_number).unwrap();
             match operation {
                 Operation::Add(value1, value2) => {
-                    match (value1, value2) {
-                        _ if value1 <= 0 && value2 <= 0 => {
-                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value1));
-                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value2));
-                        },
-                        _ if value1 > 0 && value2 > 0 => {
-                            let value1_register = *self.register_mapping.get(&value1).unwrap(); 
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::ADD(line_num_register, value1_register, value2_register));
+                    if value1 <= 0 && value2 <= 0 {
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value2));
+                    }
+                    
+                    if value1 > 0 && value2 > 0 {
+                        let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::ADD(line_num_register, value1_register, value2_register));
 
-                        },
-                        _ if value1 <= 0 => {
-                            let constant = -value1;
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value2_register, constant));
-                        },
-                        _ if value2 <= 0 => {
-                            let constant = -value2;
-                            let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value1_register, constant));
-
-                        },
-                        _ => unreachable!("should never reach here"),
+                    }
+                    
+                    if value1 <= 0 {
+                        let constant = -value1;
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value2_register, constant));
+                    }
+                    
+                    if value2 <= 0 {
+                        let constant = -value2;
+                        let value1_register = *self.register_mapping.get(&value1).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value1_register, constant));
                     }
                 },
                 Operation::Sub(value1, value2) => {
-                    match (value1, value2) {
-                        _ if value1 <= 0 && value2 <= 0 => {
-                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value1));
-                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value2));
+                    if value1 <= 0 && value2 <= 0 {
+                        self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, 0, -value2));
 
-                        },
-                        _ if value1 > 0 && value2 > 0 => {
-                            let value1_register = *self.register_mapping.get(&value1).unwrap(); 
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::SUB(line_num_register, value1_register, value2_register));
+                    }
 
-                        },
-                        _ if value1 <= 0 => {
-                            let constant = -value1;
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value2_register, constant));
-                        },
-                        _ if value2 <= 0 => {
-                            let constant = -value2;
-                            let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value1_register, constant));
+                    if value1 > 0 && value2 > 0 {
+                        let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::SUB(line_num_register, value1_register, value2_register));
 
-                        },
-                        _ => unreachable!("should never reach here"),
+                    }
+                    
+                    if value1 <= 0 {
+                        let constant = -value1;
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value2_register, constant));
+                    }
+                    
+                    if value2 <= 0 {
+                        let constant = -value2;
+                        let value1_register = *self.register_mapping.get(&value1).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register, value1_register, constant));
                     }
                 },
                 Operation::Mul(value1, value2) => {
-                    match (value1, value2) {
-                        _ if value1 <= 0 && value2 <= 0 => {
-                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value1));
-                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value2));
+                    if value1 <= 0 && value2 <= 0 {
+                        self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, 0, -value2));
 
-                        },
-                        _ if value1 > 0 && value2 > 0 => {
-                            let value1_register = *self.register_mapping.get(&value1).unwrap(); 
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::MUL(line_num_register, value1_register, value2_register));
+                    }
+                    
+                    if value1 > 0 && value2 > 0 {
+                        let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::MUL(line_num_register, value1_register, value2_register));
 
-                        },
-                        _ if value1 <= 0 => {
-                            let constant = -value1;
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value2_register, constant));
-                        },
-                        _ if value2 <= 0 => {
-                            let constant = -value2;
-                            let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value1_register, constant));
+                    }
+                    
+                    if value1 <= 0 {
+                        let constant = -value1;
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value2_register, constant));
+                    }
 
-                        },
-                        _ => unreachable!("should never reach here"),
+                    if value2 <= 0 {
+                        let constant = -value2;
+                        let value1_register = *self.register_mapping.get(&value1).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register, value1_register, constant));
+
                     }
                 },
                 Operation::Div(value1, value2) => {
-                    match (value1, value2) {
-                        _ if value1 <= 0 && value2 <= 0 => {
-                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value1));
-                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value2));
+                    if value1 <= 0 && value2 <= 0 {
+                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value1));
+                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, 0, -value2));
 
-                        },
-                        _ if value1 > 0 && value2 > 0 => {
-                            let value1_register = *self.register_mapping.get(&value1).unwrap(); 
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::DIV(line_num_register, value1_register, value2_register));
+                    }
+                    if value1 > 0 && value2 > 0 {
+                        let value1_register = *self.register_mapping.get(&value1).unwrap(); 
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::DIV(line_num_register, value1_register, value2_register));
 
-                        },
-                        _ if value1 <= 0 => {
-                            let constant = -value1;
-                            let value2_register = *self.register_mapping.get(&value2).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value2_register, constant));
-                        },
-                        _ if value2 <= 0 => {
-                            let constant = -value2;
-                            let value1_register = *self.register_mapping.get(&value1).unwrap();
-                            self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value1_register, constant));
+                    }
+                    if value1 <= 0 {
+                        let constant = -value1;
+                        let value2_register = *self.register_mapping.get(&value2).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value2_register, constant));
+                    }
+                    if value2 <= 0 {
+                        let constant = -value2;
+                        let value1_register = *self.register_mapping.get(&value1).unwrap();
+                        self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register, value1_register, constant));
 
-                        },
-                        _ => unreachable!("should never reach here"),
                     }
                 },
                 Operation::Phi(value1, value2) => {
