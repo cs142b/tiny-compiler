@@ -388,13 +388,22 @@ pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Cluster
 
     for cluster in cluster_possibilities {
         for (idx, line_num) in cluster.iter().enumerate() {
-        
+            let mut was_remapped: bool = false; 
             // this line not yet remapped
             for (idx2, line_num2) in cluster.iter().enumerate() {
                 if line_num != line_num2 && !remapped.contains(line_num) && !remapped.contains(line_num2) {
-                    remapped.insert(*line_num);
+                    was_remapped = true; 
+                    // remapped.insert(*line_num);
                     remapped.insert(*line_num2);
-                    let removed_neighbors = upgraded_ig.neighbors_undirected(*line_to_node_idx.get(line_num2).unwrap());
+                    let ug = upgraded_ig.clone();
+                    let removed_neighbors = ug.neighbors_undirected(*line_to_node_idx.get(line_num2).unwrap());
+
+                    for removed_neighbor in removed_neighbors {
+                        let curr_node = line_to_node_idx.get(line_num).unwrap();
+                        if !upgraded_ig.contains_edge(*curr_node, removed_neighbor) {
+                            upgraded_ig.add_edge(*curr_node, removed_neighbor, ());
+                        }
+                    }
                     
                     
                     upgraded_ig.remove_node(*line_to_node_idx.get(line_num2).unwrap());
@@ -402,10 +411,16 @@ pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Cluster
                     let curr_saved_node: NodeIndex = *line_to_node_idx.get(line_num).unwrap(); 
                     line_to_node_idx.insert(*line_num2, curr_saved_node);
 
+                    println!("Curr saved node = {:?}", curr_saved_node);
+
+
                     let cluster_to_change = &mut upgraded_ig[curr_saved_node];
                     cluster_to_change.push(*line_num2);
 
                 }
+            }
+            if was_remapped == true {
+                remapped.insert(*line_num);
             }
         }
     }
@@ -461,6 +476,7 @@ pub fn get_upgraded_interference_graph (g: &InterferenceGraph, cluster_possibili
 fn convert_ig_to_upgraded(
     g: &InterferenceGraph,
 ) -> (UpgradedInterferenceGraph, HashMap<LineNumber, NodeIndex>) {
+    
     let mut upgraded_ig: petgraph::Graph<Vec<isize>, (), petgraph::Undirected> =
         UpgradedInterferenceGraph::new_undirected();
     let mut line_to_nodeidx: HashMap<isize, NodeIndex> = HashMap::<LineNumber, NodeIndex>::new();
@@ -477,6 +493,7 @@ fn convert_ig_to_upgraded(
 
         old_to_new_map.insert(node, new_node);
     }
+
 
     for old in g.node_indices() {
         let new_node = old_to_new_map.get(&old).unwrap();
