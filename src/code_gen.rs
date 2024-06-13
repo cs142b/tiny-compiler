@@ -518,22 +518,16 @@ impl CodeGeneration {
                     if value1 <= 0 && value2 <= 0 {
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value1));
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, 0, -value2));
-                    }
-                    
-                    if value1 > 0 && value2 > 0 {
+                    } else if value1 > 0 && value2 > 0 {
                         let value1_register:u8 = *self.register_mapping.get(&value1).unwrap() as u8; 
                         let value2_register:u8 = *self.register_mapping.get(&value2).unwrap() as u8;
                         self.assembly_instructions.push(AssemblyInstruction::ADD(line_num_register, value1_register, value2_register));
 
-                    }
-                    
-                    if value1 <= 0 {
+                    } else if value1 <= 0 {
                         let constant = -value1;
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value2_register as u8, constant));
-                    }
-                    
-                    if value2 <= 0 {
+                    } else if value2 <= 0 {
                         let constant = -value2;
                         let value1_register = *self.register_mapping.get(&value1).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::ADDI(line_num_register, value1_register as u8, constant));
@@ -547,20 +541,20 @@ impl CodeGeneration {
 
                     }
 
-                    if value1 > 0 && value2 > 0 {
+                    else if value1 > 0 && value2 > 0 {
                         let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::SUB(line_num_register as u8, value1_register as u8, value2_register as u8));
 
                     }
                     
-                    if value1 <= 0 {
+                    else if value1 <= 0 {
                         let constant = -value1;
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register as u8, value2_register as u8, constant));
                     }
                     
-                    if value2 <= 0 {
+                    else if value2 <= 0 {
                         let constant = -value2;
                         let value1_register = *self.register_mapping.get(&value1).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::SUBI(line_num_register as u8, value1_register as u8, constant));
@@ -574,20 +568,20 @@ impl CodeGeneration {
 
                     }
                     
-                    if value1 > 0 && value2 > 0 {
+                    else if value1 > 0 && value2 > 0 {
                         let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::MUL(line_num_register as u8, value1_register as u8, value2_register as u8));
 
                     }
                     
-                    if value1 <= 0 {
+                    else if value1 <= 0 {
                         let constant = -value1;
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register as u8, value2_register as u8, constant));
                     }
 
-                    if value2 <= 0 {
+                    else if value2 <= 0 {
                         let constant = -value2;
                         let value1_register = *self.register_mapping.get(&value1).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::MULI(line_num_register as u8, value1_register as u8, constant));
@@ -601,18 +595,18 @@ impl CodeGeneration {
                         self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, 0, -value2));
 
                     }
-                    if value1 > 0 && value2 > 0 {
+                    else if value1 > 0 && value2 > 0 {
                         let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::DIV(line_num_register as u8, value1_register as u8, value2_register as u8));
 
                     }
-                    if value1 <= 0 {
+                    else if value1 <= 0 {
                         let constant = -value1;
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, value2_register as u8, constant));
                     }
-                    if value2 <= 0 {
+                    else if value2 <= 0 {
                         let constant = -value2;
                         let value1_register = *self.register_mapping.get(&value1).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, value1_register as u8, constant));
@@ -646,17 +640,17 @@ impl CodeGeneration {
                         self.assembly_instructions.push(AssemblyInstruction::CMPI(line_num_register as u8, value1_register as u8, -value2));
 
                     }
-                    if value1 > 0 && value2 > 0 {
+                    else if value1 > 0 && value2 > 0 {
                         let value1_register = *self.register_mapping.get(&value1).unwrap(); 
                         let value2_register = *self.register_mapping.get(&value2).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::CMP(line_num_register as u8, value1_register as u8, value2_register as u8));
 
                     }
-                    if value1 <= 0 {
+                    else if value1 <= 0 {
                         let value2_register = *self.register_mapping.get(&value2).unwrap(); 
                         self.assembly_instructions.push(AssemblyInstruction::CMPI(line_num_register as u8, value2_register as u8, -value1));
                     }
-                    if value2 <= 0 {
+                    else if value2 <= 0 {
                         let value1_register = *self.register_mapping.get(&value1).unwrap();
                         self.assembly_instructions.push(AssemblyInstruction::DIVI(line_num_register as u8, value1_register as u8, -value2));
 
@@ -717,12 +711,12 @@ impl CodeGeneration {
             self.line_number_to_assembly_map.insert(line_number, self.assembly_instructions.len() - 1);
             
             // update any waiting instructions ( the magic happens here for branching )
-            if waiting_to_be_mapped.contains_key(&line_number) {
-                let new_index = self.assembly_instructions.len() - 1;
-                let original_index = self.find_instruction_index_in_vector_given_line(line_number);
-                self.assembly_instructions[original_index].update((new_index - original_index) as isize);
-                waiting_to_be_mapped.remove(&line_number);
-            }
+            // if waiting_to_be_mapped.contains_key(&line_number) {
+            //     let new_index = self.assembly_instructions.len() - 1;
+            //     let original_index = self.find_instruction_index_in_vector_given_line(line_number);
+            //     self.assembly_instructions[original_index].update((new_index - original_index) as isize);
+            //     waiting_to_be_mapped.remove(&line_number);
+            // }
         }
 
 
@@ -740,6 +734,7 @@ impl CodeGeneration {
 
 
     fn find_instruction_index_in_vector_given_line(&self, line_number: isize) -> AssemblyIndex {
+        println!("YA: {}", line_number);
         *self.line_number_to_assembly_map.get(&line_number).unwrap()
     }
 
@@ -758,7 +753,7 @@ mod tests {
                 let a <- 1 + 2;  
                 let b <- a - 2; 
                 if 1 < 2 then 
-                    let c <- 100 + 2;
+                    let c <- 100 + 200;
                 fi;
             }.
         "

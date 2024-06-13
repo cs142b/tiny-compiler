@@ -22,7 +22,7 @@ pub fn generate_register_mapping(interference_graph: &UnGraph<Cluster, ()>) -> H
 
 pub fn color_graph<N, E>(interference_graph: &UnGraph<N, E>) -> HashMap<NodeIndex, Color> {
     let mut color_mapping = HashMap::<NodeIndex, Color>::new();
-    let max_colors = 5; // max according to doc
+    let max_colors = 15; // max according to doc
 
 
     // start coloring from the first node
