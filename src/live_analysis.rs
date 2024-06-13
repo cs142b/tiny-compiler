@@ -97,28 +97,28 @@ pub fn compute_live_sets(g: &BasicBlockGraph) -> HashMap<NodeIndex, BlockInfo> {
         }
     }
 
-    for (b, binfo) in &block_info {
-        println!("{:?}", b);
-        println!("def set: ");
-        for ins in &binfo.def_set {
-            println!("{:?}", ins);
-        }
-            println!("use set: ");
-        for ins in &binfo.use_set {
-            println!("{:?}", ins);
-        }
-            println!("in set: ");
-        for ins in &binfo.in_set {
-            println!("{:?}", ins);
-
-        }
-
-            println!("out set: ");
-        for ins in &binfo.out_set {
-            println!("{:?}", ins);
-        }
-
-    }
+    // for (b, binfo) in &block_info {
+    //     println!("{:?}", b);
+    //     println!("def set: ");
+    //     for ins in &binfo.def_set {
+    //         println!("{:?}", ins);
+    //     }
+    //         println!("use set: ");
+    //     for ins in &binfo.use_set {
+    //         println!("{:?}", ins);
+    //     }
+    //         println!("in set: ");
+    //     for ins in &binfo.in_set {
+    //         println!("{:?}", ins);
+    //
+    //     }
+    //
+    //         println!("out set: ");
+    //     for ins in &binfo.out_set {
+    //         println!("{:?}", ins);
+    //     }
+    //
+    // }
 
     block_info
 }
@@ -354,6 +354,42 @@ fn get_use_counts(
 
 pub type UpgradedInterferenceGraph = UnGraph<Cluster, ()>;
 
+pub fn get_graph_and_map (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> (UpgradedInterferenceGraph, HashMap<LineNumber, NodeIndex>) {
+    let mut remapped = LineNumSet::new(); 
+    let (mut upgraded_ig, mut line_to_node_idx) = convert_ig_to_upgraded(g);
+
+    for cluster in cluster_possibilities {
+        for (idx, line_num) in cluster.iter().enumerate() {
+        
+            // this line not yet remapped
+            for (idx2, line_num2) in cluster.iter().enumerate() {
+                if line_num != line_num2 && !remapped.contains(line_num) && !remapped.contains(line_num2) {
+                    remapped.insert(*line_num);
+                    remapped.insert(*line_num2);
+                    let removed_neighbors = upgraded_ig.neighbors_undirected(*line_to_node_idx.get(line_num2).unwrap());
+                    
+                    
+                    upgraded_ig.remove_node(*line_to_node_idx.get(line_num2).unwrap());
+                    line_to_node_idx.remove(line_num2);
+                    let curr_saved_node: NodeIndex = *line_to_node_idx.get(line_num).unwrap(); 
+                    line_to_node_idx.insert(*line_num2, curr_saved_node);
+
+                    let cluster_to_change = &mut upgraded_ig[curr_saved_node];
+                    cluster_to_change.push(*line_num2);
+
+                } 
+            }
+        }
+    }
+
+    
+
+    // for cluster in cluster_possibilities {
+
+    // }
+
+    (upgraded_ig, line_to_node_idx)
+}   
 pub fn get_upgraded_interference_graph (g: &InterferenceGraph, cluster_possibilities: &Clusters) -> UpgradedInterferenceGraph {
     let mut remapped = LineNumSet::new(); 
     let (mut upgraded_ig, mut line_to_node_idx) = convert_ig_to_upgraded(g);
