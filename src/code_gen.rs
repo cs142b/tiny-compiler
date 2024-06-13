@@ -710,6 +710,7 @@ impl CodeGeneration {
                     let first_instruction_line = first_instruction.get_line_number();
                     waiting_to_be_mapped.insert(first_instruction_line, line_number);
                 },
+                Operation::Bra(value) => println!("hello world"),
                 _ => unreachable!("placeholder"),
             }
             

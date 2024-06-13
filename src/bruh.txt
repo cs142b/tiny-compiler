@@ -1,25 +1,161 @@
 
 running 1 test
 digraph main { 
-	CB [shape=record, label="<b>CB | {-1: const #1|-2: const #2}"];
+	CB [shape=record, label="<b>CB | {-2: const #2|-100: const #100|-1: const #1}"];
 
 	bb0 [shape=record, label="<b>BB0 | {1: add (-1) (-2)|2: sub (1) (-2)}"];
-	bb1 [shape=record, label="<b>BB1 | {3: End}"];
+	bb1 [shape=record, label="<b>BB1 | {3: cmp (-1) (-2)|4: bge (3) (BB3)}"];
+	bb2 [shape=record, label="<b>BB2 | {5: add (-100) (-2)|7: bra (BB4)}"];
+	bb3 [shape=record, label="<b>BB3 | {\<empty\>}"];
+	bb4 [shape=record, label="<b>BB4 | {6: phi (5) (0)}"];
+	bb5 [shape=record, label="<b>BB5 | {9: End}"];
 
 	CT:s -> bb0:n;
-	bb0:s -> bb1:n [label="   exit"];
+	bb0:s -> bb1:n [label="   conditional"];
+	bb1:s -> bb2:n [label="   fall-through"];
+	bb1:s -> bb3:n [label="   branch"];
+	bb2:s -> bb4:n [label="   branch"];
+	bb3:s -> bb4:n [label="   fall-through"];
+	bb4:s -> bb5:n [label="   exit"];
 
 	bb0:b -> bb1:b [color=blue, style=dotted];
+	bb1:b -> bb2:b [color=blue, style=dotted];
+	bb1:b -> bb3:b [color=blue, style=dotted];
+	bb1:b -> bb4:b [color=blue, style=dotted];
+	bb4:b -> bb5:b [color=blue, style=dotted];
 
 }
+NodeIndex(3)
+def set: 
+0
+2
 1
+use set: 
+in set: 
+5
+out set: 
+5
+0
+NodeIndex(1)
+def set: 
+3
+0
 1
-test code_gen::tests::first ... FAILED
+2
+use set: 
+-2
+-1
+in set: 
+-2
+-1
+5
+-100
+out set: 
+5
+-100
+-2
+NodeIndex(2)
+def set: 
+0
+2
+1
+use set: 
+-100
+-2
+in set: 
+-100
+-2
+5
+out set: 
+0
+5
+NodeIndex(5)
+def set: 
+1
+6
+0
+2
+use set: 
+in set: 
+out set: 
+NodeIndex(0)
+def set: 
+use set: 
+1
+-2
+-1
+in set: 
+1
+5
+-2
+-100
+-1
+out set: 
+-1
+5
+-100
+-2
+NodeIndex(4)
+def set: 
+use set: 
+5
+0
+in set: 
+5
+0
+out set: 
+MAPPING OF REGISTERS
+Line(-1): R5
+Line(-2): R3
+Line(2): R1
+Line(-100): R4
+Line(3): R1
+Line(1): R1
+Line(5): R2
+Line(0): R2
+Line(6): R1
+1
+2
+3
+4
+5
+7
+hello world
+6
+MAPPING OF REGISTERS
+Line(-1): R5
+Line(-2): R3
+Line(2): R1
+Line(-100): R4
+Line(3): R1
+Line(1): R1
+Line(5): R2
+Line(0): R2
+Line(6): R1
+ASSEMBLY INSTRUCTIONS
+ADDI(1, 0, 1)
+ADDI(1, 0, 2)
+ADDI(1, 3, 1)
+ADDI(1, 5, 2)
+ADD(1, 2, 0)
+ADD(1, 2, 0)
+SUBI(1, 1, 2)
+ADDI(5, 0, 1)
+CMPI(1, 5, 2)
+CMPI(1, 3, 1)
+DIVI(1, 5, 2)
+BGE(1, 0)
+ADDI(2, 0, 100)
+ADDI(2, 0, 2)
+ADDI(2, 3, 100)
+ADDI(2, 4, 2)
+RET(0)
+test code_gen::tests::first ... ok
 
-failures:
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.01s
 
-failures:
-    code_gen::tests::first
 
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
