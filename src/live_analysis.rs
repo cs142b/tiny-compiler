@@ -673,4 +673,72 @@ mod live_anal_tests {
             Dot::with_config(&upgraded_ig, &[Config::EdgeNoLabel])
         );
     }
+
+
+
+
+
+
+    #[test]
+    fn actual_test () {
+        let input = "main
+
+var a, b, c, d; {
+
+    let a <- call InputNum();
+
+    let b <- call InputNum();
+
+    let c <- call InputNum();
+
+    let d <- b;
+
+    
+
+    while a<100 do 
+
+        let a <- b + 1;
+
+        let d <- d + 1;
+
+        if d < 0 then 
+
+            let b <- b + 1;
+
+            while c < 10 do
+
+                let c <- c + 1;
+
+            od;
+
+            let d <- b + 3;
+
+        fi;
+
+    od;
+
+}.".to_string(); 
+
+let mut parser = Parser::new(input); 
+parser.parse_computation(); 
+let graph = &parser.internal_program.get_curr_fn().bb_graph;
+
+        // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+        let graph = get_interference_graph(&parser.internal_program.get_curr_fn().bb_graph);
+        println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        let bbg = &parser.internal_program.get_curr_fn().bb_graph;
+
+        let cluster_possibilities = get_clusters(&bbg);
+        let upgraded_ig = get_upgraded_interference_graph(&graph, &cluster_possibilities);
+
+        println!(
+            "{:?}",
+            Dot::with_config(&upgraded_ig, &[Config::EdgeNoLabel])
+        );
+    }
+
+
+    
+
 }

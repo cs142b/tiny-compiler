@@ -912,4 +912,54 @@ mod parser_tests{
         // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
         println!("{}", generate_dot_viz("main", &parser.internal_program));
     }
+    
+
+    #[test]
+    fn actual_test () {
+        let input = "
+main
+
+var a, b, c, d; {
+
+    let a <- call InputNum();
+
+    let b <- call InputNum();
+
+    let c <- call InputNum();
+
+    let d <- b;
+
+    
+
+    while a < 100 do 
+
+        let a <- b + 1;
+
+        let d <- d + 1;
+
+        while d < 0 do
+
+            let b <- b + 1;
+
+            while c < 10 do
+
+                let c <- c + 1;
+
+            od;
+
+            let d <- b + 3;
+
+        od;
+
+    od;
+
+}.".to_string();
+
+let mut parser = Parser::new(input); 
+parser.parse_computation(); 
+let graph = &parser.internal_program.get_curr_fn().bb_graph;
+
+        // println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
+        println!("{}", generate_dot_viz("main", &parser.internal_program));
+    }
 }

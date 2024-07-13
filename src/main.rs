@@ -12,6 +12,8 @@ mod cfg_traversal;
 mod register_allocation;
 mod code_gen;
 mod assembler;
+mod internal_graph;
+mod internal_use_graph;
 
 // use crate::parser::Parser;
 
